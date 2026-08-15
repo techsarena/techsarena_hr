@@ -6,9 +6,9 @@ import frappe
 from frappe.utils import getdate, nowdate
 from frappe.utils.password import update_password
 
-from orbit_hr.demo_records import provision_role_demo_records
+from techsarena_hr.demo_records import provision_role_demo_records
 
-DEMO_PASSWORD = "OrbitDemo@123"
+DEMO_PASSWORD = "TechsarenaDemo@123"
 
 DEMO_USERS = (
 	("leave.approver@techsarena.local", "Nikhil", "Varma", "Leave Approver", "Design Lead"),
@@ -95,7 +95,7 @@ def provision_role_demo_users(password: str = DEMO_PASSWORD) -> dict:
 
 def verify_role_demo_users() -> list[dict]:
 	"""Return a compact bootstrap check for every provisioned demo account."""
-	from orbit_hr.api import bootstrap
+	from techsarena_hr.api import bootstrap
 
 	checks = []
 	try:

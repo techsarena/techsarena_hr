@@ -1,4 +1,4 @@
-app_name = "orbit_hr"
+app_name = "techsarena_hr"
 app_title = "Techs Arena HCM"
 app_publisher = "Techs arena"
 app_description = "Human capital management by Techs Arena"
@@ -13,11 +13,11 @@ app_license = "mit"
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
-# 		"name": "orbit_hr",
-# 		"logo": "/assets/orbit_hr/logo.png",
+# 		"name": "techsarena_hr",
+# 		"logo": "/assets/techsarena_hr/logo.png",
 # 		"title": "Techs Arena HCM",
-# 		"route": "/orbit_hr",
-# 		"has_permission": "orbit_hr.api.permission.has_app_permission"
+# 		"route": "/techsarena_hr",
+# 		"has_permission": "techsarena_hr.api.permission.has_app_permission"
 # 	}
 # ]
 
@@ -25,15 +25,15 @@ app_license = "mit"
 # ------------------
 
 # include js, css files in header of desk.html
-# app_include_css = "/assets/orbit_hr/css/orbit_hr.css"
-# app_include_js = "/assets/orbit_hr/js/orbit_hr.js"
+# app_include_css = "/assets/techsarena_hr/css/techsarena_hr.css"
+# app_include_js = "/assets/techsarena_hr/js/techsarena_hr.js"
 
 # include js, css files in header of web template
-# web_include_css = "/assets/orbit_hr/css/orbit_hr.css"
-# web_include_js = "/assets/orbit_hr/js/orbit_hr.js"
+# web_include_css = "/assets/techsarena_hr/css/techsarena_hr.css"
+# web_include_js = "/assets/techsarena_hr/js/techsarena_hr.js"
 
 # include custom scss in every website theme (without file extension ".scss")
-# website_theme_scss = "orbit_hr/public/scss/website"
+# website_theme_scss = "techsarena_hr/public/scss/website"
 
 # include js, css files in header of web form
 # webform_include_js = {"doctype": "public/js/doctype.js"}
@@ -51,7 +51,7 @@ app_license = "mit"
 # Svg Icons
 # ------------------
 # include app icons in desk
-# app_include_icons = "orbit_hr/public/icons.svg"
+# app_include_icons = "techsarena_hr/public/icons.svg"
 
 # Home Pages
 # ----------
@@ -75,47 +75,47 @@ app_license = "mit"
 
 # add methods and filters to jinja environment
 # jinja = {
-# 	"methods": "orbit_hr.utils.jinja_methods",
-# 	"filters": "orbit_hr.utils.jinja_filters"
+# 	"methods": "techsarena_hr.utils.jinja_methods",
+# 	"filters": "techsarena_hr.utils.jinja_filters"
 # }
 
 # Installation
 # ------------
 
-# before_install = "orbit_hr.install.before_install"
-after_install = "orbit_hr.install.after_install"
+# before_install = "techsarena_hr.install.before_install"
+after_install = "techsarena_hr.install.after_install"
 
 # Keeps the Leave Type policy fields in place on sites installed before they
 # existed, and re-creates them if HRMS is installed after this app.
-after_migrate = "orbit_hr.install.after_migrate"
+after_migrate = "techsarena_hr.install.after_migrate"
 
 # Uninstallation
 # ------------
 
-# before_uninstall = "orbit_hr.uninstall.before_uninstall"
-# after_uninstall = "orbit_hr.uninstall.after_uninstall"
+# before_uninstall = "techsarena_hr.uninstall.before_uninstall"
+# after_uninstall = "techsarena_hr.uninstall.after_uninstall"
 
 # Integration Setup
 # ------------------
 # To set up dependencies/integrations with other apps
 # Name of the app being installed is passed as an argument
 
-# before_app_install = "orbit_hr.utils.before_app_install"
-# after_app_install = "orbit_hr.utils.after_app_install"
+# before_app_install = "techsarena_hr.utils.before_app_install"
+# after_app_install = "techsarena_hr.utils.after_app_install"
 
 # Integration Cleanup
 # -------------------
 # To clean up dependencies/integrations with other apps
 # Name of the app being uninstalled is passed as an argument
 
-# before_app_uninstall = "orbit_hr.utils.before_app_uninstall"
-# after_app_uninstall = "orbit_hr.utils.after_app_uninstall"
+# before_app_uninstall = "techsarena_hr.utils.before_app_uninstall"
+# after_app_uninstall = "techsarena_hr.utils.after_app_uninstall"
 
 # Desk Notifications
 # ------------------
 # See frappe.core.notifications.get_notification_config
 
-# notification_config = "orbit_hr.notifications.get_notification_config"
+# notification_config = "techsarena_hr.notifications.get_notification_config"
 
 # Permissions
 # -----------
@@ -154,39 +154,39 @@ after_migrate = "orbit_hr.install.after_migrate"
 
 # scheduler_events = {
 # 	"all": [
-# 		"orbit_hr.tasks.all"
+# 		"techsarena_hr.tasks.all"
 # 	],
 # 	"daily": [
-# 		"orbit_hr.tasks.daily"
+# 		"techsarena_hr.tasks.daily"
 # 	],
 # 	"hourly": [
-# 		"orbit_hr.tasks.hourly"
+# 		"techsarena_hr.tasks.hourly"
 # 	],
 # 	"weekly": [
-# 		"orbit_hr.tasks.weekly"
+# 		"techsarena_hr.tasks.weekly"
 # 	],
 # 	"monthly": [
-# 		"orbit_hr.tasks.monthly"
+# 		"techsarena_hr.tasks.monthly"
 # 	],
 # }
 
 # Testing
 # -------
 
-# before_tests = "orbit_hr.install.before_tests"
+# before_tests = "techsarena_hr.install.before_tests"
 
 # Overriding Methods
 # ------------------------------
 #
 # override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "orbit_hr.event.get_events"
+# 	"frappe.desk.doctype.event.event.get_events": "techsarena_hr.event.get_events"
 # }
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,
 # along with any modifications made in other Frappe apps
 # override_doctype_dashboards = {
-# 	"Task": "orbit_hr.task.get_dashboard_data"
+# 	"Task": "techsarena_hr.task.get_dashboard_data"
 # }
 
 # exempt linked doctypes from being automatically cancelled
@@ -200,13 +200,13 @@ after_migrate = "orbit_hr.install.after_migrate"
 
 # Request Events
 # ----------------
-# before_request = ["orbit_hr.utils.before_request"]
-# after_request = ["orbit_hr.utils.after_request"]
+# before_request = ["techsarena_hr.utils.before_request"]
+# after_request = ["techsarena_hr.utils.after_request"]
 
 # Job Events
 # ----------
-# before_job = ["orbit_hr.utils.before_job"]
-# after_job = ["orbit_hr.utils.after_job"]
+# before_job = ["techsarena_hr.utils.before_job"]
+# after_job = ["techsarena_hr.utils.after_job"]
 
 # User Data Protection
 # --------------------
@@ -236,7 +236,7 @@ after_migrate = "orbit_hr.install.after_migrate"
 # --------------------------------
 
 # auth_hooks = [
-# 	"orbit_hr.auth.validate"
+# 	"techsarena_hr.auth.validate"
 # ]
 
 # Automatically update python controller files with type annotations for this app.

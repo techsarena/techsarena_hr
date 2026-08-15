@@ -109,7 +109,7 @@ def _insert_raw(values: dict, created: dict[str, int], *, creation=None):
 
 def _ensure_holiday_list(company: str, created: dict[str, int]) -> str:
 	year = getdate(nowdate()).year
-	name = f"Orbit Demo Holidays {year}"
+	name = f"Techsarena Demo Holidays {year}"
 	_insert_raw(
 		{
 			"doctype": "Holiday List",
@@ -142,8 +142,8 @@ def _ensure_holiday_list(company: str, created: dict[str, int]) -> str:
 
 def _ensure_shift_types(holiday_list: str, created: dict[str, int]) -> tuple[str, str]:
 	shifts = (
-		("Orbit General Shift", "09:00:00", "18:00:00"),
-		("Orbit Evening Shift", "14:00:00", "22:00:00"),
+		("Techsarena General Shift", "09:00:00", "18:00:00"),
+		("Techsarena Evening Shift", "14:00:00", "22:00:00"),
 	)
 	for name, start, end in shifts:
 		_insert_raw(
@@ -190,7 +190,7 @@ def _ensure_leave_allocations(employee: str, company: str, created: dict[str, in
 
 
 def _ensure_attendance(employee, company: str, index: int, created: dict[str, int]) -> None:
-	attendance_name = f"ORBIT-DEMO-ATT-{employee.name}"
+	attendance_name = f"TECHSARENA-DEMO-ATT-{employee.name}"
 	doc = _insert_raw(
 		{
 			"doctype": "Attendance",
@@ -203,7 +203,7 @@ def _ensure_attendance(employee, company: str, index: int, created: dict[str, in
 			"working_hours": 7.5 + (index % 3) * 0.4,
 			"late_entry": 1 if index in {1, 4} else 0,
 			"early_exit": 1 if index == 6 else 0,
-			"shift": "Orbit General Shift",
+			"shift": "Techsarena General Shift",
 			"docstatus": 1,
 		},
 		created,
@@ -215,13 +215,13 @@ def _ensure_attendance(employee, company: str, index: int, created: dict[str, in
 		_insert_raw(
 			{
 				"doctype": "Employee Checkin",
-				"name": f"ORBIT-DEMO-CHECKIN-{employee.name}-{suffix}",
+				"name": f"TECHSARENA-DEMO-CHECKIN-{employee.name}-{suffix}",
 				"employee": employee.name,
 				"employee_name": employee.employee_name,
 				"time": time,
 				"log_type": log_type,
-				"shift": "Orbit General Shift",
-				"device_id": "Orbit Demo Seed",
+				"shift": "Techsarena General Shift",
+				"device_id": "Techsarena Demo Seed",
 			},
 			created,
 		)
@@ -229,9 +229,9 @@ def _ensure_attendance(employee, company: str, index: int, created: dict[str, in
 
 def _ensure_salary_masters(company: str, currency: str, created: dict[str, int]) -> None:
 	for name, abbreviation, component_type in (
-		("Orbit Basic", "OB", "Earning"),
-		("Orbit Allowance", "OA", "Earning"),
-		("Orbit Tax", "OT", "Deduction"),
+		("Techsarena Basic", "OB", "Earning"),
+		("Techsarena Allowance", "OA", "Earning"),
+		("Techsarena Tax", "OT", "Deduction"),
 	):
 		_insert_raw(
 			{
@@ -246,7 +246,7 @@ def _ensure_salary_masters(company: str, currency: str, created: dict[str, int])
 	_insert_raw(
 		{
 			"doctype": "Salary Structure",
-			"name": "Orbit Demo Salary Structure",
+			"name": "Techsarena Demo Salary Structure",
 			"company": company,
 			"is_active": "Yes",
 			"currency": currency,
@@ -264,11 +264,11 @@ def _ensure_salary_slip(employee, company: str, currency: str, index: int, creat
 	doc = _insert_raw(
 		{
 			"doctype": "Salary Slip",
-			"name": f"ORBIT-DEMO-SAL-{employee.name}",
+			"name": f"TECHSARENA-DEMO-SAL-{employee.name}",
 			"employee": employee.name,
 			"employee_name": employee.employee_name,
 			"company": company,
-			"salary_structure": "Orbit Demo Salary Structure",
+			"salary_structure": "Techsarena Demo Salary Structure",
 			"posting_date": month_end,
 			"start_date": month_start,
 			"end_date": month_end,
@@ -282,11 +282,11 @@ def _ensure_salary_slip(employee, company: str, currency: str, index: int, creat
 			"rounded_total": gross - deduction,
 			"docstatus": 1,
 			"earnings": [
-				{"salary_component": "Orbit Basic", "abbr": "OB", "amount": gross * 0.65},
-				{"salary_component": "Orbit Allowance", "abbr": "OA", "amount": gross * 0.35},
+				{"salary_component": "Techsarena Basic", "abbr": "OB", "amount": gross * 0.65},
+				{"salary_component": "Techsarena Allowance", "abbr": "OA", "amount": gross * 0.35},
 			],
 			"deductions": [
-				{"salary_component": "Orbit Tax", "abbr": "OT", "amount": deduction},
+				{"salary_component": "Techsarena Tax", "abbr": "OT", "amount": deduction},
 			],
 		},
 		created,
@@ -302,7 +302,7 @@ def _ensure_leave_requests(employees: dict, company: str, created: dict[str, int
 		doc = _insert_raw(
 			{
 				"doctype": "Leave Application",
-				"name": f"ORBIT-DEMO-LEAVE-{index + 1:02}",
+				"name": f"TECHSARENA-DEMO-LEAVE-{index + 1:02}",
 				"employee": employee.name,
 				"employee_name": employee.employee_name,
 				"company": company,
@@ -314,7 +314,7 @@ def _ensure_leave_requests(employees: dict, company: str, created: dict[str, int
 				"leave_approver": LEAVE_APPROVER,
 				"leave_approver_name": "Nikhil Varma",
 				"leave_balance": 8 - index % 4,
-				"description": "[Orbit Demo] Family or personal commitment",
+				"description": "[Techsarena Demo] Family or personal commitment",
 				"docstatus": 0,
 			},
 			created,
@@ -330,7 +330,7 @@ def _ensure_expense_claims(employees: dict, company: str, created: dict[str, int
 		doc = _insert_raw(
 			{
 				"doctype": "Expense Claim",
-				"name": f"ORBIT-DEMO-EXPENSE-{index + 1:02}",
+				"name": f"TECHSARENA-DEMO-EXPENSE-{index + 1:02}",
 				"employee": employee.name,
 				"employee_name": employee.employee_name,
 				"company": company,
@@ -338,7 +338,7 @@ def _ensure_expense_claims(employees: dict, company: str, created: dict[str, int
 				"approval_status": "Draft",
 				"status": "Draft",
 				"posting_date": add_days(nowdate(), -index),
-				"remark": f"[Orbit Demo] {expense_types[index % len(expense_types)]} reimbursement",
+				"remark": f"[Techsarena Demo] {expense_types[index % len(expense_types)]} reimbursement",
 				"total_claimed_amount": amount,
 				"total_sanctioned_amount": amount,
 				"grand_total": amount,
@@ -370,7 +370,7 @@ def _ensure_shift_requests(
 		doc = _insert_raw(
 			{
 				"doctype": "Shift Request",
-				"name": f"ORBIT-DEMO-SHIFT-{index + 1:02}",
+				"name": f"TECHSARENA-DEMO-SHIFT-{index + 1:02}",
 				"employee": employee.name,
 				"employee_name": employee.employee_name,
 				"company": company,
@@ -389,9 +389,9 @@ def _ensure_shift_requests(
 
 def _ensure_recruitment(company: str, created: dict[str, int]) -> None:
 	openings = (
-		("ORBIT-DEMO-JOB-BACKEND", "Backend Engineer", "Engineering Lead"),
-		("ORBIT-DEMO-JOB-DESIGN", "Product Designer", "Product Designer"),
-		("ORBIT-DEMO-JOB-HR", "People Operations Specialist", "HR Executive"),
+		("TECHSARENA-DEMO-JOB-BACKEND", "Backend Engineer", "Engineering Lead"),
+		("TECHSARENA-DEMO-JOB-DESIGN", "Product Designer", "Product Designer"),
+		("TECHSARENA-DEMO-JOB-HR", "People Operations Specialist", "HR Executive"),
 	)
 	for name, title, designation in openings:
 		_insert_raw(
@@ -410,7 +410,7 @@ def _ensure_recruitment(company: str, created: dict[str, int]) -> None:
 	_insert_raw(
 		{
 			"doctype": "Interview Round",
-			"name": "Orbit Demo Technical Round",
+			"name": "Techsarena Demo Technical Round",
 			"round_name": "Technical Round",
 			"designation": "Engineering Lead",
 		},
@@ -424,7 +424,7 @@ def _ensure_recruitment(company: str, created: dict[str, int]) -> None:
 		("Tara Iyer", "tara.demo@example.com", "15:00:00", -2),
 	)
 	for index, (candidate, email, time, day_offset) in enumerate(candidates):
-		applicant_name = f"ORBIT-DEMO-APPLICANT-{index + 1:02}"
+		applicant_name = f"TECHSARENA-DEMO-APPLICANT-{index + 1:02}"
 		_insert_raw(
 			{
 				"doctype": "Job Applicant",
@@ -440,11 +440,11 @@ def _ensure_recruitment(company: str, created: dict[str, int]) -> None:
 		_insert_raw(
 			{
 				"doctype": "Interview",
-				"name": f"ORBIT-DEMO-INTERVIEW-{index + 1:02}",
+				"name": f"TECHSARENA-DEMO-INTERVIEW-{index + 1:02}",
 				"job_applicant": applicant_name,
 				"job_opening": openings[0][0],
 				"designation": "Engineering Lead",
-				"interview_round": "Orbit Demo Technical Round",
+				"interview_round": "Techsarena Demo Technical Round",
 				"status": "Pending",
 				"scheduled_on": add_days(nowdate(), day_offset),
 				"from_time": time,
@@ -463,7 +463,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 	plans = (
 		{
 			"index": 1,
-			"applicant": "ORBIT-DEMO-APPLICANT-01",
+			"applicant": "TECHSARENA-DEMO-APPLICANT-01",
 			"employee_name": "Ananya Kulkarni",
 			"starts_in": 3,
 			"percent": 60,
@@ -478,7 +478,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 		},
 		{
 			"index": 2,
-			"applicant": "ORBIT-DEMO-APPLICANT-02",
+			"applicant": "TECHSARENA-DEMO-APPLICANT-02",
 			"employee_name": "Zoya Sheikh",
 			"starts_in": 5,
 			"percent": 33,
@@ -491,7 +491,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 		},
 		{
 			"index": 3,
-			"applicant": "ORBIT-DEMO-APPLICANT-03",
+			"applicant": "TECHSARENA-DEMO-APPLICANT-03",
 			"employee_name": "Arjun Bose",
 			"starts_in": -10,
 			"percent": 100,
@@ -505,7 +505,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 	)
 	for plan in plans:
 		index = plan["index"]
-		project_name = f"ORBIT-DEMO-ONBOARDING-PROJECT-{index:02}"
+		project_name = f"TECHSARENA-DEMO-ONBOARDING-PROJECT-{index:02}"
 		_insert_raw(
 			{
 				"doctype": "Project",
@@ -523,7 +523,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 			plan["activities"],
 			start=1,
 		):
-			task_name = f"ORBIT-DEMO-ONBOARDING-TASK-{index:02}-{activity_index:02}"
+			task_name = f"TECHSARENA-DEMO-ONBOARDING-TASK-{index:02}-{activity_index:02}"
 			_insert_raw(
 				{
 					"doctype": "Task",
@@ -549,7 +549,7 @@ def _ensure_onboarding(company: str, created: dict[str, int]) -> None:
 		_insert_raw(
 			{
 				"doctype": "Employee Onboarding",
-				"name": f"ORBIT-DEMO-ONBOARDING-{index:02}",
+				"name": f"TECHSARENA-DEMO-ONBOARDING-{index:02}",
 				"job_applicant": plan["applicant"],
 				"employee_name": plan["employee_name"],
 				"date_of_joining": add_days(nowdate(), plan["starts_in"]),
@@ -570,7 +570,7 @@ def _ensure_notification(user: str, index: int, created: dict[str, int]) -> None
 	_insert_raw(
 		{
 			"doctype": "Notification Log",
-			"name": f"ORBIT-DEMO-NOTIFICATION-{index + 1:02}",
+			"name": f"TECHSARENA-DEMO-NOTIFICATION-{index + 1:02}",
 			"for_user": user,
 			"subject": "Your Techs Arena HCM dashboard is ready",
 			"type": "Alert",
@@ -587,10 +587,10 @@ def _ensure_system_activity(created: dict[str, int]) -> None:
 		_insert_raw(
 			{
 				"doctype": "Error Log",
-				"name": f"ORBIT-DEMO-ERROR-{index + 1}",
+				"name": f"TECHSARENA-DEMO-ERROR-{index + 1}",
 				"method": method,
 				"reference_doctype": reference,
-				"error": "[Orbit Demo] Example operational error for the System Manager dashboard.",
+				"error": "[Techsarena Demo] Example operational error for the System Manager dashboard.",
 			},
 			created,
 			creation=now_datetime() - timedelta(hours=index + 2),

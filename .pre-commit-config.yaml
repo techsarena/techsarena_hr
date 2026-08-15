@@ -8,7 +8,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        files: "orbit_hr.*"
+        files: "techsarena_hr.*"
         exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
       - id: check-merge-conflict
       - id: check-ast
@@ -38,11 +38,11 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                orbit_hr/public/dist/.*|
+                techsarena_hr/public/dist/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                orbit_hr/templates/includes/.*|
-                orbit_hr/public/js/lib/.*
+                techsarena_hr/templates/includes/.*|
+                techsarena_hr/public/js/lib/.*
             )$
 
 
@@ -55,12 +55,12 @@ repos:
         # Ignore any files that might contain jinja / bundles
         exclude: |
             (?x)^(
-                orbit_hr/public/dist/.*|
+                techsarena_hr/public/dist/.*|
                 cypress/.*|
                 .*node_modules.*|
                 .*boilerplate.*|
-                orbit_hr/templates/includes/.*|
-                orbit_hr/public/js/lib/.*
+                techsarena_hr/templates/includes/.*|
+                techsarena_hr/public/js/lib/.*
             )$
 
 ci:

@@ -30,7 +30,7 @@ from frappe.utils import (
 	nowdate,
 )
 
-from orbit_hr.role_dashboards import build_role_dashboards
+from techsarena_hr.role_dashboards import build_role_dashboards
 
 HR_ROLES = {"HR User", "HR Manager", "Administrator"}
 #: Roles that decide requests in the approvals inbox. The queue spans leave,
@@ -900,7 +900,7 @@ def _leave_policy_allocation_rows(doc) -> list[dict]:
 					"is_compensatory",
 					"is_lwp",
 					"max_leaves_allowed",
-					"orbit_applies_to",
+					"techsarena_applies_to",
 				],
 			),
 			limit_page_length=0,
@@ -920,7 +920,7 @@ def _leave_policy_allocation_rows(doc) -> list[dict]:
 			if is_carry_forward
 			else _("No")
 		)
-		notes = leave_type.get("orbit_applies_to") if leave_type else None
+		notes = leave_type.get("techsarena_applies_to") if leave_type else None
 		if not notes:
 			notes = (
 				_("From approved extra work")
@@ -1586,7 +1586,7 @@ def health() -> dict:
 		"ok": True,
 		"site": frappe.local.site,
 		"hrms_installed": "hrms" in installed and "erpnext" in installed,
-		"orbit_hr_installed": "orbit_hr" in installed,
+		"techsarena_hr_installed": "techsarena_hr" in installed,
 	}
 
 
@@ -2327,12 +2327,12 @@ POLICY_FIELDS = (
 	"encashment_threshold_days",
 	"max_continuous_days_allowed",
 	"applicable_after",
-	"orbit_policy_version",
-	"orbit_effective_from",
-	"orbit_applies_to",
-	"orbit_notice_days",
-	"orbit_escalation_days",
-	"orbit_secondary_approver_above",
+	"techsarena_policy_version",
+	"techsarena_effective_from",
+	"techsarena_applies_to",
+	"techsarena_notice_days",
+	"techsarena_escalation_days",
+	"techsarena_secondary_approver_above",
 )
 
 
@@ -3347,7 +3347,7 @@ def decide_requests(requests: str, decision: str, comment: str | None = None) ->
 		if doctype not in APPROVAL_SOURCES or not name:
 			failed.append({"name": name, "error": _("Unsupported request.")})
 			continue
-		savepoint = f"orbit_{len(done) + len(failed)}"
+		savepoint = f"techsarena_{len(done) + len(failed)}"
 		frappe.db.savepoint(savepoint)
 		try:
 			done.append(_decide_one(doctype, name, decision == "Approved", comment, user, roles))

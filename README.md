@@ -1,6 +1,6 @@
-### Orbit HR
+### Techsarena HR
 
-the workspace everyone orbits
+the workspace everyone connects to
 
 ### Installation
 
@@ -9,7 +9,7 @@ You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 ```bash
 cd $PATH_TO_YOUR_BENCH
 bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app orbit_hr
+bench install-app techsarena_hr
 ```
 
 ### Contributing
@@ -17,7 +17,7 @@ bench install-app orbit_hr
 This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
 
 ```bash
-cd apps/orbit_hr
+cd apps/techsarena_hr
 pre-commit install
 ```
 

@@ -1,9 +1,9 @@
 [project]
-name = "orbit_hr"
+name = "techsarena_hr"
 authors = [
     { name = "Techs arena", email = "info@techsarena.com"}
 ]
-description = "the workspace everyone orbits"
+description = "the workspace everyone connects to"
 requires-python = ">=3.10"
 readme = "README.md"
 dynamic = ["version"]
