@@ -1,7 +1,7 @@
 app_name = "orbit_hr"
-app_title = "Orbit HR"
+app_title = "Techs Arena HCM"
 app_publisher = "Techs arena"
-app_description = "the workspace everyone orbits"
+app_description = "Human capital management by Techs Arena"
 app_email = "info@techsarena.com"
 app_license = "mit"
 
@@ -15,7 +15,7 @@ app_license = "mit"
 # 	{
 # 		"name": "orbit_hr",
 # 		"logo": "/assets/orbit_hr/logo.png",
-# 		"title": "Orbit HR",
+# 		"title": "Techs Arena HCM",
 # 		"route": "/orbit_hr",
 # 		"has_permission": "orbit_hr.api.permission.has_app_permission"
 # 	}
@@ -83,7 +83,11 @@ app_license = "mit"
 # ------------
 
 # before_install = "orbit_hr.install.before_install"
-# after_install = "orbit_hr.install.after_install"
+after_install = "orbit_hr.install.after_install"
+
+# Keeps the Leave Type policy fields in place on sites installed before they
+# existed, and re-creates them if HRMS is installed after this app.
+after_migrate = "orbit_hr.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -241,4 +245,3 @@ app_license = "mit"
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
-
