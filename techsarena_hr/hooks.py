@@ -149,6 +149,15 @@ after_migrate = "techsarena_hr.install.after_migrate"
 # 	}
 # }
 
+doc_events = {
+	"Salary Slip": {
+		# Computes the monthly income-tax deduction from the employee's Income Tax
+		# Slab. No-op unless enabled in Techsarena Payroll Settings. Independent of
+		# the arrears path (which settles via Additional Salary).
+		"before_save": "techsarena_hr.techsarena_payroll.income_tax.apply_monthly_tax",
+	},
+}
+
 # Scheduled Tasks
 # ---------------
 

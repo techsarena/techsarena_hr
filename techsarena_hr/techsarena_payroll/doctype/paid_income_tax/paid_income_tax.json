@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-08-16 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "is_submittable": 1,
+ "naming_rule": "Expression (old style)",
+ "autoname": "PAID-TAX-.YYYY.-.#####",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "company",
+  "column_break_1",
+  "payroll_period",
+  "period_from",
+  "period_to",
+  "amount",
+  "amended_from"
+ ],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "fetch_from": "employee.company", "read_only": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "payroll_period", "fieldtype": "Link", "label": "Payroll Period", "options": "Payroll Period", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "period_from", "fieldtype": "Date", "label": "Period From", "fetch_from": "payroll_period.start_date", "read_only": 1},
+  {"fieldname": "period_to", "fieldtype": "Date", "label": "Period To", "fetch_from": "payroll_period.end_date", "read_only": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Income Tax Already Paid", "reqd": 1, "in_list_view": 1, "description": "Income tax already deducted/paid this tax year outside the current payroll runs. Reduces the remaining tax spread over the rest of the year."},
+  {"fieldname": "amended_from", "fieldtype": "Link", "label": "Amended From", "options": "Paid Income Tax", "read_only": 1, "no_copy": 1, "print_hide": 1}
+ ],
+ "links": [],
+ "modified": "2026-08-16 00:00:00",
+ "module": "Techsarena Payroll",
+ "name": "Paid Income Tax",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "report": 1, "print": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
