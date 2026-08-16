@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "creation": "2026-08-16 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "issingle": 1,
+ "field_order": [
+  "arrears_section",
+  "default_arrear_earnings",
+  "default_arrear_deductions",
+  "company_components_section",
+  "company_components",
+  "tax_section",
+  "enable_income_tax",
+  "tax_component"
+ ],
+ "fields": [
+  {"fieldname": "arrears_section", "fieldtype": "Section Break", "label": "Arrears Defaults", "description": "Salary components whose retroactive difference is included when an Arrears Process runs. These can be overridden on each Arrears Process document."},
+  {"fieldname": "default_arrear_earnings", "fieldtype": "Table", "label": "Default Arrear Earnings", "options": "Arrears Component"},
+  {"fieldname": "default_arrear_deductions", "fieldtype": "Table", "label": "Default Arrear Deductions", "options": "Arrears Component"},
+  {"fieldname": "company_components_section", "fieldtype": "Section Break", "label": "Company-wise Components", "description": "Restrict salary components to specific companies. When set, only the listed components are considered for a company during arrears and tax processing."},
+  {"fieldname": "company_components", "fieldtype": "Table", "label": "Company Components", "options": "Company Wise Component"},
+  {"fieldname": "tax_section", "fieldtype": "Section Break", "label": "Income Tax"},
+  {"fieldname": "enable_income_tax", "fieldtype": "Check", "label": "Enable Monthly Income Tax", "default": 0, "description": "Compute monthly income tax on Salary Slip from the employee's assigned Income Tax Slab."},
+  {"fieldname": "tax_component", "fieldtype": "Link", "label": "Tax Deduction Component", "options": "Salary Component", "depends_on": "enable_income_tax", "description": "Deduction Salary Component used to post the computed monthly income tax."}
+ ],
+ "links": [],
+ "modified": "2026-08-16 00:00:00",
+ "module": "Techsarena Payroll",
+ "name": "Techsarena Payroll Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "report": 1, "print": 1, "email": 1, "share": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "creation": "2026-08-16 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "from_date",
+  "to_date",
+  "base_salary",
+  "amount",
+  "employee_arrears"
+ ],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1, "columns": 3},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1, "columns": 2},
+  {"fieldname": "from_date", "fieldtype": "Date", "label": "From Date", "read_only": 1},
+  {"fieldname": "to_date", "fieldtype": "Date", "label": "To Date", "read_only": 1},
+  {"fieldname": "base_salary", "fieldtype": "Currency", "label": "Base Salary", "read_only": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "label": "Arrears Amount", "read_only": 1, "in_list_view": 1, "columns": 2},
+  {"fieldname": "employee_arrears", "fieldtype": "Link", "label": "Employee Arrears", "options": "Employee Arrears", "read_only": 1, "in_list_view": 1, "columns": 2}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-16 00:00:00",
+ "module": "Techsarena Payroll",
+ "name": "Arrear Process Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

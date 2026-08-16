@@ -56,13 +56,31 @@ most of two `PROGRESS.md` clusters (ESS/API + Gratuity/GPS) into one app.
 
 ## Plan
 
-### Phase 1 — Merge onto GitHub (integration)
+### Phase 1 — Merge onto GitHub (integration) ✅ DONE 2026-08-16
+Result: merge commit `5266c25` pushed to `origin/version-15` (primary). Gratuity + GPS
+Attendance modules integrated into the ESS/API base; `bench migrate` clean; both-side
+doctypes present; `health()` OK; engines import; leave-policy custom fields created.
+Bench working tree now tracks `version-15`; `develop` retired (kept as local ref).
+
+_Original steps:_
 1. Add GitHub as a remote of a fresh working clone; branch `feat/merge-gratuity-gps` off `version-15`.
 2. Copy local modules `gratuity/` and `gps_attendance/` into the GitHub app tree; add both to `modules.txt`.
 3. Reconcile config: `hooks.py` (merge scheduler/doc_events if any), `patches.txt`, `install.py`/`after_migrate`, `pyproject.toml`, `.pre-commit`.
 4. Apply chosen identity: set `app_title = "Techs Arena HR"`, keep three-module split.
 5. Install on site `techsarena.hr`, `bench migrate`, smoke-test: all doctypes migrate; `mark_checkin` geofence; gratuity preview; a couple of GitHub ESS endpoints (`bootstrap`, `attendance_month`).
 6. Commit, push branch, open PR into `version-15` (or fast-forward if solo). Decide long-term branch (`version-15` primary; retire `develop`).
+
+### Phase 2 progress
+- **1a Arrears sub-cluster — DONE (structural) 2026-08-16.** New module **Techsarena Payroll**
+  (⚠️ never name a module "Payroll" — collides with hrms's module and migrate deletes hrms
+  doctypes as orphans; see memory `techsarena-hr-module-naming`). Doctypes: Techsarena Payroll
+  Settings (single), Arrears Process (submittable, clean engine w/ unit-testable
+  `component_total`), Employee Arrears (submittable → raises Additional Salary, same path as
+  Gratuity), + child tables Arrears Component, Company Wise Component, Arrear Process Detail.
+  Migrates clean; pure calc verified. **E2E deferred** — site has no employee / salary-component
+  / salary-structure master data to run a real arrears computation or slip settlement.
+- **1b Income tax — NEXT.** Configurable slab engine (reuse hrms Income Tax Slab), kept separate
+  from funds: Previous Taxable Income + Paid Income Tax + monthly tax on the salary slip.
 
 ### Phase 2 — Build remaining features (one cluster at a time, priority order)
 1. Payroll deep: arrears, income tax, company-wise components, salary-slip overrides
