@@ -1,5 +1,5 @@
 app_name = "techsarena_hr"
-app_title = "Techs Arena HCM"
+app_title = "Techs Arena HR"
 app_publisher = "Techs arena"
 app_description = "Human capital management by Techs Arena"
 app_email = "info@techsarena.com"

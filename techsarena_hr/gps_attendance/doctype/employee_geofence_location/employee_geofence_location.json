@@ -1,0 +1,22 @@
+{
+ "actions": [],
+ "creation": "2026-08-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": ["location", "location_name", "allowed_radius"],
+ "fields": [
+  {"fieldname": "location", "fieldtype": "Link", "label": "Geofence Location", "options": "Geofence Location", "reqd": 1, "in_list_view": 1, "columns": 4},
+  {"fieldname": "location_name", "fieldtype": "Data", "label": "Name", "fetch_from": "location.location_name", "read_only": 1, "in_list_view": 1, "columns": 5},
+  {"fieldname": "allowed_radius", "fieldtype": "Float", "label": "Radius (m)", "fetch_from": "location.allowed_radius", "read_only": 1, "in_list_view": 1, "columns": 2}
+ ],
+ "links": [],
+ "modified": "2026-08-12 00:00:00",
+ "module": "GPS Attendance",
+ "name": "Employee Geofence Location",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:location_name",
+ "creation": "2026-08-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "location_name",
+  "is_active",
+  "column_break_1",
+  "allowed_radius",
+  "coords_section",
+  "latitude",
+  "column_break_2",
+  "longitude",
+  "address_section",
+  "address",
+  "map"
+ ],
+ "fields": [
+  {"fieldname": "location_name", "fieldtype": "Data", "label": "Location Name", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "is_active", "fieldtype": "Check", "label": "Active", "default": 1, "in_list_view": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "allowed_radius", "fieldtype": "Float", "label": "Allowed Radius (metres)", "reqd": 1, "default": 100, "precision": "2", "in_list_view": 1, "description": "A check-in is accepted only within this many metres of the coordinates."},
+  {"fieldname": "coords_section", "fieldtype": "Section Break", "label": "Coordinates"},
+  {"fieldname": "latitude", "fieldtype": "Float", "label": "Latitude", "reqd": 1, "precision": "6"},
+  {"fieldname": "column_break_2", "fieldtype": "Column Break"},
+  {"fieldname": "longitude", "fieldtype": "Float", "label": "Longitude", "reqd": 1, "precision": "6"},
+  {"fieldname": "address_section", "fieldtype": "Section Break", "label": "Address & Map", "collapsible": 1},
+  {"fieldname": "address", "fieldtype": "Small Text", "label": "Address"},
+  {"fieldname": "map", "fieldtype": "Geolocation", "label": "Map"}
+ ],
+ "links": [],
+ "modified": "2026-08-12 00:00:00",
+ "module": "GPS Attendance",
+ "name": "Geofence Location",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "report": 1, "print": 1},
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

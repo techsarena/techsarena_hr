@@ -1,0 +1,23 @@
+{
+ "actions": [],
+ "creation": "2026-08-12 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": ["device_id", "device_name", "active", "registered_on"],
+ "fields": [
+  {"fieldname": "device_id", "fieldtype": "Data", "label": "Device ID", "reqd": 1, "in_list_view": 1, "columns": 4},
+  {"fieldname": "device_name", "fieldtype": "Data", "label": "Device Name", "in_list_view": 1, "columns": 3},
+  {"fieldname": "active", "fieldtype": "Check", "label": "Active", "default": 1, "in_list_view": 1, "columns": 1},
+  {"fieldname": "registered_on", "fieldtype": "Datetime", "label": "Registered On", "read_only": 1, "in_list_view": 1, "columns": 3}
+ ],
+ "links": [],
+ "modified": "2026-08-12 00:00:00",
+ "module": "GPS Attendance",
+ "name": "Employee Device Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
