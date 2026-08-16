@@ -71,14 +71,18 @@ _Original steps:_
 6. Commit, push branch, open PR into `version-15` (or fast-forward if solo). Decide long-term branch (`version-15` primary; retire `develop`).
 
 ### Phase 2 progress
-- **1a Arrears sub-cluster — DONE (structural) 2026-08-16.** New module **Techsarena Payroll**
+- **1a Arrears sub-cluster — DONE + E2E VERIFIED 2026-08-16.** New module **Techsarena Payroll**
   (⚠️ never name a module "Payroll" — collides with hrms's module and migrate deletes hrms
   doctypes as orphans; see memory `techsarena-hr-module-naming`). Doctypes: Techsarena Payroll
-  Settings (single), Arrears Process (submittable, clean engine w/ unit-testable
-  `component_total`), Employee Arrears (submittable → raises Additional Salary, same path as
-  Gratuity), + child tables Arrears Component, Company Wise Component, Arrear Process Detail.
-  Migrates clean; pure calc verified. **E2E deferred** — site has no employee / salary-component
-  / salary-structure master data to run a real arrears computation or slip settlement.
+  Settings (single), Arrears Process (submittable), Employee Arrears (submittable → raises
+  Additional Salary, same path as Gratuity), + child tables Arrears Component, Company Wise
+  Component, Arrear Process Detail. Engine: full-period old-rate slip × base-ratio × post-raise
+  day fraction (avoids hrms part-month proration). Verified on seeded data: raise 100k→140k on
+  Jul 15 → 21935.48; new-employee first-month arrears prorated; both settle via Additional Salary.
+  **Test data seeded on `techsarena.hr`:** Company "Techs Arena" (PKR), FY 2026, Holiday List
+  "TA 2026", Payroll Period, Income Tax Slab "PK Slab 2026", salary structure "TA Standard"
+  (Basic 60% + HRA 40%), employees Ali Raza (raise Jul 15) & Sara Khan (joined Jul 10).
+  Also set System Settings language=en (was empty → hrms money_in_words crashed).
 - **1b Income tax — NEXT.** Configurable slab engine (reuse hrms Income Tax Slab), kept separate
   from funds: Previous Taxable Income + Paid Income Tax + monthly tax on the salary slip.
 
