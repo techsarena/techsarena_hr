@@ -83,8 +83,11 @@ _Original steps:_
   "TA 2026", Payroll Period, Income Tax Slab "PK Slab 2026", salary structure "TA Standard"
   (Basic 60% + HRA 40%), employees Ali Raza (raise Jul 15) & Sara Khan (joined Jul 10).
   Also set System Settings language=en (was empty → hrms money_in_words crashed).
-- **1b Income tax — NEXT.** Configurable slab engine (reuse hrms Income Tax Slab), kept separate
-  from funds: Previous Taxable Income + Paid Income Tax + monthly tax on the salary slip.
+- **1b Income tax — DONE + E2E VERIFIED 2026-08-16.** Configurable slab engine (reuses hrms
+  Income Tax Slab), separate from funds. Doctypes Previous Taxable Income + Paid Income Tax;
+  `income_tax.py` with pure `progressive_tax()` + `apply_monthly_tax` before_save Salary Slip
+  hook (no-op unless enabled in settings). Verified: annual taxable 1.68M → 101999.80 tax;
+  Aug slip → 20399.96 monthly (= annual/5 remaining months). See HANDOFF.md for what's next.
 
 ### Phase 2 — Build remaining features (one cluster at a time, priority order)
 1. Payroll deep: arrears, income tax, company-wise components, salary-slip overrides
