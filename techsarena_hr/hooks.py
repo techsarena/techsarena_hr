@@ -155,6 +155,15 @@ doc_events = {
 		# Slab. No-op unless enabled in Techsarena Payroll Settings. Independent of
 		# the arrears path (which settles via Additional Salary).
 		"before_save": "techsarena_hr.techsarena_payroll.income_tax.apply_monthly_tax",
+		# Seat-licence gate: block payroll when over the licensed employee count.
+		"before_submit": "techsarena_hr.techsarena_subscription.subscription.check_payroll",
+	},
+	"Payroll Entry": {
+		"before_submit": "techsarena_hr.techsarena_subscription.subscription.check_payroll",
+	},
+	"Employee": {
+		# Block creating / activating an employee beyond the licensed seat count.
+		"validate": "techsarena_hr.techsarena_subscription.subscription.check_new_employee",
 	},
 }
 

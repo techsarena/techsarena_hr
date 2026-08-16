@@ -1,0 +1,46 @@
+{
+ "actions": [],
+ "creation": "2026-08-16 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "license_section",
+  "enabled",
+  "licensed_to",
+  "license_col",
+  "license_key",
+  "enforcement_section",
+  "block_over_limit",
+  "block_new_employees",
+  "companies_section",
+  "company_licenses",
+  "usage_section",
+  "usage_html"
+ ],
+ "fields": [
+  {"fieldname": "license_section", "fieldtype": "Section Break", "label": "License"},
+  {"fieldname": "enabled", "fieldtype": "Check", "label": "Subscription Enabled", "default": "1"},
+  {"fieldname": "licensed_to", "fieldtype": "Data", "label": "Licensed To (client)", "description": "The client this license is issued to, e.g. eBay."},
+  {"fieldname": "license_col", "fieldtype": "Column Break"},
+  {"fieldname": "license_key", "fieldtype": "Data", "label": "License Key", "read_only": 1},
+  {"fieldname": "enforcement_section", "fieldtype": "Section Break", "label": "Enforcement"},
+  {"fieldname": "block_over_limit", "fieldtype": "Check", "label": "Block payroll when over limit", "default": "1", "description": "Blocks Salary Slip / Payroll Entry for a company that exceeds its licensed employees (or whose license expired)."},
+  {"fieldname": "block_new_employees", "fieldtype": "Check", "label": "Block adding employees over limit", "default": "1", "description": "Prevents creating/activating an employee beyond that company's licensed number."},
+  {"fieldname": "companies_section", "fieldtype": "Section Break", "label": "Company Licenses", "description": "One row per company. A company with no row here is not restricted."},
+  {"fieldname": "company_licenses", "fieldtype": "Table", "options": "Techsarena Company License", "label": "Company Licenses"},
+  {"fieldname": "usage_section", "fieldtype": "Section Break", "label": "Usage"},
+  {"fieldname": "usage_html", "fieldtype": "HTML", "label": "Usage"}
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-16 00:00:00.000000",
+ "module": "Techsarena Subscription",
+ "name": "Techsarena Subscription",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "share": 1, "print": 1, "email": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
