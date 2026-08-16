@@ -24,7 +24,7 @@ from __future__ import annotations
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_days, add_months, date_diff, flt, getdate
+from frappe.utils import add_months, date_diff, flt, getdate
 
 
 def component_total(slip_rows, components: set[str]) -> float:
@@ -62,11 +62,10 @@ class ArrearsProcess(Document):
 			self.append("arrear_deductions", {"salary_component": row.salary_component})
 
 	def _earning_components(self) -> set[str]:
-		comps = {r.salary_component for r in self.arrear_earnings}
-		# the headline arrears component is always part of the earnings basis
-		if self.salary_component:
-			comps.add(self.salary_component)
-		return comps
+		# The earnings *measured* for the retro difference. The headline
+		# ``salary_component`` is only the component the result is *posted* under,
+		# so it is deliberately not part of the measurement basis.
+		return {r.salary_component for r in self.arrear_earnings}
 
 	def _deduction_components(self) -> set[str]:
 		return {r.salary_component for r in self.arrear_deductions}
@@ -127,30 +126,44 @@ class ArrearsProcess(Document):
 		)
 
 	def _compute_raise_arrears(self) -> list[dict]:
+		"""Arrears from a mid-period pay raise.
+
+		The employee was (or will be) paid the whole period at the *old* base, but
+		is entitled to the *new* base for the days from the raise onward. For a
+		base-proportional component the shortfall is::
+
+		    (new_base/old_base - 1) x old_component_amount x (days_from_raise / period_days)
+
+		so we build a single full-period slip at the old rate and scale it. This
+		sidesteps hrms partial-period proration (which would return full month
+		amounts for a part-month slip) and works for any base-proportional
+		component; flat components scale by ~0 and drop out, as they should.
+		"""
 		earnings = self._earning_components()
 		deductions = self._deduction_components()
+		period_days = date_diff(self.to_date, self.from_date) + 1
 		rows = []
 		for employee in self._eligible_raise_employees():
 			ssa = self._effective_assignment(employee)
 			if not ssa:
 				continue
-			raise_date = getdate(ssa.from_date)
+			old_base = self._base_on(employee, self.from_date)
+			new_base = flt(ssa.base)
+			if old_base <= 0 or new_base <= old_base:
+				continue
 			try:
-				pre = self._slip(employee, self.from_date, add_days(raise_date, -1))
-				post = self._slip(employee, raise_date, self.to_date)
-				paid = self._slip(employee, self.from_date, self.to_date)
+				old_full = self._slip(employee, self.from_date, self.to_date)
 			except Exception:
-				frappe.log_error(
-					f"Arrears slip build failed for {employee}", "Arrears Process"
-				)
+				frappe.log_error(f"Arrears slip build failed for {employee}", "Arrears Process")
 				continue
 
-			correct_earn = component_total(pre.earnings, earnings) + component_total(post.earnings, earnings)
-			paid_earn = component_total(paid.earnings, earnings)
-			correct_ded = component_total(pre.deductions, deductions) + component_total(post.deductions, deductions)
-			paid_ded = component_total(paid.deductions, deductions)
-
-			amount = flt(correct_earn - paid_earn) - flt(correct_ded - paid_ded)
+			ratio = new_base / old_base - 1.0
+			raise_date = getdate(ssa.from_date)
+			days_after = date_diff(self.to_date, raise_date) + 1
+			proration = days_after / period_days if period_days else 0
+			earn_diff = component_total(old_full.earnings, earnings) * ratio
+			ded_diff = component_total(old_full.deductions, deductions) * ratio
+			amount = flt((earn_diff - ded_diff) * proration, 2)
 			if amount <= 0:
 				continue
 			rows.append(
@@ -158,11 +171,25 @@ class ArrearsProcess(Document):
 					"employee": employee,
 					"from_date": self.from_date,
 					"to_date": self.to_date,
-					"base_salary": flt(ssa.base),
+					"base_salary": new_base,
 					"amount": amount,
 				}
 			)
 		return rows
+
+	def _base_on(self, employee: str, on_date) -> float:
+		"""Assigned base in force on ``on_date`` (the pre-raise / old rate)."""
+		bases = frappe.get_all(
+			"Salary Structure Assignment",
+			filters=[
+				["employee", "=", employee],
+				["from_date", "<=", on_date],
+				["docstatus", "=", 1],
+			],
+			order_by="from_date desc",
+			pluck="base",
+		)
+		return flt(bases[0]) if bases else 0.0
 
 	def _compute_new_employees(self) -> list[dict]:
 		"""First-month arrears for employees who joined the previous month."""
