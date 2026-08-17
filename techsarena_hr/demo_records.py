@@ -72,7 +72,7 @@ def provision_role_demo_records(company: str) -> dict[str, int]:
 def _employees_by_user() -> dict:
 	rows = frappe.get_all(
 		"Employee",
-		filters={"user_id": ["like", "%@techsarena.local"], "status": "Active"},
+		filters={"user_id": ["in", list(DEPARTMENT_BY_USER)], "status": "Active"},
 		fields=["name", "employee_name", "user_id", "department"],
 		order_by="name asc",
 	)
