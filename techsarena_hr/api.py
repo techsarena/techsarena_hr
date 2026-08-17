@@ -74,6 +74,36 @@ def _current_employee(user: str | None = None, required: bool = True) -> str | N
 	return employee
 
 
+def _visible_employee_names(employee: str | None) -> set[str]:
+	"""The employee plus everyone under them in the reporting tree.
+
+	Self-service visibility for a non-HR user: their own record and their direct
+	and indirect reports, and nothing else. With no reports this collapses to
+	``{employee}`` (own records only). Traversed in Python off a single query;
+	a ``seen`` set makes an accidental reporting cycle safe.
+	"""
+	if not employee:
+		return set()
+	children: dict[str, list[str]] = {}
+	for row in frappe.get_all(
+		"Employee",
+		filters={"status": "Active"},
+		fields=["name", "reports_to"],
+		limit_page_length=0,
+	):
+		if row.reports_to:
+			children.setdefault(row.reports_to, []).append(row.name)
+	visible = {employee}
+	queue = [employee]
+	while queue:
+		current = queue.pop()
+		for child in children.get(current, ()):
+			if child not in visible:
+				visible.add(child)
+				queue.append(child)
+	return visible
+
+
 def _require_employee_user(user: str | None = None) -> tuple[str, str]:
 	user = user or _require_login()
 	if "Employee" not in set(frappe.get_roles(user)):
@@ -348,11 +378,17 @@ def _employee_assets(employee: str) -> list[dict]:
 	)
 
 
-def _directory(*, unrestricted: bool = False) -> list[dict]:
-	list_method = frappe.get_all if unrestricted else frappe.get_list
-	employees = list_method(
+def _directory(*, unrestricted: bool = False, visible: set[str] | None = None) -> list[dict]:
+	# HR sees everyone; everyone else sees only their own reporting subtree
+	# (self + reports). ``visible`` is that subtree, computed by the caller.
+	filters: dict = {"status": "Active"}
+	if not unrestricted:
+		if not visible:
+			return []
+		filters["name"] = ["in", sorted(visible)]
+	employees = frappe.get_all(
 		"Employee",
-		filters={"status": "Active"},
+		filters=filters,
 		fields=[
 			"name",
 			"employee_name",
@@ -1647,11 +1683,15 @@ def bootstrap() -> dict:
 		"leave_requests": _leave_requests(employee) if has_employee_access else [],
 		"salary_slips": _salary_slips(employee) if has_employee_access else [],
 		"approvals": _pending_approvals(user, roles) if can_approve else [],
-		"directory": _directory(unrestricted=can_manage_hr)
+		"directory": _directory(
+			unrestricted=can_manage_hr,
+			visible=None if can_manage_hr else _visible_employee_names(employee),
+		)
 		if frappe.has_permission("Employee", "read")
 		else [],
 		"users": _users() if roles.intersection({"System Manager", "Administrator"}) else [],
 		"notifications": _notifications(user),
+		"branding": _resolved_branding(),
 		"hr_summary": _hr_summary() if can_manage_hr else None,
 		**dashboard_context,
 	}
@@ -1661,9 +1701,10 @@ def bootstrap() -> dict:
 def employee_profile(employee: str | None = None) -> dict:
 	"""Full profile for one employee, grouped for the profile screen's tabs.
 
-	Employees may always read their own record.  Reading someone else's goes
-	through the normal Employee read permission, so HR/manager visibility stays
-	governed by Frappe's permission rules rather than anything invented here.
+	Employees may always read their own record and anyone in their reporting
+	subtree (their reports, recursively). Beyond that it falls through to the
+	normal Employee read permission, so HR visibility stays governed by Frappe's
+	rules. Pay and statutory details remain gated to self-or-HR below.
 	"""
 	user = _require_login()
 	_require_hrms()
@@ -1675,7 +1716,13 @@ def employee_profile(employee: str | None = None) -> dict:
 			_("Your account is not linked to an active Employee record. Please contact HR."),
 			frappe.PermissionError,
 		)
-	if employee != own and not frappe.has_permission("Employee", "read", doc=employee):
+	# A user may read their own record and anyone in their reporting subtree; HR
+	# and other privileged roles fall through to Frappe's own read permission.
+	if (
+		employee != own
+		and employee not in _visible_employee_names(own)
+		and not frappe.has_permission("Employee", "read", doc=employee)
+	):
 		frappe.throw(_("You are not allowed to view this employee."), frappe.PermissionError)
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(_("Employee {0} was not found.").format(employee), frappe.DoesNotExistError)
@@ -3896,3 +3943,136 @@ def employee_onboarding() -> dict:
 			for row in rows
 		]
 	}
+
+
+# ---------------------------------------------------------------------------
+# Demo data seeding
+# ---------------------------------------------------------------------------
+
+DEMO_SEED_ROLES = {"System Manager", "HR Manager", "Administrator"}
+
+
+@frappe.whitelist(methods=["POST"])
+def seed_demo_data() -> dict:
+	"""Populate the site with a demo workforce for testing.
+
+	Guarded twice over: the caller must hold an HR/admin role, and the site must
+	opt in via ``developer_mode`` or the ``techsarena_allow_demo_seed`` config
+	flag, so a production site is never seeded by accident. Idempotent — see
+	``techsarena_hr.demo_seed``.
+	"""
+	user = _require_login()
+	_require_hrms()
+	if not DEMO_SEED_ROLES.intersection(frappe.get_roles(user)):
+		frappe.throw(
+			_("Only HR Managers or System Managers can seed demo data."),
+			frappe.PermissionError,
+		)
+	if not (frappe.conf.get("developer_mode") or frappe.conf.get("techsarena_allow_demo_seed")):
+		frappe.throw(
+			_("Demo seeding is disabled on this site."),
+			frappe.PermissionError,
+		)
+
+	from techsarena_hr.demo_seed import seed_demo_dataset
+
+	# Seeding provisions Users, roles and passwords, which need admin rights the
+	# caller may not hold (an HR Manager cannot write User). The endpoint is
+	# already role- and site-gated, so run the provisioning as Administrator and
+	# restore the caller afterwards.
+	frappe.set_user("Administrator")
+	try:
+		return seed_demo_dataset()
+	finally:
+		frappe.set_user(user)
+
+
+# ---------------------------------------------------------------------------
+# Branding
+# ---------------------------------------------------------------------------
+
+
+def _logo_data_uri(path: str | None) -> str | None:
+	"""Embed a branding logo as a ``data:`` URI.
+
+	The app runs cross-origin from the site in development, and Frappe serves
+	static ``/files`` and ``/assets`` without CORS headers — so the browser
+	cannot fetch a logo by URL. Reading the file here and returning bytes inline
+	sidesteps that entirely (and works for SVG and raster alike). Returns
+	``None`` on anything unexpected so the client falls back to its own mark.
+	"""
+	if not path or not isinstance(path, str):
+		return None
+	try:
+		import base64
+		import mimetypes
+		import os
+
+		rel = path.split("?")[0].split("#")[0]
+		candidates: list[str] = []
+		if rel.startswith("/assets/"):
+			candidates.append(os.path.join(frappe.get_site_path("..", "assets"), rel[len("/assets/") :]))
+		elif rel.startswith("/private/files/"):
+			candidates.append(frappe.get_site_path("private", "files", rel[len("/private/files/") :]))
+		elif rel.startswith("/files/"):
+			candidates.append(frappe.get_site_path("public", "files", rel[len("/files/") :]))
+		for candidate in candidates:
+			if candidate and os.path.isfile(candidate) and os.path.getsize(candidate) <= 1_000_000:
+				with open(candidate, "rb") as handle:
+					raw = handle.read()
+				mime = mimetypes.guess_type(rel)[0] or (
+					"image/svg+xml" if rel.lower().endswith(".svg") else "application/octet-stream"
+				)
+				return f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+	except Exception:
+		return None
+	return None
+
+
+def _resolved_branding() -> dict:
+	"""Client brand (name + logos) for the app surfaces.
+
+	Reuses ``techsarena_branding``'s shared resolver so the app shows the same
+	brand as the Frappe desk and login page (config > Techsarena Branding
+	Settings > default). Logos are returned both as server-relative paths and as
+	inline ``data:`` URIs (``*_logo_data``) — the app prefers the inline form so
+	cross-origin static-file CORS never blocks the mark. Degrades to the app's
+	own defaults if the branding app is not installed.
+	"""
+	try:
+		from techsarena_branding.branding import resolve
+
+		r = resolve()
+		app_logo = r.get("navbar_logo")
+		login_logo = r.get("login_logo") or r.get("navbar_logo")
+		return {
+			"name": r.get("client_name") or "Techsarena HCM",
+			"app_logo": app_logo,
+			"login_logo": login_logo,
+			"app_logo_data": _logo_data_uri(app_logo),
+			"login_logo_data": _logo_data_uri(login_logo),
+			"favicon": r.get("favicon"),
+			"copyright": r.get("copyright"),
+			"developed_by": r.get("dev_name"),
+			"developer_logo": r.get("dev_logo"),
+			"show_dev_credit": bool(r.get("show_dev")),
+		}
+	except Exception:
+		return {
+			"name": "Techsarena HCM",
+			"app_logo": None,
+			"login_logo": None,
+			"app_logo_data": None,
+			"login_logo_data": None,
+			"favicon": None,
+			"copyright": "© Techs Arena",
+			"developed_by": "Techs Arena",
+			"developer_logo": None,
+			"show_dev_credit": True,
+		}
+
+
+@frappe.whitelist(allow_guest=True)
+def app_branding() -> dict:
+	"""Public brand shown on the login screen, before sign-in."""
+	return _resolved_branding()

@@ -170,23 +170,13 @@ doc_events = {
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"techsarena_hr.tasks.all"
-# 	],
-# 	"daily": [
-# 		"techsarena_hr.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"techsarena_hr.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"techsarena_hr.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"techsarena_hr.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"monthly": [
+		# Idempotent, opt-in monthly leave accrual (no-op unless configured via
+		# techsarena_leave_monthly_accrual / techsarena_leave_accrual_type).
+		"techsarena_hr.leave_engine.run_scheduled_leave_adjustments",
+	],
+}
 
 # Testing
 # -------
