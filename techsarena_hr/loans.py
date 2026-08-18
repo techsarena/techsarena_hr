@@ -1,26 +1,35 @@
-"""Employee loans over the `lending` app: view loans and their repayment
-schedule, and request a reschedule (new tenure) or skip (defer) an instalment.
+"""Employee loans over the `lending` app.
 
-Reschedule/skip regenerate the loan's active Loan Repayment Schedule using
-lending's own amortisation (``get_monthly_repayment_amount`` + the flat monthly
-interest formula). These are facade-level schedule adjustments intended for the
-pre-disbursement demo flow — they do not post the GL/accrual entries a full
-Loan Restructure would; HR would formalise an approved change through lending's
-restructure flow.
+View loans and their repayment schedule, and apply a **reschedule** (new tenure)
+or **skip / defer** an instalment through lending's formal **Loan Restructure**
+flow — a real submittable document that regenerates the schedule and posts the
+GL / accrual adjustments on approval. The loan is disbursed on demand so the
+restructure has an active balance to work on.
 """
 
 from __future__ import annotations
+
+import contextlib
 
 import frappe
 from frappe import _
 from frappe.utils import flt, getdate, nowdate
 
-from lending.loan_management.doctype.loan_repayment_schedule.loan_repayment_schedule import (
-	add_single_month,
-	get_monthly_repayment_amount,
-)
-
 AUDIT_TAG = "[Techsarena Loan]"
+
+
+@contextlib.contextmanager
+def _elevated(caller: str):
+	"""Run loan/GL operations with admin rights the self-service caller lacks,
+	then restore the session. The endpoints are already access-gated."""
+	prev_flag = frappe.flags.ignore_permissions
+	frappe.set_user("Administrator")
+	frappe.flags.ignore_permissions = True
+	try:
+		yield
+	finally:
+		frappe.flags.ignore_permissions = prev_flag
+		frappe.set_user(caller)
 
 
 def _require_user() -> str:
@@ -42,12 +51,18 @@ def _hr_or_self(applicant: str) -> tuple[str, str | None]:
 
 
 def _active_schedule(loan: str) -> str | None:
-	return frappe.db.get_value(
-		"Loan Repayment Schedule", {"loan": loan, "docstatus": 1}, "name"
-	) or frappe.db.get_value("Loan Repayment Schedule", {"loan": loan}, "name")
+	"""The current schedule: the Active one after any restructure, else the
+	submitted schedule, else whatever exists."""
+	return (
+		frappe.db.get_value(
+			"Loan Repayment Schedule", {"loan": loan, "docstatus": 1, "status": "Active"}, "name"
+		)
+		or frappe.db.get_value("Loan Repayment Schedule", {"loan": loan, "docstatus": 1}, "name")
+		or frappe.db.get_value("Loan Repayment Schedule", {"loan": loan}, "name")
+	)
 
 
-def _rows(schedule: str) -> list[dict]:
+def _rows(schedule: str | None) -> list[dict]:
 	if not schedule:
 		return []
 	return frappe.get_all(
@@ -94,13 +109,17 @@ def _loans_for(applicant: str) -> list[dict]:
 		loan = frappe.get_doc("Loan", row.name)
 		summary = _loan_summary(loan)
 		schedule = _active_schedule(loan.name)
-		upcoming = frappe.get_all(
-			"Repayment Schedule",
-			filters={"parent": schedule, "payment_date": [">=", nowdate()]},
-			fields=["payment_date", "total_payment"],
-			order_by="payment_date asc",
-			limit_page_length=1,
-		) if schedule else []
+		upcoming = (
+			frappe.get_all(
+				"Repayment Schedule",
+				filters={"parent": schedule, "payment_date": [">=", nowdate()]},
+				fields=["payment_date", "total_payment"],
+				order_by="payment_date asc",
+				limit_page_length=1,
+			)
+			if schedule
+			else []
+		)
 		summary["next_installment"] = upcoming[0] if upcoming else None
 		out.append(summary)
 	return out
@@ -120,55 +139,69 @@ def loan_detail(loan: str) -> dict:
 		frappe.throw(_("Loan {0} was not found.").format(loan), frappe.DoesNotExistError)
 	doc = frappe.get_doc("Loan", loan)
 	_hr_or_self(doc.applicant)
-	schedule = _active_schedule(loan)
-	return {"loan": _loan_summary(doc), "schedule": _rows(schedule)}
+	return {"loan": _loan_summary(doc), "schedule": _rows(_active_schedule(loan))}
 
 
-def _amortise(loan_amount: float, rate: float, periods: int, start_date) -> tuple[float, list[dict]]:
-	"""Replicate lending's 'Monthly as per repayment start date' schedule."""
-	emi = get_monthly_repayment_amount(loan_amount, rate, periods)
-	monthly_rate = flt(rate) / (12 * 100)
-	balance = flt(loan_amount)
-	date = getdate(start_date)
-	rows: list[dict] = []
-	for index in range(periods):
-		interest = flt(balance * monthly_rate)
-		principal = emi - interest
-		balance = flt(balance + interest - emi)
-		if index == periods - 1 or balance < 0:
-			principal += balance
-			balance = 0.0
-		rows.append(
-			{
-				"payment_date": date,
-				"principal_amount": flt(principal),
-				"interest_amount": flt(interest),
-				"total_payment": flt(principal + interest),
-				"balance_loan_amount": flt(balance),
-				"number_of_days": 1,
-			}
-		)
-		date = add_single_month(date)
-		if balance <= 0:
-			break
-	return emi, rows
+# --------------------------------------------------------------------------- #
+# Formal restructure flow
+# --------------------------------------------------------------------------- #
 
 
-def _replace_rows(schedule: str, rows: list[dict]) -> None:
-	frappe.db.delete("Repayment Schedule", {"parent": schedule})
-	for idx, values in enumerate(rows, start=1):
-		child = frappe.get_doc(
-			{
-				"doctype": "Repayment Schedule",
-				"parent": schedule,
-				"parenttype": "Loan Repayment Schedule",
-				"parentfield": "repayment_schedule",
-				"idx": idx,
-				"docstatus": 1,
-				**values,
-			}
-		)
-		child.db_insert()
+def _ensure_disbursed(loan) -> str | None:
+	"""Disburse the outstanding sanctioned amount so a restructure has a balance.
+	A no-op once fully disbursed. Returns the disbursement name if one was made."""
+	pending = flt(loan.loan_amount) - flt(loan.disbursed_amount)
+	if pending <= 0:
+		return None
+	cost_center = frappe.db.get_value("Company", loan.company, "cost_center") or frappe.db.get_value(
+		"Cost Center", {"company": loan.company, "is_group": 0}, "name"
+	)
+	if not cost_center:
+		frappe.throw(_("No cost center is configured for {0}.").format(loan.company))
+	disbursement = frappe.get_doc(
+		{
+			"doctype": "Loan Disbursement",
+			"against_loan": loan.name,
+			"disbursement_date": nowdate(),
+			"company": loan.company,
+			"disbursed_amount": pending,
+			"cost_center": cost_center,
+		}
+	)
+	disbursement.insert(ignore_permissions=True)
+	disbursement.submit()
+	loan.reload()
+	return disbursement.name
+
+
+def _apply_restructure(loan, new_periods: int, reason: str | None, kind: str):
+	"""Create, submit and approve a Normal Loan Restructure with a new tenure."""
+	if frappe.db.exists(
+		"Loan Restructure", {"loan": loan.name, "docstatus": 1, "status": "Initiated"}
+	):
+		frappe.throw(_("Another restructure is already pending approval on this loan."))
+
+	restructure_date = getdate(nowdate())
+	last_due = frappe.db.get_value("Loan Interest Accrual", {"loan": loan.name}, "max(due_date)")
+	if last_due and getdate(last_due) > restructure_date:
+		restructure_date = getdate(last_due)
+
+	restructure = frappe.get_doc(
+		{
+			"doctype": "Loan Restructure",
+			"loan": loan.name,
+			"restructure_type": "Normal Restructure",
+			"restructure_date": restructure_date,
+			"new_repayment_period_in_months": new_periods,
+			"reason_for_restructure": f"{kind}: {reason or 'no reason given'}",
+		}
+	)
+	restructure.insert(ignore_permissions=True)
+	restructure.submit()
+	# Initiated -> Approved applies the new schedule and books the adjustments.
+	restructure.status = "Approved"
+	restructure.save(ignore_permissions=True)
+	return restructure
 
 
 def _audit(loan: str, applicant: str, summary: str, reason: str | None) -> None:
@@ -185,62 +218,65 @@ def _audit(loan: str, applicant: str, summary: str, reason: str | None) -> None:
 
 @frappe.whitelist(methods=["POST"])
 def reschedule_loan(loan: str, new_periods, reason: str | None = None) -> dict:
-	"""Rebuild the loan's schedule over a new number of monthly instalments."""
+	"""Reschedule the loan over a new number of monthly instalments via a formal
+	Loan Restructure (real schedule regeneration + GL on approval)."""
 	if not frappe.db.exists("Loan", loan):
 		frappe.throw(_("Loan {0} was not found.").format(loan), frappe.DoesNotExistError)
 	doc = frappe.get_doc("Loan", loan)
-	_hr_or_self(doc.applicant)
+	caller, _own = _hr_or_self(doc.applicant)
 	new_periods = int(new_periods)
 	if new_periods < 1 or new_periods > 600:
 		frappe.throw(_("Enter a repayment tenure between 1 and 600 months."))
 
-	schedule = _active_schedule(loan)
-	if not schedule:
-		frappe.throw(_("This loan has no repayment schedule to reschedule."))
-	start = frappe.db.get_value("Loan Repayment Schedule", schedule, "repayment_start_date")
-	emi, rows = _amortise(doc.loan_amount, doc.rate_of_interest, new_periods, start or nowdate())
-	_replace_rows(schedule, rows)
-	frappe.db.set_value(
-		"Loan Repayment Schedule", schedule,
-		{"repayment_periods": new_periods, "monthly_repayment_amount": emi},
-	)
-	frappe.db.set_value(
-		"Loan", loan, {"repayment_periods": new_periods, "monthly_repayment_amount": emi}
-	)
-	_audit(loan, doc.applicant, f"Rescheduled to {new_periods} instalments (EMI {emi:g})", reason)
-	frappe.db.commit()
-	return {"loan": loan, "new_periods": new_periods, "new_emi": emi, "schedule": _rows(schedule)}
+	# Disbursement + restructure post GL and create Loan documents the caller has
+	# no rights on; the endpoint is already access-gated, so run them elevated.
+	with _elevated(caller):
+		doc = frappe.get_doc("Loan", loan)
+		_ensure_disbursed(doc)
+		restructure = _apply_restructure(doc, new_periods, reason, "Reschedule")
+		_audit(loan, doc.applicant, f"Rescheduled to {new_periods} instalments ({restructure.name})", reason)
+		frappe.db.commit()
+		doc.reload()
+		result = {
+			"loan": loan,
+			"new_periods": doc.repayment_periods,
+			"new_emi": flt(doc.monthly_repayment_amount),
+			"restructure": restructure.name,
+			"schedule": _rows(_active_schedule(loan)),
+		}
+	return result
 
 
 @frappe.whitelist(methods=["POST"])
 def skip_installment(loan: str, reason: str | None = None) -> dict:
-	"""Defer the next upcoming instalment to the end of the schedule."""
+	"""Defer one instalment: restructure the loan to one extra month, lowering the
+	instalment and pushing the schedule out (a payment-relief moratorium)."""
 	if not frappe.db.exists("Loan", loan):
 		frappe.throw(_("Loan {0} was not found.").format(loan), frappe.DoesNotExistError)
 	doc = frappe.get_doc("Loan", loan)
-	_hr_or_self(doc.applicant)
-	schedule = _active_schedule(loan)
-	rows = _rows(schedule)
-	if not rows:
-		frappe.throw(_("This loan has no repayment schedule."))
-	upcoming = [r for r in rows if getdate(r["payment_date"]) >= getdate(nowdate())]
-	if not upcoming:
-		frappe.throw(_("There is no upcoming instalment to skip."))
-	target = upcoming[0]
-	new_date = add_single_month(getdate(rows[-1]["payment_date"]))
-	frappe.db.set_value("Repayment Schedule", target["name"], "payment_date", new_date)
-	periods = (doc.repayment_periods or len(rows)) + 1
-	frappe.db.set_value("Loan", loan, "repayment_periods", periods)
-	frappe.db.set_value("Loan Repayment Schedule", schedule, "repayment_periods", periods)
-	_audit(
-		loan, doc.applicant,
-		f"Skipped instalment due {target['payment_date']}, deferred to {new_date}", reason,
-	)
-	frappe.db.commit()
-	return {
-		"loan": loan,
-		"skipped_date": str(target["payment_date"]),
-		"deferred_to": str(new_date),
-		"schedule": _rows(schedule),
-	}
+	caller, _own = _hr_or_self(doc.applicant)
 
+	with _elevated(caller):
+		doc = frappe.get_doc("Loan", loan)
+		current = cint_or_len(doc.repayment_periods, loan)
+		_ensure_disbursed(doc)
+		restructure = _apply_restructure(doc, current + 1, reason, "Skip / defer one instalment")
+		frappe.db.commit()
+		doc.reload()
+		rows = _rows(_active_schedule(loan))
+		deferred_to = str(rows[-1]["payment_date"]) if rows else None
+		_audit(loan, doc.applicant, f"Deferred one instalment, tenure +1 ({restructure.name})", reason)
+		frappe.db.commit()
+		result = {
+			"loan": loan,
+			"deferred_to": deferred_to,
+			"restructure": restructure.name,
+			"schedule": rows,
+		}
+	return result
+
+
+def cint_or_len(periods, loan: str) -> int:
+	if periods:
+		return int(periods)
+	return len(_rows(_active_schedule(loan))) or 12
