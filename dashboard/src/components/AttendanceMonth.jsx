@@ -1,0 +1,123 @@
+import { useMemo } from 'react';
+import { fmtDate, fmtTime, isoDate, statusTone, toDate, truthy } from '../api/format';
+
+const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/** Which visual class a day earns. Order matters: a missing punch outranks
+ *  the status it was marked with, because that is the day needing action. */
+function dayClass({ record, holiday, weekend, needsAction }) {
+  if (needsAction) return 'missing';
+  if (holiday) return 'holiday';
+  const status = String(record?.status || '').toLowerCase();
+  if (status.includes('work from home')) return 'wfh';
+  if (status.includes('half')) return 'present';
+  if (status.includes('present')) return 'present';
+  if (status.includes('leave')) return 'leave';
+  if (status.includes('absent')) return 'absent';
+  if (weekend) return 'weekend';
+  return null;
+}
+
+export function AttendanceMonth({ month, days = [], holidays = [], needsAction = [], onPick }) {
+  const cells = useMemo(() => {
+    const anchor = toDate(month) || new Date();
+    const year = anchor.getFullYear();
+    const mi = anchor.getMonth();
+    const total = new Date(year, mi + 1, 0).getDate();
+
+    const byDate = new Map(days.map((d) => [String(d.attendance_date), d]));
+    const holidayBy = new Map(holidays.map((h) => [String(h.holiday_date), h]));
+    const actionBy = new Set(needsAction.map((n) => String(n.date)));
+
+    // Monday-first, so the weekend falls at the end of each row.
+    const lead = (new Date(year, mi, 1).getDay() + 6) % 7;
+    const list = Array.from({ length: lead }, (unused, i) => ({ pad: true, key: `pad-${i}` }));
+    for (let day = 1; day <= total; day += 1) {
+      const date = new Date(year, mi, day);
+      const key = isoDate(date);
+      const dow = date.getDay();
+      list.push({
+        key,
+        day,
+        record: byDate.get(key),
+        holiday: holidayBy.get(key),
+        weekend: dow === 0 || dow === 6,
+        needsAction: actionBy.has(key),
+      });
+    }
+    return list;
+  }, [month, days, holidays, needsAction]);
+
+  const today = isoDate(new Date());
+
+  return (
+    <div className="amonth">
+      <div className="amonth__head">
+        {DOW.map((d) => <div className="amonth__dow" key={d}>{d}</div>)}
+      </div>
+      <div className="amonth__grid">
+        {cells.map((cell) => {
+          if (cell.pad) return <div className="aday aday--pad" key={cell.key} />;
+
+          const kind = dayClass(cell);
+          const isToday = cell.key === today;
+          const classes = ['aday'];
+          if (kind) classes.push(`aday--${kind}`);
+          if (isToday) classes.push('aday--today');
+
+          const rec = cell.record;
+          const times = rec?.in_time
+            ? `${fmtTime(rec.in_time)}${rec.out_time ? ` – ${fmtTime(rec.out_time)}` : ''}`
+            : null;
+
+          // A day with nothing recorded is not clickable: there is no
+          // regularisation to request against an empty future date.
+          const actionable = Boolean(onPick && (rec || cell.needsAction) && cell.key <= today);
+
+          return (
+            <button
+              type="button"
+              key={cell.key}
+              className={classes.join(' ')}
+              disabled={!actionable}
+              onClick={actionable ? () => onPick(cell.key) : undefined}
+              title={[fmtDate(cell.key), rec?.status, cell.holiday?.description].filter(Boolean).join(' · ')}
+            >
+              <div className="aday__num">
+                {cell.day}
+                {isToday && <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--accent-700)' }}>TODAY</span>}
+              </div>
+
+              {cell.needsAction ? (
+                <div className="aday__note" style={{ color: 'var(--danger)', fontWeight: 600 }}>No check-out</div>
+              ) : cell.holiday ? (
+                <div className="aday__note" style={{ color: 'var(--text-subtle)' }}>
+                  {truthy(cell.holiday.weekly_off) ? 'Weekend' : cell.holiday.description || 'Holiday'}
+                </div>
+              ) : times ? (
+                <div className="aday__time">{times}</div>
+              ) : rec?.status ? (
+                <div className="aday__note" style={{ color: `var(--${statusTone(rec.status) === 'default' ? 'text-muted' : statusTone(rec.status)})` }}>
+                  {rec.status}
+                </div>
+              ) : null}
+
+              {rec?.working_hours ? (
+                <div className="aday__time">{Number(rec.working_hours).toFixed(1)}h</div>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="cal__legend" style={{ marginTop: 'var(--space-4)' }}>
+        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--success)' }} />Present</span>
+        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--accent-400)' }} />Work from home</span>
+        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--primary-400)' }} />Leave</span>
+        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--danger)' }} />Missing punch</span>
+      </div>
+    </div>
+  );
+}
+
+export default AttendanceMonth;

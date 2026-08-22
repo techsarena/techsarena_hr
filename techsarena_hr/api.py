@@ -2261,6 +2261,7 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 				"name",
 				"employee",
 				"employee_name",
+				"department",
 				"leave_type",
 				"from_date",
 				"to_date",
@@ -2298,6 +2299,9 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 		},
 		fields=[
 			"name",
+			"employee",
+			"employee_name",
+			"department",
 			"leave_type",
 			"from_date",
 			"to_date",
@@ -2315,6 +2319,11 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 		"team_leave": entries,
 		"own_leave": own,
 		"holidays": holidays,
+		"holiday_list": holiday_list,
+		# Lets the calendar label the viewer's own row and their approver's
+		# without the client having to guess from names.
+		"employee": employee,
+		"reports_to": employee_doc.reports_to or None,
 	}
 
 
@@ -2473,11 +2482,29 @@ def leave_policies() -> dict:
 			"Company", employee_doc.company, "default_holiday_list"
 		)
 
+	# Holidays still ahead in the list's own year — the Policies screen shows
+	# these beside the leave rules, since "what am I owed" and "what is already
+	# a day off" are the same question for someone planning time away.
+	holidays = []
+	if holiday_list:
+		holidays = frappe.get_all(
+			"Holiday",
+			filters={
+				"parent": holiday_list,
+				"holiday_date": [">=", frappe.utils.nowdate()],
+				"weekly_off": 0,
+			},
+			fields=["holiday_date", "description", "weekly_off"],
+			order_by="holiday_date asc",
+			limit_page_length=12,
+		)
+
 	return {
 		"leave_types": types,
 		"approval_chain": _approval_chain(employee_doc) if employee_doc else [],
 		"documents": _policy_attachments([row.name for row in types], holiday_list),
 		"holiday_list": holiday_list,
+		"holidays": holidays,
 		"policy_set": " · ".join(
 			part
 			for part in (

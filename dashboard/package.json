@@ -1,0 +1,31 @@
+{
+  "name": "dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=/assets/techsarena_hr/dashboard/ && yarn copy-html-entry",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "copy-html-entry": "cp ../techsarena_hr/public/dashboard/index.html ../techsarena_hr/www/dashboard.html"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^9.1.2",
+    "@tanstack/react-virtual": "^3.14.10",
+    "frappe-react-sdk": "^1.17.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-is": "^19.2.8",
+    "react-router-dom": "^7.18.2",
+    "recharts": "^3.10.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "playwright": "^1.62.1",
+    "vite": "^8.2.0"
+  }
+}

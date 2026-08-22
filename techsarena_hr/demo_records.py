@@ -58,6 +58,7 @@ def provision_role_demo_records(company: str) -> dict[str, int]:
 		_ensure_salary_slip(employee, company, currency, index, created)
 		_ensure_notification(email, index, created)
 
+	_ensure_leave_type_policies(created)
 	_ensure_leave_requests(employees, company, created)
 	_ensure_expense_claims(employees, company, created)
 	_ensure_shift_requests(employees, company, evening_shift, created)
@@ -158,6 +159,83 @@ def _ensure_shift_types(holiday_list: str, created: dict[str, int]) -> tuple[str
 			created,
 		)
 	return shifts[0][0], shifts[1][0]
+
+
+# Allocation, accrual and notice per leave type. The day counts match the
+# per-employee Leave Allocations seeded below, so the Policies screen and a
+# person's balance never state different numbers for the same leave type.
+LEAVE_TYPE_POLICY = {
+	"Privilege Leave": {
+		"max_leaves_allowed": 12,
+		"is_carry_forward": 1,
+		"maximum_carry_forwarded_leaves": 5,
+		"is_earned_leave": 1,
+		"earned_leave_frequency": "Monthly",
+		"include_holiday": 0,
+		"allow_encashment": 1,
+		"max_continuous_days_allowed": 10,
+		"techsarena_policy_version": "v3",
+		"techsarena_applies_to": "All departments, full-time",
+		"techsarena_notice_days": 7,
+		"techsarena_escalation_days": 3,
+	},
+	"Sick Leave": {
+		"max_leaves_allowed": 8,
+		"is_carry_forward": 0,
+		"include_holiday": 0,
+		"max_continuous_days_allowed": 3,
+		"techsarena_policy_version": "v3",
+		"techsarena_applies_to": "All departments",
+		"techsarena_notice_days": 0,
+		"techsarena_escalation_days": 2,
+	},
+	"Casual Leave": {
+		"max_leaves_allowed": 6,
+		"is_carry_forward": 0,
+		"include_holiday": 0,
+		"max_continuous_days_allowed": 3,
+		"techsarena_policy_version": "v3",
+		"techsarena_applies_to": "All departments",
+		"techsarena_notice_days": 2,
+		"techsarena_escalation_days": 2,
+	},
+	"Compensatory Off": {
+		"is_compensatory": 1,
+		"include_holiday": 0,
+		"techsarena_policy_version": "v3",
+		"techsarena_applies_to": "Approved weekend or holiday work",
+		"techsarena_notice_days": 0,
+	},
+	"Leave Without Pay": {
+		"is_lwp": 1,
+		"include_holiday": 1,
+		"techsarena_policy_version": "v3",
+		"techsarena_applies_to": "All departments",
+		"techsarena_notice_days": 7,
+	},
+}
+
+
+def _ensure_leave_type_policies(created: dict[str, int]) -> None:
+	"""Fill in the Leave Type masters the Policies screen reads.
+
+	Only fields this site actually has are written: the `techsarena_*` policy
+	fields are custom, and `allow_half_day` / `encashment_threshold_days` are
+	absent on some HRMS versions. Writing a missing field would raise, so each
+	is checked against the doctype's own meta first.
+	"""
+	if not frappe.db.table_exists("Leave Type"):
+		return
+	meta = frappe.get_meta("Leave Type")
+	for leave_type, values in LEAVE_TYPE_POLICY.items():
+		if not frappe.db.exists("Leave Type", leave_type):
+			continue
+		writable = {k: v for k, v in values.items() if meta.has_field(k)}
+		if not writable:
+			continue
+		doc = frappe.get_doc("Leave Type", leave_type)
+		_sync_fields(doc, writable)
+		_mark(created, "Leave Type")
 
 
 def _ensure_leave_allocations(employee: str, company: str, created: dict[str, int]) -> None:
