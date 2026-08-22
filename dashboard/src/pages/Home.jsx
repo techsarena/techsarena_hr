@@ -3,18 +3,39 @@ import { Link } from 'react-router-dom';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { useToast } from '../hooks/useToast';
 import hr from '../api/hr';
-import { Card, Pill, Button, Stat, Meter, EmptyState, Avatar } from '../components/ui';
+import { Button, EmptyState, Meter, Pill } from '../components/ui';
 import { Icon } from '../components/Icon';
-import { fmtDate, fmtDays, fmtDuration, fmtMoney, fmtRange, fmtTime, statusTone } from '../api/format';
+import { fmtDate, fmtDateShort, fmtDays, fmtDuration, fmtRange, fmtTime, initials } from '../api/format';
 
-/* ---------- Punch clock ---------- */
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function todayLine(count) {
+  const date = new Intl.DateTimeFormat(undefined, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+  return `${date} · ${count || 'No'} thing${count === 1 ? '' : 's'} need you today`;
+}
+
+function shiftLabel(shift) {
+  return shift || 'General Shift · 9:00-18:00';
+}
+
 function PunchCard() {
-  const { attendance, reload } = useWorkspace();
+  const { attendance, summary, reload } = useWorkspace();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  if (!attendance) return null;
-
-  const checkedIn = attendance.checked_in;
+  const checkedIn = Boolean(attendance?.checked_in);
+  const worked = attendance?.working_seconds || 0;
+  const pct = Math.min(100, Math.max(0, (worked / (9 * 60 * 60)) * 100));
+  const stats = summary?.attendance_stats || {};
 
   const punch = async () => {
     setBusy(true);
@@ -30,323 +51,249 @@ function PunchCard() {
   };
 
   return (
-    <Card>
-      <div className="row row--between" style={{ alignItems: 'flex-start' }}>
-        <Stat
-          label={checkedIn ? 'Checked in' : 'Today'}
-          value={fmtDuration(attendance.working_seconds)}
-          meta={
-            attendance.first_in
-              ? `Since ${fmtTime(attendance.first_in)}${attendance.shift ? ` · ${attendance.shift}` : ''}`
-              : 'No punch recorded yet'
-          }
-        />
-        <Button variant={checkedIn ? 'danger' : 'primary'} onClick={punch} disabled={busy}>
-          {busy ? '…' : checkedIn ? 'Check out' : 'Check in'}
-        </Button>
-      </div>
-      {(attendance.status || attendance.late_entry || attendance.early_exit) && (
-        <div className="row" style={{ marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
-          {attendance.status && <Pill>{attendance.status}</Pill>}
-          {attendance.late_entry && <Pill tone="warning">Late entry</Pill>}
-          {attendance.early_exit && <Pill tone="warning">Early exit</Pill>}
+    <section className="home-card home-card--today">
+      <header>
+        <h2>Today</h2>
+        <span className="home-shift">{shiftLabel(attendance?.shift)}</span>
+      </header>
+      <div className="home-punch">
+        <div className="home-punch__ring" style={{ '--pct': `${pct}%` }}>
+          <strong>{fmtDuration(worked)}</strong>
+          <span>of 9:00</span>
         </div>
-      )}
-    </Card>
-  );
-}
-
-/* ---------- Leave balances ---------- */
-function LeaveBalances() {
-  const { leaveBalances } = useWorkspace();
-  if (!leaveBalances.length) return null;
-
-  return (
-    <Card
-      title="Leave balance"
-      action={<Link to="/leave" className="btn btn--link">Apply</Link>}
-    >
-      <div className="stack">
-        {leaveBalances.slice(0, 5).map((row) => (
-          <div key={row.leave_type}>
-            <div className="row row--between small" style={{ marginBottom: 5 }}>
-              <span style={{ fontWeight: 500 }}>{row.leave_type}</span>
-              <span className="tabular subtle">
-                <strong style={{ color: 'var(--ink)' }}>{Number(row.remaining).toFixed(1)}</strong> / {Number(row.allocated).toFixed(1)}
-              </span>
-            </div>
-            <Meter
-              value={row.remaining}
-              total={row.allocated}
-              tone={row.allocated > 0 && row.remaining / row.allocated < 0.25 ? 'warning' : undefined}
-            />
-            {Number(row.pending) > 0 && (
-              <p className="small subtle" style={{ marginTop: 4 }}>{fmtDays(row.pending)} awaiting approval</p>
-            )}
-          </div>
-        ))}
+        <div>
+          <span className="home-label">{checkedIn ? 'Checked in' : 'Not checked in'}</span>
+          <strong className="home-time">{attendance?.first_in ? fmtTime(attendance.first_in) : '—'}</strong>
+          <p>{attendance?.status || 'Office'}{attendance?.shift ? ` · ${attendance.shift}` : ''}</p>
+        </div>
       </div>
-    </Card>
-  );
-}
-
-/* ---------- Month attendance from workspace_summary ---------- */
-function MonthStats() {
-  const { summary } = useWorkspace();
-  const stats = summary?.attendance_stats;
-  if (!stats) return null;
-  return (
-    <Card title="This month">
-      <div className="grid grid--2">
-        <Stat label="Present" value={stats.present ?? '—'} />
-        <Stat label="On leave" value={stats.on_leave ?? '—'} />
-        <Stat label="Late entries" value={stats.late_entry ?? '—'} tone={stats.late_entry ? 'warning' : undefined} />
-        <Stat label="Avg hours" value={stats.average_hours ? Number(stats.average_hours).toFixed(1) : '—'} />
+      <Button variant={checkedIn ? 'indigo' : 'primary'} onClick={punch} disabled={busy || !attendance} className="home-punch__action">
+        <Icon name={checkedIn ? 'logout' : 'check'} size={17} />
+        {busy ? 'Working…' : checkedIn ? 'Check out' : 'Check in'}
+      </Button>
+      <div className="home-mini-stats">
+        <div><strong>{stats.present ?? '—'}</strong><span>Present</span></div>
+        <div><strong>{stats.on_leave ?? '—'}</strong><span>On leave</span></div>
+        <div><strong>{stats.late_entry ?? '—'}</strong><span>Late in</span></div>
+        <div><strong>{stats.average_hours ? `${Number(stats.average_hours).toFixed(1)}h` : '—'}</strong><span>Avg day</span></div>
       </div>
-    </Card>
+    </section>
   );
 }
 
-/* ---------- Requests ---------- */
-function MyRequests() {
-  const { leaveRequests } = useWorkspace();
+function LeaveBalanceCard() {
+  const { leaveBalances, summary } = useWorkspace();
+  const balances = leaveBalances.slice(0, 4);
+  const next = summary?.next_leave;
+
   return (
-    <Card
-      title="My leave requests"
-      action={<Link to="/leave" className="btn btn--link">See all</Link>}
-      flush
-    >
-      {leaveRequests.length === 0 ? (
-        <EmptyState title="No requests" body="Leave you apply for will appear here." icon="◷" />
+    <section className="home-card home-card--leave">
+      <header>
+        <h2>Leave balance</h2>
+        <Link to="/leave/policies">2026 allocation ↗</Link>
+      </header>
+      {balances.length ? (
+        <div className="home-leave-grid">
+          {balances.map((row) => {
+            const remaining = Number(row.remaining) || 0;
+            const allocated = Number(row.allocated) || 0;
+            return (
+              <div className="home-leave-tile" key={row.leave_type}>
+                <div>
+                  <strong>{Number.isInteger(remaining) ? remaining : remaining.toFixed(1)}</strong>
+                  <span>/ {Number.isInteger(allocated) ? allocated : allocated.toFixed(1)} days</span>
+                </div>
+                <h3>{row.leave_type}</h3>
+                <Meter value={remaining} total={allocated} tone={allocated > 0 && remaining / allocated < 0.25 ? 'warning' : undefined} />
+                {Number(row.pending) > 0 && <p>{fmtDays(row.pending)} pending</p>}
+              </div>
+            );
+          })}
+        </div>
       ) : (
-        <div className="table-wrap">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaveRequests.slice(0, 6).map((row) => (
-                <tr key={row.name}>
-                  <td className="cell-strong">{row.leave_type}</td>
-                  <td className="subtle">{fmtRange(row.from_date, row.to_date)}</td>
-                  <td className="num">{Number(row.total_leave_days).toFixed(1)}</td>
-                  <td><Pill tone={statusTone(row.status)}>{row.status}</Pill></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <EmptyState title="No leave allocation" body="Your leave balances will appear here once HR allocates them." icon={<Icon name="calendar" size={20} />} />
       )}
-    </Card>
+      <footer>
+        <span>Next off</span>
+        <strong>{next ? `${fmtDateShort(next.from_date)} — ${next.leave_type}` : 'No approved leave planned'}</strong>
+        {next && <Pill tone={next.status === 'Approved' ? 'success' : 'warning'}>{next.status}</Pill>}
+      </footer>
+    </section>
   );
 }
 
-/* ---------- Upcoming ---------- */
-function Upcoming() {
-  const { holidays, summary } = useWorkspace();
-  const nextLeave = summary?.next_leave;
-  const rows = holidays.slice(0, 5);
-
-  if (!rows.length && !nextLeave) return null;
+function NeedsYouCard() {
+  const { approvals, notifications, leaveRequests } = useWorkspace();
+  const pendingLeave = leaveRequests.find((row) => ['Open', 'Pending'].includes(row.status));
+  const items = [
+    ...approvals.slice(0, 3).map((row) => ({
+      key: `${row.doctype}-${row.id || row.name}`,
+      label: `Approval · ${row.kind || row.doctype || 'Request'}`,
+      title: row.employee_name ? `${row.employee_name} — ${row.title || 'Request'}` : row.title || 'Approval request',
+      meta: row.from_date ? fmtRange(row.from_date, row.to_date) : row.status || 'Pending',
+      actions: true,
+      tone: 'warning',
+    })),
+    ...(pendingLeave ? [{
+      key: pendingLeave.name,
+      label: 'Action · Leave',
+      title: `${pendingLeave.leave_type} request`,
+      meta: `${fmtRange(pendingLeave.from_date, pendingLeave.to_date)} · ${pendingLeave.status}`,
+      tone: 'info',
+    }] : []),
+    ...notifications.slice(0, 2).map((row) => ({
+      key: row.name,
+      label: row.document_type || 'Announcement',
+      title: row.subject,
+      meta: row.read ? 'Read' : 'Unread',
+      tone: row.read ? 'default' : 'info',
+    })),
+  ].slice(0, 4);
 
   return (
-    <Card title="Coming up">
-      <div className="stack">
-        {nextLeave && (
-          <div className="row" style={{ gap: 10 }}>
-            <span className="pill pill--primary">Leave</span>
+    <aside className="home-card home-card--needs">
+      <header>
+        <h2>Needs you</h2>
+        <span>{items.length}</span>
+      </header>
+      {items.length ? (
+        <div className="home-needs-list">
+          {items.map((item) => (
+            <div className="home-need" key={item.key}>
+              <p>{item.label}</p>
+              <strong>{item.title}</strong>
+              <span>{item.meta}</span>
+              {item.actions && (
+                <div>
+                  <Link to="/approvals" className="btn btn--indigo btn--sm">Approve</Link>
+                  <Link to="/approvals" className="btn btn--ghost btn--sm">Reject</Link>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EmptyState title="Nothing pending" body="Approvals, acknowledgements and reminders will appear here." icon={<Icon name="check" size={20} />} />
+      )}
+      <footer>
+        <span>Announcement</span>
+        <strong>{notifications[0]?.subject || 'No new company announcements'}</strong>
+      </footer>
+    </aside>
+  );
+}
+
+function HolidaysCard() {
+  const { holidays } = useWorkspace();
+  const rows = holidays.filter((row) => !row.weekly_off).slice(0, 4);
+
+  return (
+    <section className="home-card home-card--holidays">
+      <header>
+        <h2>Upcoming holidays</h2>
+        <span>Calendar</span>
+      </header>
+      {rows.length ? rows.map((row) => {
+        const date = new Date(String(row.holiday_date).replace(' ', 'T'));
+        return (
+          <div className="home-holiday" key={`${row.holiday_date}-${row.description}`}>
             <div>
-              <div style={{ fontWeight: 500 }}>{nextLeave.leave_type}</div>
-              <div className="small subtle">{fmtRange(nextLeave.from_date, nextLeave.to_date)}</div>
+              <strong>{Number.isNaN(date.getTime()) ? '—' : String(date.getDate()).padStart(2, '0')}</strong>
+              <span>{Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { month: 'short' }).format(date)}</span>
+            </div>
+            <div>
+              <strong>{row.description}</strong>
+              <p>{fmtDate(row.holiday_date)}</p>
             </div>
           </div>
-        )}
-        {rows.map((row) => (
-          <div className="row" key={`${row.holiday_date}-${row.description}`} style={{ gap: 10 }}>
-            <span className="pill">{row.weekly_off ? 'Weekly off' : 'Holiday'}</span>
-            <div className="truncate">
-              <div className="truncate" style={{ fontWeight: 500 }}>{row.description}</div>
-              <div className="small subtle">{fmtDate(row.holiday_date)}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
+        );
+      }) : <EmptyState title="No holidays listed" icon={<Icon name="calendar" size={20} />} />}
+    </section>
   );
 }
 
-/* ---------- Latest payslip ---------- */
-function LatestPayslip() {
-  const { salarySlips } = useWorkspace();
-  const slip = salarySlips[0];
-  if (!slip) return null;
-  return (
-    <Card title="Latest payslip" action={<Link to="/salary" className="btn btn--link">All payslips</Link>}>
-      <Stat
-        label={fmtRange(slip.start_date, slip.end_date)}
-        value={fmtMoney(slip.net_pay, slip.currency)}
-        meta={`Gross ${fmtMoney(slip.gross_pay, slip.currency)} · Deductions ${fmtMoney(slip.total_deduction, slip.currency)}`}
-      />
-    </Card>
-  );
-}
-
-/* ---------- Team this week ---------- */
-/* team_week is a Mon–Fri grid: members[].days[] holds one marker per weekday
-   ('approved' | 'pending' | 'none'), aligned to team.days[]. */
 const DAY_TONE = {
-  approved: { bg: 'var(--info-bg)', fg: 'var(--secondary-800)', label: 'L', title: 'On approved leave' },
-  pending: { bg: 'var(--warning-bg)', fg: 'var(--warning)', label: '?', title: 'Leave awaiting approval' },
-  none: { bg: 'var(--success-bg)', fg: 'var(--success)', label: '·', title: 'Available' },
+  approved: 'is-approved',
+  pending: 'is-pending',
+  none: '',
 };
 
-function TeamWeek() {
-  const { summary } = useWorkspace();
+function TeamWeekCard() {
+  const { summary, profile } = useWorkspace();
   const team = summary?.team_week;
   const members = team?.members || [];
-  if (!team || !members.length) return null;
-
-  const dayLabels = (team.days || []).map((day) =>
-    new Date(day).toLocaleDateString(undefined, { weekday: 'narrow' }),
+  const dayLabels = (team?.days || []).map((day) =>
+    new Date(day).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 3).toUpperCase(),
   );
 
   return (
-    <Card title="Team this week" subtitle={team.department || undefined}>
-      <div className="row" style={{ gap: 6, paddingLeft: 34, marginBottom: 6 }}>
-        {dayLabels.map((day, i) => (
-          <span key={i} className="small subtle" style={{ width: 20, textAlign: 'center', fontWeight: 600 }}>
-            {day}
-          </span>
-        ))}
-      </div>
-      <div className="stack">
-        {members.slice(0, 8).map((member) => (
-          <div className="row" key={member.employee} style={{ gap: 8 }}>
-            <Avatar name={member.employee_name} size="sm" />
-            <div className="row" style={{ gap: 6 }}>
-              {(member.days || []).map((marker, i) => {
-                const tone = DAY_TONE[marker] || DAY_TONE.none;
-                return (
-                  <span
-                    key={i}
-                    title={`${member.employee_name} · ${team.days?.[i] || ''} · ${tone.title}`}
-                    style={{
-                      width: 20, height: 20, borderRadius: 5, display: 'grid', placeItems: 'center',
-                      background: tone.bg, color: tone.fg, fontSize: 10, fontWeight: 700,
-                    }}
-                  >
-                    {tone.label}
-                  </span>
-                );
-              })}
-            </div>
-            <span className="small truncate" style={{ flex: 1, fontWeight: member.is_self ? 600 : 400 }}>
-              {member.employee_name}
-            </span>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
-/* ---------- HR overview (can_manage_hr) ---------- */
-function HrOverview() {
-  const { hrSummary, approvals } = useWorkspace();
-  if (!hrSummary) return null;
-  return (
-    <>
-      <div className="grid grid--4">
-        <div className="card"><Stat label="Headcount" value={hrSummary.headcount ?? '—'} /></div>
-        <div className="card"><Stat label="New this month" value={hrSummary.new_this_month ?? '—'} /></div>
-        <div className="card">
-          <Stat
-            label="Open leave requests"
-            value={hrSummary.open_leave_requests ?? '—'}
-            tone={hrSummary.open_leave_requests ? 'warning' : undefined}
-          />
-        </div>
-        <div className="card"><Stat label="Payslips this month" value={hrSummary.salary_slips_this_month ?? '—'} /></div>
-      </div>
-      {approvals.length > 0 && (
-        <Card
-          title="Waiting on you"
-          subtitle={`${approvals.length} request${approvals.length === 1 ? '' : 's'} pending`}
-          action={<Link to="/approvals" className="btn btn--primary btn--sm">Open inbox</Link>}
-          style={{ marginTop: 'var(--space-4)' }}
-        >
-          <div className="stack">
-            {approvals.slice(0, 4).map((row) => (
-              <div className="row" key={`${row.doctype}-${row.id || row.name}`}>
-                <Avatar name={row.employee_name} size="sm" />
-                <div className="truncate" style={{ flex: 1 }}>
-                  <div className="truncate" style={{ fontWeight: 500 }}>{row.employee_name}</div>
-                  <div className="small subtle truncate">
-                    {[row.title, row.from_date ? fmtRange(row.from_date, row.to_date) : null]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </div>
-                </div>
-                <Pill tone="warning">{row.kind || 'Pending'}</Pill>
+    <section className="home-card home-card--team">
+      <header>
+        <h2>Your team this week</h2>
+        <span>{profile?.department || team?.department || 'Team'} · {members.length || 0} people</span>
+      </header>
+      {members.length ? (
+        <>
+          <div className="home-team-grid" style={{ '--days': dayLabels.length || 5 }}>
+            <div />
+            {dayLabels.map((day) => <strong key={day}>{day}</strong>)}
+            {members.map((member) => (
+              <div className="home-team-row" key={member.employee}>
+                <span>{member.employee_name?.split(' ').map((part) => part[0]).join('').slice(0, 2) || initials(member.employee)}</span>
+                {(member.days || []).map((state, index) => (
+                  <i className={DAY_TONE[state] || ''} key={`${member.employee}-${index}`} />
+                ))}
               </div>
             ))}
           </div>
-        </Card>
+          <div className="home-team-legend">
+            <span><i className="is-approved" /> Approved leave</span>
+            <span><i className="is-pending" /> Pending</span>
+          </div>
+        </>
+      ) : (
+        <EmptyState title="No team calendar" body="Team leave will appear once your employee record has peers or reports." icon={<Icon name="people" size={20} />} />
       )}
-    </>
+    </section>
   );
 }
 
-function greeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
-
 export default function Home() {
-  const { profile, user, capabilities, branding } = useWorkspace();
+  const { profile, user, approvals, notifications, leaveRequests, branding } = useWorkspace();
   const name = (profile?.employee_name || user?.full_name || '').split(' ')[0];
-  const ess = capabilities.employee_self_service;
+  const needsCount = approvals.length + notifications.filter((row) => !row.read).length +
+    leaveRequests.filter((row) => ['Open', 'Pending'].includes(row.status)).length;
 
   return (
-    <div className="stack">
-      <div className="page-head">
-        <h1 className="page-head__title">{greeting()}{name ? `, ${name}` : ''}</h1>
-        <p className="page-head__sub">
-          {profile?.designation ? `${profile.designation}${profile.department ? ` · ${profile.department}` : ''}` : 'Your workspace at a glance'}
-        </p>
+    <div className="home-workspace">
+      <div className="home-hero">
+        <div>
+          <h1>{greeting()}{name ? `, ${name}` : ''}</h1>
+          <p>{todayLine(needsCount)}</p>
+        </div>
+        <div className="home-hero__actions">
+          <Link to="/leave" className="btn btn--ghost">
+            <Icon name="calendar" size={17} /> Apply for leave
+          </Link>
+          <Link to="/claims" className="btn btn--indigo">
+            <Icon name="plus" size={17} /> New request
+          </Link>
+        </div>
       </div>
 
-      {capabilities.can_manage_hr && <HrOverview />}
-
-      {ess ? (
-        <>
-          <div className="grid grid--3">
+      <div className="home-grid">
+        <div className="home-grid__main">
+          <div className="home-grid__column">
             <PunchCard />
-            <MonthStats />
-            <LatestPayslip />
+            <HolidaysCard />
           </div>
-          <div className="grid grid--3">
-            <LeaveBalances />
-            <Upcoming />
-            <TeamWeek />
+          <div className="home-grid__column">
+            <LeaveBalanceCard />
+            <TeamWeekCard />
           </div>
-          <MyRequests />
-        </>
-      ) : (
-        !capabilities.can_manage_hr && (
-          <Card>
-            <EmptyState
-              title="No self-service on this account"
-              body="This login isn't linked to an active Employee record, so there's no personal workspace to show. Use the navigation for the areas you administer."
-              icon={<Icon name="people" size={22} />}
-            />
-          </Card>
-        )
-      )}
+        </div>
+        <NeedsYouCard />
+      </div>
 
       <div className="attribution">
         {branding?.copyright || 'Techsarena HCM'} · powered by Frappe HRMS

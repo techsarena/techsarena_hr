@@ -166,6 +166,11 @@ export default function Shell() {
             <Icon name="menu" />
           </button>
           <span className="topbar__title">{TITLES[location.pathname] || 'Techsarena HCM'}</span>
+          <div className="topbar__search">
+            <Icon name="search" size={16} />
+            <input type="search" placeholder="Search people, policies, claims..." aria-label="Search" />
+            <kbd>⌘K</kbd>
+          </div>
           <div className="topbar__spacer" />
           <button type="button" className="topbar__btn" onClick={reload} title="Refresh" aria-label="Refresh">
             <Icon name="refresh" size={17} />

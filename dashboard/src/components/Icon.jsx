@@ -29,6 +29,7 @@ const PATHS = {
   chevronRight: <><path d="M8 4.5 13.5 10 8 15.5" /></>,
   external: <><path d="M11 3h6v6M17 3l-7.5 7.5" /><path d="M15 12v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4" /></>,
   refresh: <><path d="M16.5 8A6.5 6.5 0 0 0 5.2 5.4M3.5 12A6.5 6.5 0 0 0 14.8 14.6" /><path d="M16.5 3.5V8H12M3.5 16.5V12H8" /></>,
+  search: <><circle cx="8.5" cy="8.5" r="5" /><path d="M12.2 12.2 16.5 16.5" /></>,
   filter: <><path d="M3 5h14l-5.5 6.2V16L8.5 17v-5.8L3 5Z" /></>,
 };
 

@@ -1864,7 +1864,7 @@ def _team_week(employee: str, employee_doc) -> dict:
 			filters={"status": "Active", "reports_to": employee_doc.reports_to},
 			fields=["name", "employee_name"],
 			order_by="employee_name asc",
-			limit_page_length=25,
+			limit_page_length=0,
 		)
 	if not any(member.name == employee for member in members):
 		members.append(
