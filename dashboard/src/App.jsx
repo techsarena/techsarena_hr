@@ -24,6 +24,7 @@ import LeaveAdmin from './pages/LeaveAdmin';
 import Announcements from './pages/Announcements';
 import Hiring from './pages/Hiring';
 import Onboarding from './pages/Onboarding';
+import Offboarding from './pages/Offboarding';
 import Settings from './pages/Settings';
 import Users from './pages/Users';
 
@@ -81,6 +82,7 @@ function Gate() {
         <Route path="/announcements" element={<Announcements />} />
         <Route path="/hiring" element={guard('can_manage_hr', <Hiring />)} />
         <Route path="/onboarding" element={guard('can_manage_hr', <Onboarding />)} />
+        <Route path="/offboarding" element={guard('can_manage_hr', <Offboarding />)} />
         <Route path="/settings" element={guard('can_manage_hr', <Settings />)} />
         <Route path="/users" element={guard('can_manage_users', <Users />)} />
         <Route path="*" element={<Navigate to="/" replace />} />

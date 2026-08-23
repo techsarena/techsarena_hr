@@ -62,6 +62,7 @@ export const NAV_GROUPS = [
     items: [
       { to: '/hiring', label: 'Job openings', icon: 'briefcase' },
       { to: '/onboarding', label: 'Onboarding', icon: 'checklist' },
+      { to: '/offboarding', label: 'Offboarding', icon: 'inbox' },
     ],
   },
   {

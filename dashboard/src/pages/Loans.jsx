@@ -111,7 +111,7 @@ function SkipModal({ loan, onClose, onDone }) {
   );
 }
 
-function LoanDetail({ loan, currency, onClose, onChanged }) {
+function LoanDetail({ loan, currency, canAdminister, onClose, onChanged }) {
   const state = useAsync(
     ({ signal }) => (loan ? hr.loanDetail(loan.name, { signal }) : Promise.resolve(null)),
     [loan?.name],
@@ -141,11 +141,17 @@ function LoanDetail({ loan, currency, onClose, onChanged }) {
         onClose={onClose}
         title={loan.loan_product || 'Loan'}
         subtitle={loan.name}
+        /* Reschedule and skip drive lending's Loan Restructure, which posts GL
+           and is an approval — HR only, server-side. Hiding them from the
+           borrower keeps the UI honest rather than offering an action that can
+           only come back as "not permitted". */
         footer={
-          <>
-            <Button onClick={() => setSkip(loan)}>Skip an instalment</Button>
-            <Button variant="indigo" onClick={() => setReschedule(loan)}>Reschedule</Button>
-          </>
+          canAdminister ? (
+            <>
+              <Button onClick={() => setSkip(loan)}>Skip an instalment</Button>
+              <Button variant="indigo" onClick={() => setReschedule(loan)}>Reschedule</Button>
+            </>
+          ) : null
         }
       >
         <Async state={state} rows={6}>
@@ -209,7 +215,7 @@ function LoanDetail({ loan, currency, onClose, onChanged }) {
 }
 
 export default function Loans() {
-  const { currency } = useWorkspace();
+  const { currency, capabilities } = useWorkspace();
   const state = useAsync(({ signal }) => hr.myLoans({ signal }), []);
   const [open, setOpen] = useState(null);
 
@@ -281,7 +287,13 @@ export default function Loans() {
         }}
       </Async>
 
-      <LoanDetail loan={open} currency={currency} onClose={() => setOpen(null)} onChanged={state.reload} />
+      <LoanDetail
+        loan={open}
+        currency={currency}
+        canAdminister={Boolean(capabilities.can_manage_hr)}
+        onClose={() => setOpen(null)}
+        onChanged={state.reload}
+      />
     </div>
   );
 }

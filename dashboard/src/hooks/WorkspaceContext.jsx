@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import hr from '../api/hr';
-import { auth, resource, setCsrfToken } from '../api/client';
+import { auth, onSessionLost, resource, setCsrfToken, setSessionEstablished } from '../api/client';
+import { useRealtime } from './useRealtime';
 
 /**
  * App-wide store — the React counterpart of WorkspaceController.
@@ -40,6 +41,7 @@ export function WorkspaceProvider({ children }) {
       });
       if (!user || user === 'Guest') {
         setBoot(null);
+        setSessionEstablished(false);
         setStatus('anonymous');
         return;
       }
@@ -48,10 +50,14 @@ export function WorkspaceProvider({ children }) {
       // client, and every POST needs it.
       setCsrfToken(payload?.csrf_token);
       setBoot(payload);
+      // From here a 401/403 means the session died, not that the user was never
+      // signed in — arm the transport to report it.
+      setSessionEstablished(true);
       setStatus('ready');
     } catch (err) {
       if (err.isUnauthorized) {
         setBoot(null);
+        setSessionEstablished(false);
         setStatus('anonymous');
         return;
       }
@@ -61,6 +67,20 @@ export function WorkspaceProvider({ children }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // A session that expires mid-use drops the app back to the login screen
+  // instead of leaving the user on a dead workspace collecting "Not permitted"
+  // toasts from every background refresh.
+  useEffect(
+    () =>
+      onSessionLost(() => {
+        setBoot(null);
+        setSummary(null);
+        setError(null);
+        setStatus('anonymous');
+      }),
+    [],
+  );
 
   // The company's currency, so amounts never fall back to a foreign symbol.
   // Read from Company rather than Global Defaults: HR roles can read the former
@@ -89,6 +109,43 @@ export function WorkspaceProvider({ children }) {
       .catch(() => { if (!cancelled) setSummary(null); });
     return () => { cancelled = true; };
   }, [status, boot]);
+
+  /* Live updates.
+     Coalesced: a bulk approval fires one event per request, and refetching
+     bootstrap for each would stampede the server. The first event schedules a
+     single refresh shortly after, and any event arriving inside that window
+     rides along with it. */
+  const refreshTimer = useRef(null);
+  useEffect(() => () => clearTimeout(refreshTimer.current), []);
+
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimer.current) return;
+    refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null;
+      load();
+    }, 400);
+  }, [load]);
+
+  const onRealtime = useCallback(
+    (payload) => {
+      switch (payload?.event) {
+        case 'attendance_updated':
+          // Carries its own state, so patch it in rather than refetching.
+          if (payload.today) setBoot((prev) => prev && { ...prev, attendance: payload.today });
+          break;
+        case 'leave_decided':
+        case 'request_decided':
+        case 'approval_queue_changed':
+          scheduleRefresh();
+          break;
+        default:
+          break;
+      }
+    },
+    [scheduleRefresh],
+  );
+
+  useRealtime(onRealtime, { enabled: status === 'ready' });
 
   const signIn = useCallback(async (usr, pwd) => {
     await auth.login(usr, pwd);

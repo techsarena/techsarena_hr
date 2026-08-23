@@ -54,6 +54,19 @@ def _balance(employee: str, leave_type: str) -> float:
 	return flt(details.get(leave_type, {}).get("remaining_leaves", 0))
 
 
+def _lock_allocation(allocation_name: str) -> None:
+	"""Serialise concurrent adjustments against one allocation.
+
+	``_balance`` reads the ledger and the caller then writes to it. Without a
+	lock that is a check-then-act: two deductions can both read the same
+	pre-balance, both pass the "would this go below zero" test, and both commit —
+	driving the balance negative. Locking the allocation row makes the second
+	caller wait until the first has committed, so it reads the post-write
+	balance.
+	"""
+	frappe.db.get_value("Leave Allocation", allocation_name, "name", for_update=True)
+
+
 @frappe.whitelist(methods=["POST"])
 def adjust_leave_balance(employee: str, leave_type: str, days, reason: str | None = None) -> dict:
 	"""Grant (+) or deduct (-) leave for one employee, audited. HR only."""
@@ -71,6 +84,10 @@ def adjust_leave_balance(employee: str, leave_type: str, days, reason: str | Non
 				employee, leave_type
 			)
 		)
+
+	# Lock before reading the balance, so the check and the write that follows
+	# are one atomic decision rather than a race between concurrent adjustments.
+	_lock_allocation(allocation.name)
 
 	before = _balance(employee, leave_type)
 	if before + days < 0:
@@ -90,10 +107,14 @@ def adjust_leave_balance(employee: str, leave_type: str, days, reason: str | Non
 			"to_date": allocation.to_date,
 			"company": allocation.company,
 			"holiday_list": frappe.db.get_value("Employee", employee, "holiday_list"),
-			"docstatus": 1,
 		}
 	)
+	# Insert then submit, rather than forcing docstatus=1 in the dict. Setting
+	# docstatus on a new doc skips the submit lifecycle entirely: on_submit never
+	# fires and HRMS's own Leave Ledger Entry validations never run, so the row
+	# lands in the ledger having never been checked against its allocation.
 	ledger.insert(ignore_permissions=True)
+	ledger.submit()
 
 	note = f"{ADJUSTMENT_TAG} {days:+g} {leave_type} by {user}: {reason or 'no reason given'}"
 	frappe.get_doc(
@@ -224,18 +245,57 @@ def run_scheduled_leave_adjustments() -> dict:
 	if frappe.db.exists("Comment", {"comment_type": "Info", "content": marker}):
 		return {"skipped": f"already ran for {period}"}
 
+	# Claim the month *before* accruing anything, and commit that claim.
+	#
+	# adjust_leave_balance commits per employee. With the marker written only at
+	# the end, a crash partway through left hundreds of committed accruals and no
+	# marker — so the next run repeated every one of them and silently inflated
+	# balances. Writing the marker first makes a crash fail closed: the month is
+	# already claimed, so a rerun is a no-op and HR reconciles the shortfall
+	# deliberately rather than the job doubling up on its own.
+	frappe.get_doc(
+		{
+			"doctype": "Comment",
+			"comment_type": "Info",
+			"reference_doctype": "Employee",
+			"reference_name": "run",
+			"content": marker,
+		}
+	).insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	# The scheduler runs as Administrator already, but adjust_leave_balance calls
+	# _hr_user() and the worker's session user is not guaranteed. Switch once,
+	# and restore in a finally: the previous version called set_user inside the
+	# loop and never restored it, leaving every subsequent job in that worker
+	# running as Administrator.
+	original_user = frappe.session.user
 	accrued = 0
-	for employee in frappe.get_all("Employee", filters={"status": "Active"}, pluck="name"):
-		if _active_allocation(employee, leave_type):
+	failed = 0
+	try:
+		frappe.set_user("Administrator")
+		for employee in frappe.get_all("Employee", filters={"status": "Active"}, pluck="name"):
+			if not _active_allocation(employee, leave_type):
+				continue
 			try:
-				frappe.set_user("Administrator")
 				adjust_leave_balance(employee, leave_type, days, f"Monthly accrual {period}")
 				accrued += 1
 			except Exception:
-				frappe.log_error(title="Techsarena leave accrual failed")
-	frappe.get_doc(
-		{"doctype": "Comment", "comment_type": "Info", "reference_doctype": "Employee",
-		 "reference_name": "run", "content": marker}
-	).insert(ignore_permissions=True)
-	frappe.db.commit()
-	return {"period": period, "leave_type": leave_type, "days_each": days, "employees_accrued": accrued}
+				failed += 1
+				# Roll back this employee's partial work so the next iteration
+				# starts from a clean transaction, then keep going.
+				frappe.db.rollback()
+				frappe.log_error(
+					title="Techsarena leave accrual failed",
+					message=f"employee={employee} leave_type={leave_type} period={period}",
+				)
+	finally:
+		frappe.set_user(original_user)
+
+	return {
+		"period": period,
+		"leave_type": leave_type,
+		"days_each": days,
+		"employees_accrued": accrued,
+		"employees_failed": failed,
+	}

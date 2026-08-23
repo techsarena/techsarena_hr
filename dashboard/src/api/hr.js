@@ -12,6 +12,8 @@ const NS = 'techsarena_hr.api';
 const LEAVE = 'techsarena_hr.leave_engine';
 const FUNDS = 'techsarena_hr.funds';
 const LOANS = 'techsarena_hr.loans';
+const GPS = 'techsarena_hr.gps_attendance.api.attendance';
+const EXIT = 'techsarena_hr.offboarding';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -24,6 +26,22 @@ export const hr = {
   attendanceMonth: (month, opts) => call(`${NS}.attendance_month`, { month }, opts),
   shiftTypes: (opts) => call(`${NS}.shift_types`, undefined, opts),
   checkInOut: (logType) => post(`${NS}.check_in_out`, { log_type: logType }),
+
+  /* ---- Geofenced attendance (GPS) ----
+     Separate from checkInOut: this path enforces an HR-approved device and the
+     employee's assigned geofence. The employee is taken from the session — the
+     endpoint has no `employee` parameter, by design. */
+  gpsCheckIn: ({ logType, latitude, longitude, deviceId, accuracy }) =>
+    post(`${GPS}.mark_checkin`, {
+      log_type: logType,
+      latitude,
+      longitude,
+      device_id: deviceId,
+      accuracy,
+    }),
+  requestDeviceEnrolment: (deviceId, deviceName) =>
+    post(`${GPS}.request_device_enrolment`, { device_id: deviceId, device_name: deviceName }),
+  attendanceContext: (opts) => call(`${GPS}.my_attendance_context`, undefined, opts),
   requestRegularisation: (payload) => post(`${NS}.request_regularisation`, payload),
   requestShiftChange: (payload) => post(`${NS}.request_shift_change`, payload),
 
@@ -57,6 +75,38 @@ export const hr = {
       return { leave_types: leaveTypes, approval_chain: [], documents: [], holiday_list: null, policy_set: null };
     }
   },
+
+  /* ---- Leave block lists (blackout dates) ---- */
+  myBlockedDates: (fromDate, toDate, opts) =>
+    call(`${NS}.my_blocked_dates`, { from_date: fromDate, to_date: toDate }, opts),
+  leaveBlockLists: (name, opts) => call(`${NS}.leave_block_lists`, name ? { name } : undefined, opts),
+  saveLeaveBlockList: (payload) =>
+    post(`${NS}.save_leave_block_list`, {
+      ...payload,
+      dates: JSON.stringify(payload.dates || []),
+      allowed_users: JSON.stringify(payload.allowed_users || []),
+    }),
+  deleteLeaveBlockList: (name) => post(`${NS}.delete_leave_block_list`, { name }),
+  assignBlockListToDepartment: (department, leaveBlockList) =>
+    post(`${NS}.assign_block_list_to_department`, {
+      department,
+      leave_block_list: leaveBlockList,
+    }),
+
+  /* ---- Offboarding / separation ---- */
+  offboardingQueue: (opts) => call(`${EXIT}.offboarding_queue`, undefined, opts),
+  separationDetail: (name, opts) => call(`${EXIT}.separation_detail`, { name }, opts),
+  startSeparation: (payload) => post(`${EXIT}.start_separation`, payload),
+  completeSeparation: (name, relievingDate, force) =>
+    post(`${EXIT}.complete_separation`, {
+      name,
+      relieving_date: relievingDate,
+      force: force ? 1 : 0,
+    }),
+  // Reports what is owed in both directions; posts nothing.
+  exitSummary: (employee, opts) => call(`${EXIT}.exit_summary`, { employee }, opts),
+  raiseGratuityPayment: (employee, gratuityRule) =>
+    post(`${EXIT}.raise_gratuity_payment`, { employee, gratuity_rule: gratuityRule }),
 
   /* ---- Payroll ---- */
   payrollRun: (name, opts) => call(`${NS}.payroll_run`, { name }, opts),

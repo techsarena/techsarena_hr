@@ -68,16 +68,34 @@ def _contribution_amounts(employee: str, fund_type: str) -> tuple[float, float]:
 
 
 def _balance(employee: str, fund_type: str) -> float:
+	"""Running balance for one employee's fund.
+
+	Aggregated in the database rather than by streaming every transaction row
+	into Python — this is called several times per request (and once per
+	employee in the monthly posting loop), so the row-by-row version scanned an
+	employee's whole history each time.
+	"""
 	rows = frappe.get_all(
 		DOCTYPE,
 		filters={"employee": employee, "fund_type": fund_type},
-		fields=["entry_type", "amount"],
-		limit_page_length=0,
+		fields=["entry_type", "sum(amount) as total"],
+		group_by="entry_type",
 	)
 	total = 0.0
 	for row in rows:
-		total += flt(row.amount) if row.entry_type in CREDIT_ENTRIES else -flt(row.amount)
+		total += flt(row.total) if row.entry_type in CREDIT_ENTRIES else -flt(row.total)
 	return total
+
+
+def _lock_employee_fund(employee: str) -> None:
+	"""Serialise concurrent fund writes for one employee.
+
+	``record_withdrawal`` reads the balance, checks it, then inserts. Without a
+	lock two concurrent withdrawals can both pass the "exceeds balance" test and
+	both commit, overdrawing the fund. Locking the Employee row makes the second
+	caller read the first one's committed result.
+	"""
+	frappe.db.get_value("Employee", employee, "name", for_update=True)
 
 
 def _add(employee, fund_type, entry_type, amount, *, period=None, reference=None, remarks=None):
@@ -137,15 +155,85 @@ def record_contribution(employee: str, fund_type: str, period: str | None = None
 
 @frappe.whitelist(methods=["POST"])
 def record_monthly_contributions(fund_type: str, period: str | None = None) -> dict:
-	"""Post one month's contribution for every active employee. HR only."""
+	"""Queue one month's contribution for every active employee. HR only.
+
+	Enqueued rather than run inline. Done in the request this was thousands of
+	queries and one commit per employee: it timed out on any real headcount, and
+	because each iteration had already committed, the timeout left the month
+	*half posted* with no record of where it stopped. As a background job it
+	runs to completion, and the per-employee idempotency check makes a re-run
+	safe if it does die partway.
+	"""
 	_hr_user()
+	if fund_type not in FUND_TYPES:
+		frappe.throw(_("Unknown fund {0}.").format(fund_type))
 	period = period or nowdate()[:7]
-	posted = 0
-	for employee in frappe.get_all("Employee", filters={"status": "Active"}, pluck="name"):
-		result = record_contribution(employee, fund_type, period)
-		if "skipped" not in result:
-			posted += 1
-	return {"fund_type": fund_type, "period": period, "employees_posted": posted}
+
+	frappe.enqueue(
+		"techsarena_hr.funds.run_monthly_contributions",
+		queue="long",
+		timeout=3600,
+		fund_type=fund_type,
+		period=period,
+		user=frappe.session.user,
+		# One posting run per fund per period, even if HR taps twice.
+		job_id=f"techsarena-funds-{fund_type}-{period}",
+		deduplicate=True,
+	)
+	return {
+		"fund_type": fund_type,
+		"period": period,
+		"queued": True,
+		"message": _("Posting {0} contributions for {1} in the background.").format(
+			fund_type, period
+		),
+	}
+
+
+def run_monthly_contributions(fund_type: str, period: str, user: str | None = None) -> dict:
+	"""Background worker for record_monthly_contributions.
+
+	Runs as the HR user who queued it, so ``record_contribution``'s own
+	``_hr_user()`` gate still applies rather than being bypassed by the worker's
+	ambient identity.
+	"""
+	original_user = frappe.session.user
+	posted, skipped, failed = 0, 0, 0
+	try:
+		if user:
+			frappe.set_user(user)
+		for employee in frappe.get_all("Employee", filters={"status": "Active"}, pluck="name"):
+			try:
+				result = record_contribution(employee, fund_type, period)
+				if "skipped" in result:
+					skipped += 1
+				else:
+					posted += 1
+			except Exception:
+				failed += 1
+				frappe.db.rollback()
+				frappe.log_error(
+					title="Techsarena fund contribution failed",
+					message=f"employee={employee} fund={fund_type} period={period}",
+				)
+	finally:
+		frappe.set_user(original_user)
+
+	summary = {
+		"fund_type": fund_type,
+		"period": period,
+		"employees_posted": posted,
+		"employees_skipped": skipped,
+		"employees_failed": failed,
+	}
+	if user:
+		frappe.publish_realtime(
+			event="techsarena_hr",
+			message={"event": "fund_contributions_posted", **summary},
+			user=user,
+			after_commit=True,
+		)
+	return summary
 
 
 @frappe.whitelist(methods=["POST"])
@@ -155,13 +243,21 @@ def record_withdrawal(employee: str, fund_type: str, amount, remarks: str | None
 	amount = flt(amount)
 	if amount <= 0:
 		frappe.throw(_("Enter a withdrawal amount greater than zero."))
+	if fund_type not in FUND_TYPES:
+		frappe.throw(_("Unknown fund {0}.").format(fund_type))
+
+	# Lock before reading, so the balance check and the debit are one atomic
+	# decision rather than a race between concurrent withdrawals.
+	_lock_employee_fund(employee)
+
 	balance = _balance(employee, fund_type)
 	if amount > balance:
 		frappe.throw(_("Withdrawal of {0} exceeds the {1} balance of {2}.").format(amount, fund_type, balance))
 	name = _add(employee, fund_type, "Withdrawal", amount, remarks=remarks or "Fund withdrawal")
 	frappe.db.commit()
+	# Derived from the values already in hand — no second full aggregation.
 	return {"employee": employee, "fund_type": fund_type, "withdrawn": amount,
-	        "row": name, "balance": _balance(employee, fund_type)}
+	        "row": name, "balance": balance - amount}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -199,9 +295,12 @@ def _summary_rows(fund_type: str | None, employees: list[str] | None) -> list[di
 		filters["fund_type"] = fund_type
 	if employees is not None:
 		filters["employee"] = ["in", employees]
+	# Grouped in the database: one row per (employee, fund, entry type) instead
+	# of every transaction ever written streamed into Python to be summed.
 	rows = frappe.get_all(
 		DOCTYPE, filters=filters,
-		fields=["employee", "employee_name", "fund_type", "entry_type", "amount"],
+		fields=["employee", "employee_name", "fund_type", "entry_type", "sum(amount) as amount"],
+		group_by="employee, employee_name, fund_type, entry_type",
 		limit_page_length=0,
 	)
 	agg: dict[tuple, dict] = {}

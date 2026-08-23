@@ -19,17 +19,34 @@ AUDIT_TAG = "[Techsarena Loan]"
 
 
 @contextlib.contextmanager
-def _elevated(caller: str):
-	"""Run loan/GL operations with admin rights the self-service caller lacks,
-	then restore the session. The endpoints are already access-gated."""
+def _elevated():
+	"""Run loan/GL operations with admin rights the calling HR user lacks.
+
+	Every mutation guarded by this block is HR-gated at the endpoint, but the
+	underlying documents (Loan Disbursement, Loan Restructure, the GL entries
+	they post) belong to the `lending` app, where an HR Manager holds no rights.
+
+	Both the user switch and the flag are captured **before** and restored
+	**inside** a ``finally``. The previous version called ``set_user`` outside
+	the ``try``: if that raised — it rebuilds ``frappe.local.session`` and the
+	role cache, so it can — the session stayed elevated with no restoration for
+	the remainder of the request.
+
+	Never commit inside this block. A commit here would make the elevated writes
+	durable before the caller's own guards have finished, and would defeat the
+	rollback the endpoint relies on when a later step fails.
+	"""
+	prev_user = frappe.session.user
 	prev_flag = frappe.flags.ignore_permissions
-	frappe.set_user("Administrator")
-	frappe.flags.ignore_permissions = True
 	try:
+		frappe.set_user("Administrator")
+		frappe.flags.ignore_permissions = True
 		yield
 	finally:
 		frappe.flags.ignore_permissions = prev_flag
-		frappe.set_user(caller)
+		# Restore even if set_user("Administrator") itself failed; set_user is
+		# idempotent, so re-setting the user we already are is harmless.
+		frappe.set_user(prev_user)
 
 
 def _require_user() -> str:
@@ -41,6 +58,7 @@ def _require_user() -> str:
 
 
 def _hr_or_self(applicant: str) -> tuple[str, str | None]:
+	"""Read access: HR, or the employee looking at their own loan."""
 	from techsarena_hr.api import HR_ROLES, _current_employee
 
 	user = _require_user()
@@ -48,6 +66,26 @@ def _hr_or_self(applicant: str) -> tuple[str, str | None]:
 	if applicant != own and not set(frappe.get_roles(user)).intersection(HR_ROLES):
 		frappe.throw(_("You are not allowed to act on this loan."), frappe.PermissionError)
 	return user, own
+
+
+def _require_loan_admin() -> str:
+	"""Write access to the restructure flow: HR only, never the borrower.
+
+	``_apply_restructure`` drives the Loan Restructure straight from Initiated to
+	Approved, which regenerates the schedule and books the GL adjustments. That
+	is an approval. Letting the applicant reach it — which ``_hr_or_self`` did,
+	since ``applicant == own`` passes — let an employee approve their own
+	financial restructure, extend their own tenure and defer their own
+	instalments without anyone reviewing it.
+	"""
+	from techsarena_hr.api import HR_ROLES
+
+	user = _require_user()
+	if not set(frappe.get_roles(user)).intersection(HR_ROLES):
+		frappe.throw(
+			_("Only HR can reschedule or defer a loan instalment."), frappe.PermissionError
+		)
+	return user
 
 
 def _active_schedule(loan: str) -> str | None:
@@ -96,31 +134,91 @@ def _loan_summary(loan) -> dict:
 	}
 
 
-def _loans_for(applicant: str) -> list[dict]:
+#: Fields _loan_summary reads. Selected explicitly so the list view never pulls
+#: whole documents.
+_LOAN_FIELDS = (
+	"name",
+	"loan_product",
+	"applicant",
+	"applicant_name",
+	"loan_amount",
+	"rate_of_interest",
+	"status",
+	"repayment_periods",
+	"monthly_repayment_amount",
+	"total_payment",
+	"total_amount_paid",
+)
+
+
+def _active_schedules(loans: list[str]) -> dict[str, str]:
+	"""Map each loan to its current schedule in one pass.
+
+	The per-loan ``_active_schedule`` costs up to three queries each; batched
+	here it is one query total, with the same precedence — an Active schedule
+	wins over a merely submitted one, which wins over a draft.
+	"""
+	if not loans:
+		return {}
 	rows = frappe.get_all(
+		"Loan Repayment Schedule",
+		filters={"loan": ["in", loans]},
+		fields=["name", "loan", "docstatus", "status"],
+		limit_page_length=0,
+	)
+	ranked: dict[str, tuple[int, str]] = {}
+	for row in rows:
+		# Higher rank wins: Active+submitted > submitted > anything else.
+		if row.docstatus == 1 and row.status == "Active":
+			rank = 2
+		elif row.docstatus == 1:
+			rank = 1
+		else:
+			rank = 0
+		current = ranked.get(row.loan)
+		if current is None or rank > current[0]:
+			ranked[row.loan] = (rank, row.name)
+	return {loan: name for loan, (_rank, name) in ranked.items()}
+
+
+def _loans_for(applicant: str) -> list[dict]:
+	"""Loan summaries for one applicant, in a fixed number of queries.
+
+	Previously this ran ``frappe.get_doc`` plus up to three schedule look-ups
+	plus an instalment query *per loan* — roughly 5N queries. It is now 3 total.
+	"""
+	loans = frappe.get_all(
 		"Loan",
 		filters={"applicant": applicant, "applicant_type": "Employee"},
-		fields=["name"],
+		fields=list(_LOAN_FIELDS),
 		order_by="creation desc",
 		limit_page_length=0,
 	)
-	out = []
-	for row in rows:
-		loan = frappe.get_doc("Loan", row.name)
-		summary = _loan_summary(loan)
-		schedule = _active_schedule(loan.name)
-		upcoming = (
-			frappe.get_all(
-				"Repayment Schedule",
-				filters={"parent": schedule, "payment_date": [">=", nowdate()]},
-				fields=["payment_date", "total_payment"],
-				order_by="payment_date asc",
-				limit_page_length=1,
+	if not loans:
+		return []
+
+	schedules = _active_schedules([loan.name for loan in loans])
+	schedule_names = [name for name in schedules.values() if name]
+
+	# Earliest future instalment per schedule, in one query.
+	next_by_schedule: dict[str, dict] = {}
+	if schedule_names:
+		for row in frappe.get_all(
+			"Repayment Schedule",
+			filters={"parent": ["in", schedule_names], "payment_date": [">=", nowdate()]},
+			fields=["parent", "payment_date", "total_payment"],
+			order_by="payment_date asc",
+			limit_page_length=0,
+		):
+			next_by_schedule.setdefault(
+				row.parent, {"payment_date": row.payment_date, "total_payment": row.total_payment}
 			)
-			if schedule
-			else []
-		)
-		summary["next_installment"] = upcoming[0] if upcoming else None
+
+	out = []
+	for loan in loans:
+		summary = _loan_summary(loan)
+		schedule = schedules.get(loan.name)
+		summary["next_installment"] = next_by_schedule.get(schedule) if schedule else None
 		out.append(summary)
 	return out
 
@@ -222,20 +320,22 @@ def reschedule_loan(loan: str, new_periods, reason: str | None = None) -> dict:
 	Loan Restructure (real schedule regeneration + GL on approval)."""
 	if not frappe.db.exists("Loan", loan):
 		frappe.throw(_("Loan {0} was not found.").format(loan), frappe.DoesNotExistError)
-	doc = frappe.get_doc("Loan", loan)
-	caller, _own = _hr_or_self(doc.applicant)
+	# HR only: this approves a restructure and posts GL. The borrower can read
+	# their loan (loan_detail) but must not be able to restructure it.
+	_require_loan_admin()
 	new_periods = int(new_periods)
 	if new_periods < 1 or new_periods > 600:
 		frappe.throw(_("Enter a repayment tenure between 1 and 600 months."))
 
 	# Disbursement + restructure post GL and create Loan documents the caller has
 	# no rights on; the endpoint is already access-gated, so run them elevated.
-	with _elevated(caller):
+	# No commit inside the block — the request's own transaction carries these,
+	# so a failure after this point still rolls the whole restructure back.
+	with _elevated():
 		doc = frappe.get_doc("Loan", loan)
 		_ensure_disbursed(doc)
 		restructure = _apply_restructure(doc, new_periods, reason, "Reschedule")
 		_audit(loan, doc.applicant, f"Rescheduled to {new_periods} instalments ({restructure.name})", reason)
-		frappe.db.commit()
 		doc.reload()
 		result = {
 			"loan": loan,
@@ -253,20 +353,20 @@ def skip_installment(loan: str, reason: str | None = None) -> dict:
 	instalment and pushing the schedule out (a payment-relief moratorium)."""
 	if not frappe.db.exists("Loan", loan):
 		frappe.throw(_("Loan {0} was not found.").format(loan), frappe.DoesNotExistError)
-	doc = frappe.get_doc("Loan", loan)
-	caller, _own = _hr_or_self(doc.applicant)
+	# HR only, for the same reason as reschedule_loan: deferring an instalment is
+	# a payment-relief decision, and it was repeatable without limit by the
+	# borrower themselves.
+	_require_loan_admin()
 
-	with _elevated(caller):
+	with _elevated():
 		doc = frappe.get_doc("Loan", loan)
 		current = cint_or_len(doc.repayment_periods, loan)
 		_ensure_disbursed(doc)
 		restructure = _apply_restructure(doc, current + 1, reason, "Skip / defer one instalment")
-		frappe.db.commit()
 		doc.reload()
 		rows = _rows(_active_schedule(loan))
 		deferred_to = str(rows[-1]["payment_date"]) if rows else None
 		_audit(loan, doc.applicant, f"Deferred one instalment, tenure +1 ({restructure.name})", reason)
-		frappe.db.commit()
 		result = {
 			"loan": loan,
 			"deferred_to": deferred_to,

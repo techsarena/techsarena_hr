@@ -31,8 +31,12 @@ export function useAsync(loader, deps = [], { immediate = true } = {}) {
       setState({ data, error: null, loading: false });
       return data;
     } catch (error) {
-      if (error.name === 'AbortError' || !mountedRef.current) return;
-      setState({ data: null, error, loading: false });
+      // Check `aborted` here as well as on the success path. Without it a
+      // superseded request that fails still writes its error to state, so a
+      // fast A→B→C filter change where B fails leaves B's error on screen even
+      // though C is in flight and about to succeed.
+      if (error.name === 'AbortError' || controller.signal.aborted || !mountedRef.current) return;
+      setState((prev) => ({ ...prev, error, loading: false }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

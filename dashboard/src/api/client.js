@@ -61,6 +61,45 @@ export function setCsrfToken(token) {
   if (token && token !== '{{ frappe.session.csrf_token }}') runtimeCsrfToken = token;
 }
 
+/**
+ * Session-loss channel.
+ *
+ * A 401/403 arriving *after* the app is running means the session timed out or
+ * the CSRF token rotated — not that the user lacks a permission they had a
+ * moment ago. Without this the app surfaced "Not permitted" in a toast and left
+ * the user on a dead screen with no way back to the login form.
+ *
+ * The provider subscribes; the transport publishes. Kept as a module-level
+ * listener set rather than a thrown sentinel so a failing background refresh
+ * can trigger re-authentication without the calling screen having to know.
+ */
+const sessionLostListeners = new Set();
+
+export function onSessionLost(listener) {
+  sessionLostListeners.add(listener);
+  return () => sessionLostListeners.delete(listener);
+}
+
+/** Armed only once bootstrap has succeeded, so the cold-start 403 that simply
+ *  means "logged out" still resolves to the normal anonymous path. */
+let sessionEstablished = false;
+
+export function setSessionEstablished(value) {
+  sessionEstablished = Boolean(value);
+}
+
+function notifySessionLost() {
+  if (!sessionEstablished) return;
+  sessionEstablished = false;
+  for (const listener of sessionLostListeners) {
+    try {
+      listener();
+    } catch {
+      /* a broken listener must not stop the others */
+    }
+  }
+}
+
 function csrfToken() {
   // Set by www/dashboard.html in production; under `vite dev` the placeholder
   // survives and we fall back to the token bootstrap handed us.
@@ -121,11 +160,13 @@ async function request(path, { method = 'GET', params, body, signal } = {}) {
       data?.exception ||
       response.statusText ||
       'Request failed';
+    // 403 from Frappe means "not logged in" as often as "not allowed"; the
+    // session guard decides which by re-checking the logged user.
+    const isUnauthorized = response.status === 401 || response.status === 403;
+    if (isUnauthorized) notifySessionLost();
     throw new ApiError(message, {
       status: response.status,
-      // 403 from Frappe means "not logged in" as often as "not allowed"; the
-      // session guard decides which by re-checking the logged user.
-      isUnauthorized: response.status === 401 || response.status === 403,
+      isUnauthorized,
       exc: data?.exc_type,
     });
   }

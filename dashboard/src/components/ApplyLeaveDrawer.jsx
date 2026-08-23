@@ -3,7 +3,7 @@ import hr from '../api/hr';
 import { useToast } from '../hooks/useToast';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { Button, Drawer, Field, FieldRow } from './ui';
-import { fmtDays, isoDate } from '../api/format';
+import { fmtDate, fmtDays, isoDate } from '../api/format';
 
 /* ---------- Apply drawer ---------- */
 export function ApplyDrawer({ open, onClose, onDone }) {
@@ -21,6 +21,8 @@ export function ApplyDrawer({ open, onClose, onDone }) {
   const [busy, setBusy] = useState(false);
 
   const { leave_type, from_date, to_date, half_day } = form;
+  const blockedDates = preview?.blocked_dates || [];
+  const hasBlocked = blockedDates.length > 0;
 
   /* The day count and resulting balance come from HRMS's own working-day
      maths (leave_preview) — never computed here, or the preview would
@@ -68,8 +70,14 @@ export function ApplyDrawer({ open, onClose, onDone }) {
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" onClick={submit} disabled={busy || !form.leave_type || Boolean(previewError)}>
-            {busy ? 'Submitting…' : 'Submit request'}
+          {/* Blocked dates are refused server-side at submit, so the button is
+              disabled rather than letting the request fail after the fact. */}
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={busy || !form.leave_type || Boolean(previewError) || hasBlocked}
+          >
+            {busy ? 'Submitting…' : hasBlocked ? 'Dates blocked' : 'Submit request'}
           </Button>
         </>
       }
@@ -111,6 +119,27 @@ export function ApplyDrawer({ open, onClose, onDone }) {
 
         {previewError && (
           <div className="login__error" style={{ margin: 0 }}>{previewError.message}</div>
+        )}
+
+        {/* A blackout is the reason a request will be refused, so it reads
+            before the day-count card rather than buried inside it. */}
+        {hasBlocked && (
+          <div className="login__error" style={{ margin: 0 }}>
+            <strong>Leave is blocked on these dates.</strong>
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+              {blockedDates.slice(0, 5).map((row) => (
+                <li key={row.block_date}>
+                  {fmtDate(row.block_date)}
+                  {row.reason ? ` — ${row.reason}` : ''}
+                </li>
+              ))}
+            </ul>
+            {blockedDates.length > 5 && (
+              <p className="small" style={{ margin: '6px 0 0' }}>
+                and {blockedDates.length - 5} more
+              </p>
+            )}
+          </div>
         )}
 
         {preview && (

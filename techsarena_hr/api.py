@@ -118,10 +118,81 @@ def _as_text(value) -> str | None:
 	return str(value) if value is not None else None
 
 
-def _attendance(employee: str) -> dict:
+#: Realtime event namespace. The client subscribes to these once, on the socket
+#: Frappe already runs; nothing here polls.
+REALTIME_EVENT = "techsarena_hr"
+
+
+def _publish(event: str, payload: dict, *, user: str | None = None) -> None:
+	"""Push a change to a connected client over Frappe's socket.
+
+	Fire-and-forget by design: a socket that is down must never fail the write
+	that triggered it. ``after_commit`` means the client is only told once the
+	transaction is durable, so a listener that immediately refetches cannot read
+	back the pre-write state.
+	"""
+	try:
+		frappe.publish_realtime(
+			event=REALTIME_EVENT,
+			message={"event": event, **payload},
+			user=user,
+			after_commit=True,
+		)
+	except Exception:
+		# Realtime is an enhancement, never a dependency of the mutation.
+		frappe.log_error(title="Techsarena realtime publish failed")
+
+
+def _publish_to_employee(employee: str, event: str, payload: dict) -> None:
+	"""Notify the user account behind an Employee record, if it has one."""
+	if not employee:
+		return
+	user = frappe.db.get_value("Employee", employee, "user_id")
+	if user:
+		_publish(event, {"employee": employee, **payload}, user=user)
+
+
+def _shift_crosses_midnight(shift_type: str | None) -> bool:
+	"""Whether a shift's end time falls on the day after its start."""
+	if not shift_type:
+		return False
+	row = frappe.db.get_value("Shift Type", shift_type, ["start_time", "end_time"], as_dict=True)
+	if not row or row.start_time is None or row.end_time is None:
+		return False
+	return get_timedelta(row.end_time).total_seconds() <= get_timedelta(row.start_time).total_seconds()
+
+
+def _punch_window(employee: str, employee_doc=None) -> tuple[datetime, datetime]:
+	"""The span of time whose punches belong to the employee's *current* shift.
+
+	A day-shift employee's punches all fall inside one civil day, so the window
+	is simply midnight to midnight. A night-shift employee who starts at 22:00
+	and ends at 06:00 has their IN and OUT land on **different civil days** — the
+	old midnight-to-midnight window split the pair, so the OUT day booked zero
+	worked seconds while the IN day kept an unclosed punch counting live against
+	``now_datetime()`` and inflated hours without bound.
+
+	For a midnight-crossing shift the window therefore opens on the *previous*
+	day, so an open IN from last night is still visible and pairs with today's
+	OUT.
+	"""
 	day = getdate(nowdate())
 	start = datetime.combine(day, datetime.min.time())
 	end = datetime.combine(day, datetime.max.time())
+
+	if employee_doc is None:
+		employee_doc = frappe.db.get_value(
+			"Employee", employee, ["default_shift"], as_dict=True
+		)
+	shift = (employee_doc or {}).get("default_shift")
+	if shift and _shift_crosses_midnight(shift):
+		start = datetime.combine(add_days(day, -1), datetime.min.time())
+	return start, end
+
+
+def _attendance(employee: str, employee_doc=None) -> dict:
+	day = getdate(nowdate())
+	start, end = _punch_window(employee, employee_doc)
 	logs = frappe.get_list(
 		"Employee Checkin",
 		filters={"employee": employee, "time": ["between", [start, end]]},
@@ -129,6 +200,16 @@ def _attendance(employee: str) -> dict:
 		order_by="time asc",
 		limit_page_length=100,
 	)
+	# On a night shift the window reaches back a day, so a *completed* previous
+	# shift would otherwise be re-counted as today's. Once the last punch is an
+	# OUT that landed before today began, the previous shift is closed: drop
+	# everything before today and start the current day clean.
+	if logs and start.date() != day:
+		midnight = datetime.combine(day, datetime.min.time())
+		last = logs[-1]
+		if last.log_type == "OUT" and get_datetime(last.time) < midnight:
+			logs = [log for log in logs if get_datetime(log.time) >= midnight]
+
 	last_log = logs[-1] if logs else None
 	is_checked_in = bool(last_log and last_log.log_type != "OUT")
 	seconds = 0
@@ -2309,6 +2390,7 @@ def request_regularisation(
 	doc.explanation = explanation
 	doc.half_day = frappe.utils.cint(half_day)
 	doc.insert()
+	_publish("approval_queue_changed", {"doctype": "Attendance Request", "name": doc.name})
 	return {"name": doc.name, "status": "Pending"}
 
 
@@ -2478,6 +2560,31 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 	}
 
 
+def _blocked_dates(employee: str, leave_type: str | None, start, end) -> list[dict]:
+	"""Blackout dates from HRMS's Leave Block List that hit this range.
+
+	Delegates to HRMS's own resolver, which walks both the company-wide lists
+	(``applies_to_all_departments``) and the requester's department list, and
+	honours the per-list allow list. Passing ``all_lists=False`` means a user on
+	a list's allow list correctly sees no block.
+	"""
+	if not frappe.db.table_exists("Leave Block List"):
+		return []
+	try:
+		from hrms.hr.doctype.leave_block_list.leave_block_list import get_applicable_block_dates
+	except ImportError:
+		return []
+
+	company = frappe.db.get_value("Employee", employee, "company")
+	rows = get_applicable_block_dates(
+		start, end, employee=employee, company=company, leave_type=leave_type
+	) or []
+	return sorted(
+		({"block_date": str(row.get("block_date")), "reason": row.get("reason")} for row in rows),
+		key=lambda row: row["block_date"],
+	)
+
+
 @frappe.whitelist()
 def leave_preview(leave_type: str, from_date: str, to_date: str, half_day: int | str = 0) -> dict:
 	"""Working days, resulting balance and clashes for a draft leave request.
@@ -2505,6 +2612,7 @@ def leave_preview(leave_type: str, from_date: str, to_date: str, half_day: int |
 			break
 
 	overlap = team_calendar(str(start), str(end))
+	blocked = _blocked_dates(employee, leave_type, start, end)
 	return {
 		"leave_type": leave_type,
 		"from_date": str(start),
@@ -2516,6 +2624,13 @@ def leave_preview(leave_type: str, from_date: str, to_date: str, half_day: int |
 		"team_leave": overlap["team_leave"],
 		"team_size": overlap["team_size"],
 		"holidays": overlap["holidays"],
+		# Blackout dates. HRMS surfaces these as a msgprint on the Desk form,
+		# which a REST client never sees, and only *enforces* them at approval
+		# time — so without this the employee would file a request that looks
+		# fine and gets refused days later. See submit_leave, which blocks it up
+		# front.
+		"blocked_dates": blocked,
+		"has_blocked_dates": bool(blocked),
 	}
 
 
@@ -2668,6 +2783,246 @@ def leave_policies() -> dict:
 	}
 
 
+# --------------------------------------------------------------------------- #
+# Leave block lists (blackout dates)
+# --------------------------------------------------------------------------- #
+
+
+@frappe.whitelist()
+def leave_block_lists(name: str | None = None) -> dict:
+	"""Blackout calendars HR maintains, with one list expanded when named.
+
+	The list a Department points at is reported alongside the company-wide ones
+	so HR can see which populations a blackout actually reaches — that mapping
+	lives on Department, not on the block list, and is easy to lose track of.
+	"""
+	_require_hr_access()
+	_require_hrms()
+	if not frappe.db.table_exists("Leave Block List"):
+		return {"lists": [], "selected": None, "departments": []}
+
+	lists = frappe.get_all(
+		"Leave Block List",
+		fields=[
+			"name",
+			"leave_block_list_name",
+			"company",
+			"applies_to_all_departments",
+			"leave_type",
+		],
+		order_by="leave_block_list_name asc",
+		limit_page_length=0,
+	)
+
+	# Which departments route to which list — one query, not one per list.
+	departments = frappe.get_all(
+		"Department",
+		filters={"leave_block_list": ["is", "set"]},
+		fields=["name", "leave_block_list"],
+		limit_page_length=0,
+	)
+	by_list: dict[str, list[str]] = {}
+	for row in departments:
+		by_list.setdefault(row.leave_block_list, []).append(row.name)
+
+	today = getdate(nowdate())
+	counts = _block_list_date_counts([row.name for row in lists], today)
+	for row in lists:
+		row["departments"] = by_list.get(row.name, [])
+		row["total_dates"] = counts.get(row.name, {}).get("total", 0)
+		row["upcoming_dates"] = counts.get(row.name, {}).get("upcoming", 0)
+
+	selected = _block_list_payload(name) if name else None
+	return {"lists": lists, "selected": selected, "departments": departments}
+
+
+def _block_list_date_counts(names: list[str], today) -> dict[str, dict]:
+	"""Total and still-to-come blackout dates per list, in one query."""
+	if not names:
+		return {}
+	counts: dict[str, dict] = {}
+	for row in frappe.get_all(
+		"Leave Block List Date",
+		filters={"parent": ["in", names]},
+		fields=["parent", "block_date"],
+		limit_page_length=0,
+	):
+		entry = counts.setdefault(row.parent, {"total": 0, "upcoming": 0})
+		entry["total"] += 1
+		if getdate(row.block_date) >= today:
+			entry["upcoming"] += 1
+	return counts
+
+
+def _block_list_payload(name: str) -> dict:
+	"""One block list in full: its dates and its allow list."""
+	if not frappe.db.exists("Leave Block List", name):
+		frappe.throw(_("Block list {0} was not found.").format(name), frappe.DoesNotExistError)
+
+	doc = frappe.get_doc("Leave Block List", name)
+	dates = [
+		{"name": row.name, "block_date": str(row.block_date), "reason": row.reason}
+		for row in sorted(doc.get("leave_block_list_dates") or [], key=lambda r: str(r.block_date))
+	]
+	allowed = [row.allow_user for row in (doc.get("leave_block_list_allowed") or []) if row.allow_user]
+	allowed_names = {}
+	if allowed:
+		allowed_names = {
+			row.name: row.full_name or row.name
+			for row in frappe.get_all(
+				"User",
+				filters={"name": ["in", allowed]},
+				fields=["name", "full_name"],
+				limit_page_length=0,
+			)
+		}
+	return {
+		"name": doc.name,
+		"leave_block_list_name": doc.leave_block_list_name,
+		"company": doc.company,
+		"applies_to_all_departments": cint(doc.applies_to_all_departments),
+		"leave_type": doc.leave_type,
+		"dates": dates,
+		"allowed_users": [{"user": u, "full_name": allowed_names.get(u, u)} for u in allowed],
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def save_leave_block_list(
+	name: str | None = None,
+	leave_block_list_name: str | None = None,
+	company: str | None = None,
+	applies_to_all_departments: int | str = 0,
+	leave_type: str | None = None,
+	dates=None,
+	allowed_users=None,
+) -> dict:
+	"""Create or update a blackout calendar. HR only.
+
+	``dates`` is a JSON list of ``{block_date, reason}``; ``allowed_users`` a
+	JSON list of user ids exempt from the block. Both replace the existing rows
+	wholesale — the screen edits the whole table, so a partial merge would make
+	deletions impossible to express.
+	"""
+	_require_hr_access()
+	_require_hrms()
+	if not frappe.db.table_exists("Leave Block List"):
+		frappe.throw(_("Leave Block List is not available on this site."), frappe.ValidationError)
+
+	rows = frappe.parse_json(dates) if isinstance(dates, str) else (dates or [])
+	users = frappe.parse_json(allowed_users) if isinstance(allowed_users, str) else (allowed_users or [])
+
+	if name:
+		doc = frappe.get_doc("Leave Block List", name)
+	else:
+		if not leave_block_list_name:
+			frappe.throw(_("Name the block list before saving."), frappe.ValidationError)
+		doc = frappe.new_doc("Leave Block List")
+
+	if leave_block_list_name:
+		doc.leave_block_list_name = leave_block_list_name
+	if company:
+		doc.company = company
+	elif not doc.company:
+		doc.company = frappe.defaults.get_user_default("Company")
+	doc.applies_to_all_departments = cint(applies_to_all_departments)
+	# An empty leave_type means the block applies to every type — that is HRMS's
+	# own convention, so pass the blank through rather than skipping the write.
+	doc.leave_type = leave_type or None
+
+	seen: set[str] = set()
+	doc.set("leave_block_list_dates", [])
+	for row in rows:
+		block_date = row.get("block_date") if isinstance(row, dict) else row
+		if not block_date:
+			continue
+		key = str(getdate(block_date))
+		# HRMS raises on a repeated date; de-duplicate here so a double-click in
+		# the date picker is silently tolerated rather than failing the save.
+		if key in seen:
+			continue
+		seen.add(key)
+		doc.append(
+			"leave_block_list_dates",
+			{
+				"block_date": getdate(block_date),
+				"reason": (row.get("reason") if isinstance(row, dict) else None) or _("Blocked"),
+			},
+		)
+
+	doc.set("leave_block_list_allowed", [])
+	for user in dict.fromkeys(u for u in users if u):
+		doc.append("leave_block_list_allowed", {"allow_user": user})
+
+	doc.save()
+	return _block_list_payload(doc.name)
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_leave_block_list(name: str) -> dict:
+	"""Remove a blackout calendar. HR only."""
+	_require_hr_access()
+	_require_hrms()
+	if not frappe.db.exists("Leave Block List", name):
+		frappe.throw(_("Block list {0} was not found.").format(name), frappe.DoesNotExistError)
+
+	linked = frappe.get_all(
+		"Department", filters={"leave_block_list": name}, pluck="name", limit_page_length=0
+	)
+	if linked:
+		frappe.throw(
+			_("{0} is still assigned to {1}. Clear it from those departments first.").format(
+				name, ", ".join(linked[:5])
+			),
+			frappe.ValidationError,
+		)
+	frappe.delete_doc("Leave Block List", name)
+	return {"name": name, "deleted": True}
+
+
+@frappe.whitelist(methods=["POST"])
+def assign_block_list_to_department(department: str, leave_block_list: str | None = None) -> dict:
+	"""Point a department at a blackout calendar, or clear it. HR only.
+
+	The department link is how a non-company-wide list reaches anyone, so it is
+	part of the block-list workflow rather than a separate department screen.
+	"""
+	_require_hr_access()
+	_require_hrms()
+	if not frappe.db.exists("Department", department):
+		frappe.throw(_("Department {0} was not found.").format(department), frappe.DoesNotExistError)
+	if leave_block_list and not frappe.db.exists("Leave Block List", leave_block_list):
+		frappe.throw(
+			_("Block list {0} was not found.").format(leave_block_list), frappe.DoesNotExistError
+		)
+
+	doc = frappe.get_doc("Department", department)
+	doc.leave_block_list = leave_block_list or None
+	doc.save()
+	return {"department": department, "leave_block_list": doc.leave_block_list}
+
+
+@frappe.whitelist()
+def my_blocked_dates(from_date: str, to_date: str) -> dict:
+	"""Blackout dates that apply to the signed-in employee in a range.
+
+	Lets the leave calendar shade blocked days before the employee picks them.
+	"""
+	user = _require_login()
+	_require_hrms()
+	_unused_user, employee = _require_employee_user(user)
+
+	start = getdate(from_date)
+	end = getdate(to_date)
+	if end < start:
+		frappe.throw(_("The end date cannot be before the start date."))
+	return {
+		"from_date": str(start),
+		"to_date": str(end),
+		"blocked_dates": _blocked_dates(employee, None, start, end),
+	}
+
+
 @frappe.whitelist(methods=["POST"])
 def check_in_out(log_type: str, latitude=None, longitude=None, device_id: str | None = None) -> dict:
 	user = _require_login()
@@ -2676,6 +3031,15 @@ def check_in_out(log_type: str, latitude=None, longitude=None, device_id: str | 
 	log_type = (log_type or "").upper()
 	if log_type not in {"IN", "OUT"}:
 		frappe.throw(_("Log type must be IN or OUT."))
+
+	# Serialise concurrent punches for this employee before reading the current
+	# state. Without the lock this is a check-then-act: a double-tap, a retry or
+	# a second tab can both read "not checked in" and both insert an IN. The
+	# duplicate is not cosmetic — _attendance pairs punches sequentially, so a
+	# second IN overwrites the pending one and silently discards the first
+	# interval, undercounting worked hours for the day and feeding that into
+	# payroll.
+	frappe.db.get_value("Employee", employee, "name", for_update=True)
 
 	current = _attendance(employee)
 	if log_type == "IN" and current["checked_in"]:
@@ -2690,8 +3054,14 @@ def check_in_out(log_type: str, latitude=None, longitude=None, device_id: str | 
 	doc.device_id = device_id or "Techs Arena HCM"
 	doc.latitude = latitude
 	doc.longitude = longitude
-	doc.insert(ignore_permissions=True)
-	return _attendance(employee)
+	# The employee owns this record and holds create rights on Employee Checkin.
+	# Elevating bypassed HRMS's own validation and any site customisation (e.g. a
+	# rule blocking backdated punches) for no benefit.
+	doc.insert()
+
+	updated = _attendance(employee)
+	_publish_to_employee(employee, "attendance_updated", {"today": updated})
+	return updated
 
 
 @frappe.whitelist(methods=["POST"])
@@ -2705,15 +3075,44 @@ def submit_leave(
 	user = _require_login()
 	_require_hrms()
 	_unused_user, employee = _require_employee_user(user)
+
+	start = getdate(from_date)
+	end = getdate(to_date)
+	if end < start:
+		frappe.throw(_("The end date cannot be before the start date."))
+
+	# Refuse blackout dates at application time.
+	#
+	# HRMS only *enforces* its Leave Block List when status becomes "Approved"
+	# (validate_block_days), and at application time merely msgprints a warning
+	# that a REST client never receives. So without this an employee files a
+	# request that looks accepted, plans around it, and has it refused days
+	# later at the approver's desk. Failing here makes the blackout visible at
+	# the moment it applies.
+	blocked = _blocked_dates(employee, leave_type, start, end)
+	if blocked:
+		detail = ", ".join(
+			f"{row['block_date']}" + (f" ({row['reason']})" if row.get("reason") else "")
+			for row in blocked[:5]
+		)
+		more = len(blocked) - 5
+		if more > 0:
+			detail += _(" and {0} more").format(more)
+		frappe.throw(
+			_("Leave cannot be applied for on blocked dates: {0}").format(detail),
+			frappe.ValidationError,
+		)
+
 	doc = frappe.new_doc("Leave Application")
 	doc.employee = employee
 	doc.leave_type = leave_type
-	doc.from_date = getdate(from_date)
-	doc.to_date = getdate(to_date)
+	doc.from_date = start
+	doc.to_date = end
 	doc.description = description
 	doc.half_day = frappe.utils.cint(half_day)
 	doc.status = "Open"
 	doc.insert()
+	_publish("approval_queue_changed", {"doctype": "Leave Application", "name": doc.name})
 	return {"name": doc.name, "status": doc.status, "total_leave_days": doc.total_leave_days}
 
 
@@ -2736,6 +3135,11 @@ def decide_leave(name: str, decision: str, comment: str | None = None) -> dict:
 	doc.submit()
 	if comment:
 		doc.add_comment("Comment", text=comment)
+	# Tell the requester's open tab, and every approver whose queue just shrank.
+	_publish_to_employee(
+		doc.employee, "leave_decided", {"name": doc.name, "status": doc.status}
+	)
+	_publish("approval_queue_changed", {"doctype": "Leave Application", "name": doc.name})
 	return {"name": doc.name, "status": doc.status, "docstatus": doc.docstatus}
 
 
@@ -3638,11 +4042,9 @@ def approval_queue() -> dict:
 	# who name this user as their approver.
 	reports = None
 	if not is_hr:
-		reports = frappe.get_all(
-			"Employee",
-			filters={"leave_approver": user, "status": "Active"},
-			pluck="name",
-		) or ["__none__"]
+		# Same set _decide_one authorises against, so what the inbox lists is
+		# exactly what this user is allowed to decide.
+		reports = sorted(_approver_reports(user)) or ["__none__"]
 
 	rows = []
 	for doctype, source in APPROVAL_SOURCES.items():
@@ -3783,13 +4185,47 @@ def approval_detail(doctype: str, name: str) -> dict:
 	return detail
 
 
+def _approver_reports(user: str) -> set[str]:
+	"""Employees who name this user as their leave approver.
+
+	The fallback authority for request types that carry no approver field of
+	their own — the same set ``approval_queue`` filters those types by, so the
+	inbox and the decision agree on who may act.
+	"""
+	return set(
+		frappe.get_all(
+			"Employee",
+			filters={"leave_approver": user, "status": "Active"},
+			pluck="name",
+		)
+	)
+
+
 def _decide_one(doctype: str, name: str, approve: bool, comment: str | None, user: str, roles: set) -> dict:
 	"""Applies one decision, letting each doctype's own workflow do the work."""
 	doc = frappe.get_doc(doctype, name)
 	is_hr = bool(roles.intersection(HR_ROLES))
-	approver = doc.get(APPROVAL_SOURCES[doctype]["approver_field"] or "")
-	if approver and approver != user and not is_hr:
-		frappe.throw(_("You are not the approver for this request."), frappe.PermissionError)
+	approver_field = APPROVAL_SOURCES[doctype]["approver_field"]
+	approver = doc.get(approver_field) if approver_field else None
+
+	if not is_hr:
+		if approver_field:
+			if approver and approver != user:
+				frappe.throw(
+					_("You are not the approver for this request."), frappe.PermissionError
+				)
+		else:
+			# Attendance and comp-off requests carry no approver field. Without
+			# this branch the guard above was skipped entirely whenever
+			# approver_field was None, so any holder of a MANAGER_ROLES role could
+			# decide any employee's request company-wide. Fall back to the
+			# reporting relationship, exactly as approval_queue does when it
+			# filters these types by `employee in reports`.
+			if doc.get("employee") not in _approver_reports(user):
+				frappe.throw(
+					_("You are not the approver for this request."), frappe.PermissionError
+				)
+
 	if doc.docstatus != 0:
 		frappe.throw(_("{0} has already been decided.").format(name))
 
@@ -3814,10 +4250,15 @@ def _decide_one(doctype: str, name: str, approve: bool, comment: str | None, use
 
 	if comment:
 		doc.add_comment("Comment", text=comment)
+	status = doc.get("status") or doc.get("approval_status") or "Submitted"
+	_publish_to_employee(
+		doc.get("employee"), "request_decided", {"doctype": doctype, "name": doc.name, "status": status}
+	)
+	_publish("approval_queue_changed", {"doctype": doctype, "name": doc.name})
 	return {
 		"name": doc.name,
 		"doctype": doctype,
-		"status": doc.get("status") or doc.get("approval_status") or "Submitted",
+		"status": status,
 	}
 
 
@@ -4034,6 +4475,7 @@ def submit_expense_claim(expenses: str, remark: str | None = None) -> dict:
 			},
 		)
 	claim.insert()
+	_publish("approval_queue_changed", {"doctype": "Expense Claim", "name": claim.name})
 	return {"name": claim.name, "total_claimed_amount": claim.total_claimed_amount}
 
 
