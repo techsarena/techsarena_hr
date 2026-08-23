@@ -18,6 +18,17 @@ function dayClass({ record, holiday, weekend, needsAction }) {
   return null;
 }
 
+export function AttendanceMonthLegend() {
+  return (
+    <div className="cal__legend">
+      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--success)' }} />Present</span>
+      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--accent-400)' }} />Work from home</span>
+      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--primary-400)' }} />Leave</span>
+      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--danger)' }} />Missing punch</span>
+    </div>
+  );
+}
+
 export function AttendanceMonth({ month, days = [], holidays = [], needsAction = [], onPick }) {
   const cells = useMemo(() => {
     const anchor = toDate(month) || new Date();
@@ -83,38 +94,34 @@ export function AttendanceMonth({ month, days = [], holidays = [], needsAction =
               onClick={actionable ? () => onPick(cell.key) : undefined}
               title={[fmtDate(cell.key), rec?.status, cell.holiday?.description].filter(Boolean).join(' · ')}
             >
-              <div className="aday__num">
-                {cell.day}
-                {isToday && <span style={{ marginLeft: 4, fontSize: 9, color: 'var(--accent-700)' }}>TODAY</span>}
+              <div className="aday__top">
+                <span className="aday__num">{cell.day}</span>
+                {isToday && <span className="aday__today">Today</span>}
+                {cell.needsAction && !isToday && <span className="aday__alert" aria-hidden="true">!</span>}
               </div>
 
               {cell.needsAction ? (
-                <div className="aday__note" style={{ color: 'var(--danger)', fontWeight: 600 }}>No check-out</div>
-              ) : cell.holiday ? (
-                <div className="aday__note" style={{ color: 'var(--text-subtle)' }}>
-                  {truthy(cell.holiday.weekly_off) ? 'Weekend' : cell.holiday.description || 'Holiday'}
+                <div className="aday__note aday__note--danger">No check-out</div>
+              ) : cell.holiday && !truthy(cell.holiday.weekly_off) ? (
+                <div className="aday__note aday__note--holiday">
+                  {cell.holiday.description || 'Holiday'}
                 </div>
               ) : times ? (
-                <div className="aday__time">{times}</div>
+                <div className="aday__time">
+                  <span className="aday__range">{times}</span>
+                  {rec?.working_hours ? <span className="aday__hours">{Number(rec.working_hours).toFixed(1)}h</span> : null}
+                </div>
               ) : rec?.status ? (
-                <div className="aday__note" style={{ color: `var(--${statusTone(rec.status) === 'default' ? 'text-muted' : statusTone(rec.status)})` }}>
+                <div
+                  className="aday__note"
+                  style={{ color: `var(--${statusTone(rec.status) === 'default' ? 'text-muted' : statusTone(rec.status)})` }}
+                >
                   {rec.status}
                 </div>
-              ) : null}
-
-              {rec?.working_hours ? (
-                <div className="aday__time">{Number(rec.working_hours).toFixed(1)}h</div>
               ) : null}
             </button>
           );
         })}
-      </div>
-
-      <div className="cal__legend" style={{ marginTop: 'var(--space-4)' }}>
-        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--success)' }} />Present</span>
-        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--accent-400)' }} />Work from home</span>
-        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--primary-400)' }} />Leave</span>
-        <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--danger)' }} />Missing punch</span>
       </div>
     </div>
   );

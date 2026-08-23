@@ -1,133 +1,88 @@
 import { useMemo, useState } from 'react';
 import { useWorkspace } from '../hooks/WorkspaceContext';
-import { Button, Card, Drawer, EmptyState, FieldRow, Stat } from '../components/ui';
-import { DataTable, exportCsv } from '../components/DataTable';
+import { Button, Card, EmptyState } from '../components/ui';
+import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
-import { fmtDate, fmtMoney, fmtRange } from '../api/format';
+import { fmtDate, fmtDateShort, fmtMoney, toDate } from '../api/format';
 
-/* Component rows are hydrated into every slip by the bootstrap payload, so
-   opening an older month shows its real breakdown rather than an empty list. */
-function SlipDrawer({ slip, onClose }) {
-  if (!slip) return null;
-  const earnings = slip.earnings || [];
-  const deductions = slip.deductions || [];
+/** April-start financial year, matching the HRMS default. */
+function fyOf(value) {
+  const d = toDate(value);
+  if (!d) return null;
+  const start = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+  return { key: String(start), label: `FY ${start}–${String(start + 1).slice(2)}` };
+}
 
-  return (
-    <Drawer
-      open
-      onClose={onClose}
-      title={fmtRange(slip.start_date, slip.end_date)}
-      subtitle={`Payslip ${slip.name}`}
-      footer={<Button onClick={() => window.print()}><Icon name="download" size={15} /> Print</Button>}
-    >
-      <div className="stack">
-        <Card className="card--muted">
-          <Stat label="Net pay" value={fmtMoney(slip.net_pay, slip.currency)} meta={`Posted ${fmtDate(slip.posting_date)}`} />
-        </Card>
+const MONTH_FMT = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+const monthLabelOf = (slip) => {
+  const d = toDate(slip.end_date) || toDate(slip.start_date);
+  return d ? MONTH_FMT.format(d) : slip.name;
+};
 
-        <Card title="Earnings" flush>
-          {earnings.length === 0 ? (
-            <EmptyState title="No earning lines" icon="◷" />
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <tbody>
-                  {earnings.map((row, i) => (
-                    <tr key={`${row.salary_component}-${i}`}>
-                      <td>{row.salary_component}</td>
-                      <td className="num">{fmtMoney(row.amount, slip.currency)}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td className="cell-strong">Gross</td>
-                    <td className="num cell-strong">{fmtMoney(slip.gross_pay, slip.currency)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
+/* Frappe renders the payslip itself — asking it for the PDF keeps the
+   downloaded document identical to what the print view shows, rather than a
+   second rendering of the same numbers that could drift from it. */
+function payslipPdfUrl(slip) {
+  const params = new URLSearchParams({
+    doctype: 'Salary Slip',
+    name: slip.name,
+    format: 'Salary Slip',
+    no_letterhead: '0',
+  });
+  return `/api/method/frappe.utils.print_format.download_pdf?${params}`;
+}
 
-        <Card title="Deductions" flush>
-          {deductions.length === 0 ? (
-            <EmptyState title="No deductions" icon="◷" />
-          ) : (
-            <div className="table-wrap">
-              <table className="table">
-                <tbody>
-                  {deductions.map((row, i) => (
-                    <tr key={`${row.salary_component}-${i}`}>
-                      <td>{row.salary_component}</td>
-                      <td className="num">{fmtMoney(row.amount, slip.currency)}</td>
-                    </tr>
-                  ))}
-                  <tr>
-                    <td className="cell-strong">Total</td>
-                    <td className="num cell-strong">{fmtMoney(slip.total_deduction, slip.currency)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          )}
-        </Card>
-
-        <Card title="Details">
-          <FieldRow label="Period" value={fmtRange(slip.start_date, slip.end_date)} />
-          <FieldRow label="Posting date" value={slip.posting_date ? fmtDate(slip.posting_date) : null} />
-          <FieldRow label="Bank" value={slip.bank_name} />
-          <FieldRow label="Currency" value={slip.currency} />
-        </Card>
-      </div>
-    </Drawer>
-  );
+/** A component row's share of its side, for the proportion bar. */
+function shares(rows, total) {
+  const sum = Number(total) || rows.reduce((n, r) => n + Number(r.amount || 0), 0);
+  if (!sum) return [];
+  return rows.map((r) => ({ ...r, pct: (Number(r.amount || 0) / sum) * 100 }));
 }
 
 export default function Salary() {
   const { salarySlips } = useWorkspace();
-  const [open, setOpen] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [fy, setFy] = useState('all');
 
-  const latest = salarySlips[0];
-  const currency = latest?.currency;
+  const years = useMemo(() => {
+    const seen = new Map();
+    for (const slip of salarySlips) {
+      const f = fyOf(slip.end_date || slip.start_date);
+      if (f) seen.set(f.key, f.label);
+    }
+    return [...seen].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [salarySlips]);
 
-  const trend = useMemo(() => {
-    if (salarySlips.length < 2) return null;
-    const [current, previous] = salarySlips;
-    const delta = Number(current.net_pay) - Number(previous.net_pay);
-    if (!delta) return 'Unchanged from last period';
-    return `${delta > 0 ? '+' : ''}${fmtMoney(delta, currency)} vs previous period`;
-  }, [salarySlips, currency]);
-
-  const columns = useMemo(
-    () => [
-      {
-        key: 'start_date',
-        header: 'Period',
-        render: (row) => <span className="cell-strong">{fmtRange(row.start_date, row.end_date)}</span>,
-        sortValue: (row) => row.start_date,
-      },
-      { key: 'posting_date', header: 'Posted', render: (row) => fmtDate(row.posting_date), sortValue: (row) => row.posting_date },
-      { key: 'gross_pay', header: 'Gross', align: 'right', render: (row) => fmtMoney(row.gross_pay, row.currency), sortValue: (row) => Number(row.gross_pay) },
-      { key: 'total_deduction', header: 'Deductions', align: 'right', render: (row) => fmtMoney(row.total_deduction, row.currency), sortValue: (row) => Number(row.total_deduction) },
-      {
-        key: 'net_pay',
-        header: 'Net pay',
-        align: 'right',
-        render: (row) => <span className="cell-strong">{fmtMoney(row.net_pay, row.currency)}</span>,
-        sortValue: (row) => Number(row.net_pay),
-      },
-      { key: 'bank_name', header: 'Bank', render: (row) => row.bank_name || '—' },
-    ],
-    [],
+  const slips = useMemo(
+    () => (fy === 'all'
+      ? salarySlips
+      : salarySlips.filter((s) => fyOf(s.end_date || s.start_date)?.key === fy)),
+    [salarySlips, fy],
   );
 
-  return (
-    <div className="stack">
-      <div className="page-head">
-        <h1 className="page-head__title">Salary</h1>
-        <p className="page-head__sub">Your submitted payslips and their component breakdown</p>
-      </div>
+  // Derived, not stored: a slip the year filter has just hidden falls back to
+  // the newest visible one without an effect round-trip.
+  const active = useMemo(
+    () => slips.find((s) => s.name === selected) || slips[0] || null,
+    [slips, selected],
+  );
 
-      {salarySlips.length === 0 ? (
+  const csvColumns = [
+    { key: 'start_date', header: 'From' },
+    { key: 'end_date', header: 'To' },
+    { key: 'posting_date', header: 'Posted' },
+    { key: 'gross_pay', header: 'Gross' },
+    { key: 'total_deduction', header: 'Deductions' },
+    { key: 'net_pay', header: 'Net pay' },
+  ];
+
+  if (salarySlips.length === 0) {
+    return (
+      <div className="stack">
+        <div className="page-head">
+          <h1 className="page-head__title">Salary</h1>
+          <p className="page-head__sub">Your payslips and their component breakdown</p>
+        </div>
         <Card>
           <EmptyState
             title="No payslips yet"
@@ -135,41 +90,156 @@ export default function Salary() {
             icon={<Icon name="wallet" size={22} />}
           />
         </Card>
-      ) : (
-        <>
-          <div className="grid grid--3">
-            <div className="card">
-              <Stat label="Latest net pay" value={fmtMoney(latest.net_pay, currency)} meta={trend || fmtRange(latest.start_date, latest.end_date)} />
-            </div>
-            <div className="card">
-              <Stat label="Latest gross" value={fmtMoney(latest.gross_pay, currency)} meta={`Deductions ${fmtMoney(latest.total_deduction, currency)}`} />
-            </div>
-            <div className="card">
-              <Stat label="Payslips on record" value={salarySlips.length} meta="Most recent 12 periods" />
-            </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stack">
+      <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div>
+          <h1 className="page-head__title">Salary</h1>
+          <p className="page-head__sub">Your payslips and their component breakdown</p>
+        </div>
+        <div className="row" style={{ gap: 'var(--space-2)' }}>
+          {years.length > 1 && (
+            <select value={fy} onChange={(e) => setFy(e.target.value)} style={{ width: 'auto' }} aria-label="Financial year">
+              <option value="all">All years</option>
+              {years.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          )}
+          <Button size="sm" onClick={() => exportCsv('payslips', csvColumns, slips)}>
+            <Icon name="download" size={14} /> Export CSV
+          </Button>
+        </div>
+      </div>
+
+      <div className="pay-layout">
+        {/* ---- Payslip rail ---- */}
+        <aside className="pay-rail">
+          <div className="pay-rail__label">Payslips</div>
+          <div className="pay-rail__list">
+            {slips.map((slip) => (
+              <button
+                type="button"
+                key={slip.name}
+                className={`pay-rail__item${slip.name === active?.name ? ' is-active' : ''}`}
+                aria-current={slip.name === active?.name}
+                onClick={() => setSelected(slip.name)}
+              >
+                <span className="pay-rail__month">
+                  {monthLabelOf(slip)}
+                  {slip.posting_date && (
+                    <span className="pay-rail__paid">Paid {fmtDateShort(slip.posting_date)}</span>
+                  )}
+                </span>
+                <span className="pay-rail__amount">{fmtMoney(slip.net_pay, slip.currency)}</span>
+              </button>
+            ))}
           </div>
+        </aside>
 
-          <Card
-            flush
-            title="Payslip history"
-            action={
-              <Button size="sm" onClick={() => exportCsv('payslips', columns, salarySlips)}>
-                <Icon name="download" size={14} /> CSV
-              </Button>
-            }
-          >
-            <DataTable
-              columns={columns}
-              rows={salarySlips}
-              onRowClick={setOpen}
-              initialSort={{ key: 'start_date', dir: 'desc' }}
-              emptyTitle="No payslips"
-            />
-          </Card>
-        </>
-      )}
+        {/* ---- Selected payslip ---- */}
+        {active && <PayslipDetail slip={active} />}
+      </div>
+    </div>
+  );
+}
 
-      <SlipDrawer slip={open} onClose={() => setOpen(null)} />
+function PayslipDetail({ slip }) {
+  const currency = slip.currency;
+  const earnings = shares(slip.earnings || [], slip.gross_pay);
+  const deductions = slip.deductions || [];
+
+  return (
+    <div className="stack" style={{ minWidth: 0 }}>
+      {/* ---- Net pay hero ---- */}
+      <div className="pay-hero">
+        <div className="pay-hero__main">
+          <div className="pay-hero__label">Net pay · {monthLabelOf(slip)}</div>
+          <div className="pay-hero__value">{fmtMoney(slip.net_pay, currency)}</div>
+          {/* Only stated when the document actually records it — a payslip with
+              no posting date or bank must not imply it was credited. */}
+          {(slip.posting_date || slip.bank_name) && (
+            <div className="pay-hero__meta">
+              {slip.posting_date ? `Credited ${fmtDate(slip.posting_date)}` : 'Not yet credited'}
+              {slip.bank_name ? ` to ${slip.bank_name}` : ''}
+            </div>
+          )}
+        </div>
+
+        <div className="pay-hero__figures">
+          <div className="pay-hero__figure">
+            <span className="pay-hero__figure-label">Gross</span>
+            <span className="pay-hero__figure-value">{fmtMoney(slip.gross_pay, currency)}</span>
+          </div>
+          <div className="pay-hero__figure">
+            <span className="pay-hero__figure-label">Deductions</span>
+            <span className="pay-hero__figure-value">{fmtMoney(slip.total_deduction, currency)}</span>
+          </div>
+        </div>
+
+        <a className="btn btn--indigo pay-hero__action" href={payslipPdfUrl(slip)} target="_blank" rel="noreferrer">
+          <Icon name="download" size={15} /> Download PDF
+        </a>
+      </div>
+
+      {/* ---- Component breakdown ---- */}
+      <div className="grid grid--2 pay-breakdown">
+        <Card className="pay-panel">
+          <header className="pay-panel__head">
+            <h3 className="card__title">Earnings</h3>
+            <span className="pay-panel__total">{fmtMoney(slip.gross_pay, currency)}</span>
+          </header>
+          {earnings.length === 0 ? (
+            <EmptyState title="No earning lines" body="This payslip records no component rows." icon="◷" />
+          ) : (
+            <>
+              <ul className="pay-lines">
+                {earnings.map((row, i) => (
+                  <li className="pay-line" key={`${row.salary_component}-${i}`}>
+                    <span className="pay-line__name">{row.salary_component}</span>
+                    <span className="pay-line__amount">{fmtMoney(row.amount, currency)}</span>
+                  </li>
+                ))}
+              </ul>
+              {/* Composition of gross at a glance — which components the pay
+                  actually consists of, without a second set of numbers. */}
+              <div className="pay-bar" role="img" aria-label="Share of gross by component">
+                {earnings.map((row, i) => (
+                  <span
+                    key={`${row.salary_component}-${i}`}
+                    className={`pay-bar__seg pay-bar__seg--${i % 4}`}
+                    style={{ width: `${row.pct}%` }}
+                    title={`${row.salary_component} · ${fmtMoney(row.amount, currency)}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+
+        <Card className="pay-panel">
+          <header className="pay-panel__head">
+            <h3 className="card__title">Deductions</h3>
+            <span className="pay-panel__total pay-panel__total--minus">
+              − {fmtMoney(slip.total_deduction, currency)}
+            </span>
+          </header>
+          {deductions.length === 0 ? (
+            <EmptyState title="No deductions" body="Nothing was withheld from this payslip." icon="◷" />
+          ) : (
+            <ul className="pay-lines">
+              {deductions.map((row, i) => (
+                <li className="pay-line" key={`${row.salary_component}-${i}`}>
+                  <span className="pay-line__name">{row.salary_component}</span>
+                  <span className="pay-line__amount">{fmtMoney(row.amount, currency)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }

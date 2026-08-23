@@ -79,11 +79,15 @@ export const hr = {
   expenseClaims: (opts) => call(`${NS}.expense_claims`, undefined, opts),
   submitExpenseClaim: (expenses, remark) =>
     post(`${NS}.submit_expense_claim`, { expenses: JSON.stringify(expenses), remark }),
+  withdrawExpenseClaim: (name) => post(`${NS}.withdraw_expense_claim`, { name }),
 
   /* ---- Hiring ---- */
   jobOpenings: (opts) => call(`${NS}.job_openings`, undefined, opts),
   jobOpeningDetail: (name, opts) => call(`${NS}.job_opening_detail`, { name }, opts),
   employeeOnboarding: (opts) => call(`${NS}.employee_onboarding`, undefined, opts),
+
+  /* ---- Insights ---- */
+  insights: (months, opts) => call(`${NS}.insights`, months ? { months } : undefined, opts),
 
   /* ---- Goals & appraisal ----
      Returns only {goals, appraisals}; rate_goal / submit_self_assessment are

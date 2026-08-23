@@ -296,7 +296,7 @@ export default function Home() {
       </div>
 
       <div className="attribution">
-        {branding?.copyright || 'Techsarena HCM'} · powered by Frappe HRMS
+         Powered by {branding?.copyright || 'Techsarena HCM'}
       </div>
     </div>
   );

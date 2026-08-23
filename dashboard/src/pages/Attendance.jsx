@@ -4,12 +4,12 @@ import { useAsync } from '../hooks/useAsync';
 import { useToast } from '../hooks/useToast';
 import { Async, Button, Card, Drawer, Field, Pill, Tabs } from '../components/ui';
 import { DataTable, exportCsv } from '../components/DataTable';
-import { AttendanceMonth } from '../components/AttendanceMonth';
+import { AttendanceMonth, AttendanceMonthLegend } from '../components/AttendanceMonth';
 import PunchHero from '../components/PunchHero';
 import { Icon } from '../components/Icon';
 import {
   fmtDate, fmtDateShort, fmtNumber, fmtRange, fmtTime,
-  isoDate, monthKey, monthLabel, shiftMonth, statusTone,
+  isoDate, monthKey, monthLabel, shiftMonth, statusTone, toDate,
 } from '../api/format';
 
 /* ---------- Regularisation drawer ---------- */
@@ -149,6 +149,24 @@ function ShiftDrawer({ open, onClose, onDone }) {
   );
 }
 
+/** "AUGUST SO FAR · 1–7" — the eyebrow the summary card wears. The range ends
+ *  on the last day actually recorded, so a past month reads 1–31 while the
+ *  current one stops at today. */
+function monthSoFarLabel(month, monthStart, days) {
+  const name = monthLabel(month).replace(/\s+\d{4}$/, '');
+  const last = days.length ? toDate(days[days.length - 1].attendance_date) : null;
+  const start = toDate(monthStart || month);
+  if (!last || !start) return `${name} so far`;
+  return `${name} so far · ${start.getDate()}–${last.getDate()}`;
+}
+
+/** Decimal hours as "8h 24m" — the same voice as the punch clock. */
+function fmtHours(hours) {
+  const total = Math.round(Number(hours) * 60);
+  if (!Number.isFinite(total) || total <= 0) return '—';
+  return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, '0')}m`;
+}
+
 export default function Attendance() {
   const [month, setMonth] = useState(() => monthKey());
   const [view, setView] = useState('calendar');
@@ -244,10 +262,12 @@ export default function Attendance() {
                         { id: 'ledger', label: 'Ledger', count: days.length },
                       ]}
                     />
-                    {view === 'ledger' && (
+                    {view === 'ledger' ? (
                       <Button size="sm" onClick={() => exportCsv(`attendance-${month}`, columns, days)}>
                         <Icon name="download" size={14} /> CSV
                       </Button>
+                    ) : (
+                      <AttendanceMonthLegend />
                     )}
                   </div>
                   <div style={{ padding: '0 var(--space-5) var(--space-5)' }}>
@@ -274,10 +294,11 @@ export default function Attendance() {
 
                 <div className="split__rail">
                   <Card
-                    title={`${monthLabel(month)} so far`}
+                    title={monthSoFarLabel(month, data.month_start, days)}
+                    className="card--eyebrow"
                     action={
                       summary.average_hours
-                        ? <span className="small subtle tabular">{fmtNumber(summary.average_hours)}h avg</span>
+                        ? <span className="stat-aside tabular">{fmtHours(summary.average_hours)} avg</span>
                         : null
                     }
                   >
@@ -334,12 +355,18 @@ export default function Attendance() {
                           <div className="row row--between" key={row.date}>
                             <div className="truncate">
                               <div className="small" style={{ fontWeight: 600 }}>{fmtDateShort(row.date)}</div>
-                              <div className="small subtle truncate">
-                                {row.shift?.shift_type || (row.holiday ? '—' : 'No shift assigned')}
-                              </div>
+                              {row.holiday ? null : (
+                                <div className="small subtle truncate">
+                                  {row.shift?.shift_type || 'No shift assigned'}
+                                </div>
+                              )}
                             </div>
                             {row.holiday ? (
-                              <Pill tone="warning">{row.weekly_off ? 'Weekly off' : 'Holiday'}</Pill>
+                              <Pill tone="warning">
+                                {row.weekly_off
+                                  ? 'Weekly off'
+                                  : `Holiday${row.holiday.description ? ` · ${row.holiday.description}` : ''}`}
+                              </Pill>
                             ) : row.shift?.start_time && row.shift?.end_time ? (
                               <span className="small subtle tabular">
                                 {String(row.shift.start_time).slice(0, 5)} – {String(row.shift.end_time).slice(0, 5)}
@@ -360,9 +387,9 @@ export default function Attendance() {
                           <div className="row row--between" key={row.name}>
                             <div className="truncate">
                               <div className="small truncate" style={{ fontWeight: 600 }}>
-                                {row.reason || row.leave_type || 'Request'}
+                                {row.kind || 'Request'} · {fmtRange(row.from_date, row.to_date)}
                               </div>
-                              <div className="small subtle truncate">{fmtRange(row.from_date, row.to_date)}</div>
+                              <div className="small subtle truncate">{row.detail || row.explanation || '—'}</div>
                             </div>
                             <Pill tone={statusTone(row.status)}>{row.status || 'Pending'}</Pill>
                           </div>

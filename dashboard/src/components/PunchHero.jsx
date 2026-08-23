@@ -3,7 +3,9 @@ import hr from '../api/hr';
 import { useToast } from '../hooks/useToast';
 import { Button } from './ui';
 import { Icon } from './Icon';
-import { fmtDuration, fmtTime } from '../api/format';
+import { fmtDuration, fmtTime, toDate } from '../api/format';
+
+const HERO_DATE = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
 /** Seconds in a shift window like "09:00:00"–"18:00:00". Returns null when
  *  either end is unset, so the progress bar is simply omitted rather than
@@ -62,12 +64,18 @@ export default function PunchHero({ today, defaultShift, onDone }) {
     }
   };
 
+  const state = checkedIn ? 'Checked in' : today?.first_in ? 'Checked out' : 'Not checked in';
+  const stamp = toDate(today?.first_in) || new Date();
+  const shiftName = today?.shift || defaultShift?.shift_type;
+  const shiftWindow = defaultShift?.start_time && defaultShift?.end_time
+    ? `${String(defaultShift.start_time).slice(0, 5)} – ${String(defaultShift.end_time).slice(0, 5)}`
+    : null;
+  const flags = [today?.late_entry ? 'Late in' : null, today?.early_exit ? 'Early out' : null].filter(Boolean);
+
   return (
     <div className="punch">
       <div className="punch__lead">
-        <div className="punch__label">
-          {checkedIn ? 'Checked in' : today?.first_in ? 'Checked out' : 'Not checked in'}
-        </div>
+        <div className="punch__label">{state} · {HERO_DATE.format(stamp)}</div>
         <div className="punch__clock">
           {fmtDuration(worked)}
           {target && <span className="punch__of">of {fmtDuration(target)}</span>}
@@ -78,35 +86,26 @@ export default function PunchHero({ today, defaultShift, onDone }) {
       </div>
 
       <div className="punch__facts">
-        <div>
+        <div className="punch__fact">
           <div className="punch__fact-label">In</div>
           <div className="punch__fact-value">{today?.first_in ? fmtTime(today.first_in) : '—'}</div>
+          <div className="punch__fact-meta">{today?.last_log ? `Last log ${fmtTime(today.last_log)}` : ' '}</div>
         </div>
-        <div>
-          <div className="punch__fact-label">Last log</div>
-          <div className="punch__fact-value">{today?.last_log ? fmtTime(today.last_log) : '—'}</div>
-        </div>
-        <div>
+        <div className="punch__fact">
           <div className="punch__fact-label">Shift</div>
-          <div className="punch__fact-value">{today?.shift || defaultShift?.shift_type || '—'}</div>
-          {defaultShift?.start_time && defaultShift?.end_time && (
-            <div className="punch__fact-meta">
-              {String(defaultShift.start_time).slice(0, 5)} – {String(defaultShift.end_time).slice(0, 5)}
-            </div>
-          )}
+          <div className="punch__fact-value">{shiftName || '—'}</div>
+          <div className="punch__fact-meta">{shiftWindow || ' '}</div>
         </div>
-        {(today?.late_entry || today?.early_exit) && (
-          <div>
+        {flags.length > 0 && (
+          <div className="punch__fact">
             <div className="punch__fact-label">Flags</div>
-            <div className="punch__fact-value">
-              {[today.late_entry ? 'Late in' : null, today.early_exit ? 'Early out' : null]
-                .filter(Boolean).join(' · ')}
-            </div>
+            <div className="punch__fact-value punch__fact-value--warn">{flags.join(' · ')}</div>
           </div>
         )}
       </div>
 
       <Button
+        className="punch__action"
         variant={checkedIn ? 'indigo' : 'primary'}
         onClick={() => punch(checkedIn ? 'OUT' : 'IN')}
         disabled={busy}

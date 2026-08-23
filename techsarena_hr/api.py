@@ -468,6 +468,105 @@ def _hr_summary() -> dict:
 	}
 
 
+def _headcount_movement(months: int = 12) -> list[dict]:
+	"""Joiners and leavers per month, oldest first.
+
+	Counted from ``date_of_joining`` and ``relieving_date`` on Employee, which is
+	the only record of movement a stock HRMS keeps.  Employees are counted in the
+	month the event falls in regardless of current status, so someone who joined
+	and left inside the window still shows on both series.
+	"""
+	today = getdate(nowdate())
+	buckets: list[dict] = []
+	for offset in range(months - 1, -1, -1):
+		start = get_first_day(add_months(today, -offset))
+		end = get_last_day(start)
+		buckets.append(
+			{
+				"month": str(start),
+				"joiners": frappe.db.count(
+					"Employee", {"date_of_joining": ["between", [start, end]]}
+				),
+				"exits": frappe.db.count(
+					"Employee", {"relieving_date": ["between", [start, end]]}
+				),
+			}
+		)
+	return buckets
+
+
+def _attrition(movement: list[dict], headcount: int) -> dict:
+	"""Exits over the window against average headcount.
+
+	Average headcount is approximated as the current active count plus the exits
+	in the window, halved with the current count -- the standard mid-period
+	denominator.  Returned as ``None`` rather than 0 when there is nothing to
+	divide by, so the client can omit the figure instead of showing a false 0%.
+	"""
+	exits = sum(cint(row["exits"]) for row in movement)
+	start_headcount = headcount + exits - sum(cint(row["joiners"]) for row in movement)
+	average = (headcount + start_headcount) / 2
+	if average <= 0:
+		return {"rate": None, "exits": exits}
+	return {"rate": round((exits / average) * 100, 1), "exits": exits}
+
+
+def _applicant_funnel() -> list[dict]:
+	"""Candidates by stage across every opening.
+
+	Job Applicant is optional in a stock install, so a site without it returns an
+	empty funnel rather than erroring.
+	"""
+	if not frappe.db.table_exists("Job Applicant"):
+		return []
+	rows = frappe.get_all(
+		"Job Applicant",
+		fields=["status", "count(name) as total"],
+		group_by="status",
+		limit_page_length=0,
+	)
+	return [{"stage": row.status or "Open", "count": cint(row.total)} for row in rows]
+
+
+@frappe.whitelist()
+def insights(months: int = 12) -> dict:
+	"""Workforce analytics for the Insights screen.
+
+	Everything here is derived from records the site already keeps -- no figure is
+	synthesised.  A section the site cannot answer (no recruitment module, no
+	payroll entry open) comes back empty so the client can omit that card rather
+	than render a plausible-looking zero.
+	"""
+	_require_hr_access()
+	_require_hrms()
+
+	months = max(1, min(cint(months) or 12, 24))
+	headcount = frappe.db.count("Employee", {"status": "Active"})
+	movement = _headcount_movement(months)
+
+	departments = [
+		{"name": row.department or _("Unassigned"), "count": cint(row.total)}
+		for row in frappe.get_all(
+			"Employee",
+			filters={"status": "Active"},
+			fields=["department", "count(name) as total"],
+			group_by="department",
+			order_by="total desc",
+			limit_page_length=0,
+		)
+	]
+
+	return {
+		"months": months,
+		"headcount": headcount,
+		"movement": movement,
+		"attrition": _attrition(movement, headcount),
+		"departments": departments,
+		"funnel": _applicant_funnel(),
+		"summary": _hr_summary(),
+	}
+
+
 def _require_settings_access(user: str | None = None) -> tuple[str, set[str]]:
 	"""Allow the setup hub to the roles represented by its cards."""
 	user = user or _require_login()
@@ -3458,6 +3557,10 @@ def expense_claims() -> dict:
 			"remark",
 			"company",
 			"docstatus",
+			"expense_approver",
+			"creation",
+			"modified",
+			"total_advance_amount",
 		],
 		order_by="posting_date desc, creation desc",
 		limit_page_length=50,
@@ -3482,8 +3585,46 @@ def expense_claims() -> dict:
 		):
 			lines.setdefault(row.parent, []).append(row)
 
+	# Receipts are ordinary Frappe File attachments; fetched in one query and
+	# grouped, so a claim can list what backs it up without a query per row.
+	receipts: dict[str, list[dict]] = {}
+	if claims:
+		for row in frappe.get_all(
+			"File",
+			filters={
+				"attached_to_doctype": "Expense Claim",
+				"attached_to_name": ["in", [claim.name for claim in claims]],
+			},
+			fields=["attached_to_name", "file_name", "file_url", "file_size", "is_private"],
+			order_by="creation asc",
+			limit_page_length=0,
+		):
+			receipts.setdefault(row.attached_to_name, []).append(
+				{
+					"file_name": row.file_name,
+					"file_url": row.file_url,
+					"file_size": cint(row.file_size),
+					"is_private": cint(row.is_private),
+				}
+			)
+
+	approver_names = {claim.expense_approver for claim in claims if claim.get("expense_approver")}
+	approvers = {}
+	if approver_names:
+		approvers = {
+			row.name: row.full_name
+			for row in frappe.get_all(
+				"User",
+				filters={"name": ["in", sorted(approver_names)]},
+				fields=["name", "full_name"],
+				limit_page_length=0,
+			)
+		}
+
 	for claim in claims:
 		claim["expenses"] = lines.get(claim.name, [])
+		claim["receipts"] = receipts.get(claim.name, [])
+		claim["expense_approver_name"] = approvers.get(claim.get("expense_approver"))
 
 	return {
 		"claims": claims,
@@ -3491,6 +3632,33 @@ def expense_claims() -> dict:
 		"currency": frappe.db.get_value("Company", frappe.defaults.get_user_default("Company"), "default_currency")
 		or frappe.db.get_single_value("Global Defaults", "default_currency"),
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def withdraw_expense_claim(name: str) -> dict:
+	"""Cancels one of the signed-in employee's own claims.
+
+	A draft is deleted outright; a submitted claim is cancelled, which is what
+	HRMS allows an employee to undo.  Anything already approved or reimbursed is
+	refused -- that is an accounting reversal, not a withdrawal.
+	"""
+	user = _require_login()
+	_require_hrms()
+	_unused_user, employee = _require_employee_user(user)
+
+	claim = frappe.get_doc("Expense Claim", name)
+	if claim.employee != employee:
+		frappe.throw(_("You can only withdraw your own claims."), frappe.PermissionError)
+	if claim.approval_status == "Approved" or flt(claim.total_amount_reimbursed):
+		frappe.throw(_("This claim has already been approved and cannot be withdrawn."))
+	if claim.docstatus == 2:
+		frappe.throw(_("This claim has already been withdrawn."))
+
+	if claim.docstatus == 0:
+		claim.delete()
+		return {"name": name, "deleted": True}
+	claim.cancel()
+	return {"name": name, "deleted": False}
 
 
 @frappe.whitelist(methods=["POST"])
