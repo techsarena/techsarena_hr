@@ -200,13 +200,384 @@ function PayrollTabs({ value, onChange, registerCount }) {
   );
 }
 
+/* ---------- Step 1: build (or submit) a salary structure ---------- */
+function StructureStep({ onDone }) {
+  const toast = useToast();
+  const components = useAsync(({ signal }) => hr.salaryComponents({ signal }), []);
+  const drafts = useAsync(({ signal }) => hr.draftSalaryStructures({ signal }), []);
+  const [name, setName] = useState('');
+  const [earnings, setEarnings] = useState([{ salary_component: '', amount: '' }]);
+  const [deductions, setDeductions] = useState([]);
+  const [busy, setBusy] = useState(false);
+
+  const earningOptions = components.data?.earnings || [];
+  const deductionOptions = components.data?.deductions || [];
+  const draftRows = drafts.data || [];
+
+  const setRow = (list, setList, index, field, value) =>
+    setList(list.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  const addRow = (list, setList) => setList([...list, { salary_component: '', amount: '' }]);
+  const dropRow = (list, setList, index) => setList(list.filter((unused, i) => i !== index));
+
+  const submitDraft = async (structure) => {
+    setBusy(true);
+    try {
+      await hr.submitSalaryStructure(structure);
+      toast.success(`${structure} submitted — it can now be assigned.`);
+      onDone?.();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const create = async () => {
+    setBusy(true);
+    try {
+      const clean = (list) =>
+        list
+          .filter((row) => row.salary_component)
+          .map((row) => ({ salary_component: row.salary_component, amount: Number(row.amount) || 0 }));
+      const result = await hr.createSalaryStructure({
+        structure_name: name.trim(),
+        earnings: clean(earnings),
+        deductions: clean(deductions),
+        submit: 1,
+      });
+      toast.success(`${result.name} created and submitted.`);
+      onDone?.();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rowsFor = (list, setList, options, label) => (
+    <div className="stack">
+      <strong className="small">{label}</strong>
+      {list.length === 0 && <p className="small subtle">None added.</p>}
+      {list.map((row, index) => (
+        // eslint-disable-next-line react/no-array-index-key
+        <div className="payroll-comp-row" key={index}>
+          <select
+            value={row.salary_component}
+            onChange={(event) => setRow(list, setList, index, 'salary_component', event.target.value)}
+          >
+            <option value="">Select component…</option>
+            {options.map((option) => (
+              <option key={option.name} value={option.name}>{option.name}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min="0"
+            placeholder="Amount"
+            value={row.amount}
+            onChange={(event) => setRow(list, setList, index, 'amount', event.target.value)}
+          />
+          <Button size="icon" onClick={() => dropRow(list, setList, index)} aria-label="Remove">
+            <Icon name="close" size={14} />
+          </Button>
+        </div>
+      ))}
+      <Button size="sm" onClick={() => addRow(list, setList)}>
+        <Icon name="plus" size={13} /> Add {label.toLowerCase()}
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="stack">
+      {draftRows.length > 0 && (
+        <div className="payroll-alert payroll-alert--warning">
+          <strong>You already have a draft structure</strong>
+          <p>Submitting it is faster than building a new one — a draft cannot be assigned.</p>
+          <div className="payroll-actions payroll-actions--wrap" style={{ marginTop: 8 }}>
+            {draftRows.map((row) => (
+              <Button key={row.name} variant="indigo" size="sm" disabled={busy} onClick={() => submitDraft(row.name)}>
+                Submit “{row.name}”
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <label className="payroll-field">
+        New structure name
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Standard Monthly" />
+      </label>
+
+      {rowsFor(earnings, setEarnings, earningOptions, 'Earnings')}
+      {rowsFor(deductions, setDeductions, deductionOptions, 'Deductions')}
+
+      <div className="row row--between">
+        <p className="small subtle">Creating submits the structure so it is immediately assignable.</p>
+        <Button
+          variant="indigo"
+          disabled={busy || !name.trim() || !earnings.some((row) => row.salary_component)}
+          onClick={create}
+        >
+          {busy ? 'Creating…' : 'Create & submit'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** Assigns a salary structure to the employees who have none, without
+ *  leaving the dashboard. Structures come from the server already filtered to
+ *  submitted+active ones, so an unassignable draft never appears here. */
+function AssignStep({ onDone }) {
+  const toast = useToast();
+  const structures = useAsync(({ signal }) => hr.salaryStructures({ signal }), []);
+  const people = useAsync(({ signal }) => hr.unassignedEmployees({ signal }), []);
+  const [structure, setStructure] = useState('');
+  const [base, setBase] = useState('');
+  const [picked, setPicked] = useState(() => new Set());
+  const [busy, setBusy] = useState(false);
+
+  const rows = people.data || [];
+  const options = structures.data || [];
+
+  const toggle = (name) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
+  const assign = async () => {
+    setBusy(true);
+    // Assign one at a time so a single bad row cannot void the whole batch,
+    // and report exactly which employees failed.
+    const failed = [];
+    for (const employee of picked) {
+      try {
+        await hr.assignSalaryStructure(employee, structure, base || 0);
+      } catch (error) {
+        failed.push(`${employee}: ${error.message}`);
+      }
+    }
+    setBusy(false);
+    const done = picked.size - failed.length;
+    if (done > 0) toast.success(`Assigned ${done} employee${done === 1 ? '' : 's'}.`);
+    if (failed.length) toast.error(failed[0]);
+    if (done > 0) {
+      setPicked(new Set());
+      people.reload();
+      onDone?.();
+    }
+  };
+
+  return (
+    <div className="stack">
+        {options.length === 0 ? (
+          <div className="payroll-alert payroll-alert--warning">
+            <strong>No submitted salary structure</strong>
+            <p>
+              A salary structure must be created and submitted before it can be assigned.
+              Create one in Payroll settings, then come back here.
+            </p>
+          </div>
+        ) : (
+          <>
+            <label className="payroll-field">
+              Salary structure
+              <select value={structure} onChange={(event) => setStructure(event.target.value)}>
+                <option value="">Select a structure…</option>
+                {options.map((row) => (
+                  <option key={row.name} value={row.name}>
+                    {row.name}{row.currency ? ` (${row.currency})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="payroll-field">
+              Base amount <span className="subtle">— optional, applies to everyone selected</span>
+              <input
+                type="number"
+                min="0"
+                value={base}
+                onChange={(event) => setBase(event.target.value)}
+                placeholder="Leave blank to use the structure's own base"
+              />
+            </label>
+
+            {rows.length === 0 ? (
+              <p className="small subtle">Every active employee already has an assignment.</p>
+            ) : (
+              <>
+                <div className="row row--between">
+                  <strong className="small">{rows.length} unassigned</strong>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setPicked((prev) =>
+                        prev.size === rows.length ? new Set() : new Set(rows.map((r) => r.name)),
+                      )
+                    }
+                  >
+                    {picked.size === rows.length ? 'Clear all' : 'Select all'}
+                  </Button>
+                </div>
+                <div className="payroll-assign-list">
+                  {rows.map((row) => (
+                    <label className="payroll-assign-row" key={row.name}>
+                      <input
+                        type="checkbox"
+                        checked={picked.has(row.name)}
+                        onChange={() => toggle(row.name)}
+                      />
+                      <span className="truncate">
+                        <strong>{row.employee_name}</strong>
+                        <em className="subtle">{row.department || row.designation || row.name}</em>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="row row--between">
+                  <p className="small subtle">
+                    Assignments are backdated to each employee&apos;s joining date so the
+                    current period is covered.
+                  </p>
+                  <Button
+                    variant="indigo"
+                    onClick={assign}
+                    disabled={busy || !structure || picked.size === 0}
+                  >
+                    {busy ? 'Assigning…' : `Assign ${picked.size || ''}`.trim()}
+                  </Button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+    </div>
+  );
+}
+
+/* ---------- Step: add a salary component ---------- */
+function ComponentStep({ onDone }) {
+  const toast = useToast();
+  const components = useAsync(({ signal }) => hr.salaryComponents({ signal }), []);
+  const [name, setName] = useState('');
+  const [type, setType] = useState('Earning');
+  const [busy, setBusy] = useState(false);
+
+  const existing = [...(components.data?.earnings || []), ...(components.data?.deductions || [])];
+
+  const create = async () => {
+    setBusy(true);
+    try {
+      await hr.createSalaryComponent(name.trim(), type);
+      toast.success(`${name.trim()} added.`);
+      setName('');
+      components.reload();
+      onDone?.();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="stack">
+      <p className="small subtle">
+        {existing.length} component{existing.length === 1 ? '' : 's'} configured:{' '}
+        {existing.map((row) => row.name).join(', ') || 'none yet'}
+      </p>
+      <div className="payroll-comp-row">
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Component name" />
+        <select value={type} onChange={(event) => setType(event.target.value)}>
+          <option>Earning</option>
+          <option>Deduction</option>
+        </select>
+        <Button variant="indigo" disabled={busy || !name.trim()} onClick={create}>
+          {busy ? 'Adding…' : 'Add'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- The guided setup, all in-app ---------- */
+const STEP_TITLES = {
+  components: 'Salary components',
+  structures: 'Salary structure',
+  assignments: 'Assign employees',
+  payable: 'Payment account',
+};
+
+function SetupWizard({ open, onClose, checks, onChanged }) {
+  const [step, setStep] = useState(null);
+  if (!open) return null;
+
+  // Open on the first unfinished step so the user lands where the work is.
+  const order = ['components', 'structures', 'assignments', 'payable'];
+  const byId = Object.fromEntries(checks.map((check) => [check.id, check]));
+  const active = step || order.find((id) => byId[id] && !byId[id].done) || 'components';
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Set up payroll"
+      subtitle="Complete each step here — nothing needs the Desk UI"
+      footer={<Button onClick={onClose}>Close</Button>}
+    >
+      <div className="payroll-wizard">
+        <div className="payroll-wizard__steps">
+          {order.filter((id) => byId[id]).map((id, index) => (
+            <button
+              type="button"
+              key={id}
+              className={`payroll-wizard__step${active === id ? ' is-active' : ''}${byId[id].done ? ' is-done' : ''}`}
+              onClick={() => setStep(id)}
+            >
+              <span>{byId[id].done ? <Icon name="check" size={13} /> : index + 1}</span>
+              {STEP_TITLES[id]}
+            </button>
+          ))}
+        </div>
+
+        <div className="payroll-wizard__body">
+          {active === 'components' && <ComponentStep onDone={onChanged} />}
+          {active === 'structures' && <StructureStep onDone={onChanged} />}
+          {active === 'assignments' && <AssignStep onDone={onChanged} />}
+          {active === 'payable' && (
+            <div className="stack">
+              <p className="small">
+                {byId.payable?.done
+                  ? byId.payable.body
+                  : 'A default payroll payable account must be set on the Company record before slips can be submitted. This one lives in ERPNext company accounting settings.'}
+              </p>
+              {!byId.payable?.done && (
+                <Button onClick={() => { window.location.href = '/app/payroll-settings'; }}>
+                  Open payroll settings
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function EmptyPayroll({ onCreate }) {
-  const checks = [
-    ['Salary structures assigned', 'Employees with salary assignments are ready.', true],
-    ['Attendance locked for the period', 'Closed attendance keeps loss-of-pay days final.', true],
-    ['Salary components configured', 'Earnings and deductions are ready to calculate.', true],
-    ['Payment account not set', 'A payable account is needed before submission.', false],
-  ];
+  const readiness = useAsync(({ signal }) => hr.payrollReadiness({ signal }), []);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const data = readiness.data;
+  const checks = data?.checks || [];
+  const ready = data?.ready ?? false;
+
+  // Every step is completed in-app; the wizard opens on the one that is due.
+  const runAction = () => setSetupOpen(true);
 
   return (
     <div className="payroll-page payroll-page--empty">
@@ -230,14 +601,17 @@ function EmptyPayroll({ onCreate }) {
             <div className="payroll-empty-copy">
               <h2>No payroll has been run yet</h2>
               <p>
-                Everything the first run needs is already in place. Creating a payroll entry generates a draft salary
-                slip for every employee, which you can review before submitting.
+                {ready
+                  ? 'Everything the first run needs is in place. Creating a payroll entry generates a draft salary slip for every employee, which you can review before submitting.'
+                  : `${data?.unassigned_employees || 0} of ${data?.active_employees || 0} active employees cannot be paid yet. Finish the steps below, then create the run.`}
               </p>
               <div className="payroll-actions payroll-actions--wrap">
-                <Button variant="indigo" onClick={onCreate}>
+                <Button variant="indigo" onClick={onCreate} disabled={!ready}>
                   <Icon name="plus" size={15} /> Create payroll for this month
                 </Button>
-                <Button>Import last year&apos;s runs</Button>
+                {!ready && (
+                  <Button onClick={() => setSetupOpen(true)}>Set up payroll</Button>
+                )}
               </div>
             </div>
           </section>
@@ -245,18 +619,28 @@ function EmptyPayroll({ onCreate }) {
           <section className="payroll-panel payroll-checklist">
             <header>
               <h3>Before the first run</h3>
-              <Pill tone="info">3 of 4 ready</Pill>
+              <Pill tone={ready ? 'success' : 'warning'}>
+                {readiness.loading ? 'Checking…' : `${data?.ready_count ?? 0} of ${checks.length || 4} ready`}
+              </Pill>
             </header>
-            {checks.map(([title, body, done], index) => (
-              <div className={`payroll-check${done ? ' is-done' : ' is-warning'}`} key={title}>
-                <span>{done ? <Icon name="check" size={15} /> : index + 1}</span>
-                <div>
-                  <strong>{title}</strong>
-                  <p>{body}</p>
+            <Async state={readiness} rows={4}>
+              {() => checks.map((check, index) => (
+                <div className={`payroll-check${check.done ? ' is-done' : ' is-warning'}`} key={check.id}>
+                  <span>{check.done ? <Icon name="check" size={15} /> : index + 1}</span>
+                  <div>
+                    <strong>{check.title}</strong>
+                    <p>{check.body}</p>
+                  </div>
+                  {check.done ? (
+                    <em>Done</em>
+                  ) : (
+                    <Button size="sm" onClick={runAction}>
+                      {check.action_label}
+                    </Button>
+                  )}
                 </div>
-                <em>{done ? 'Done' : 'Set account'}</em>
-              </div>
-            ))}
+              ))}
+            </Async>
           </section>
         </div>
 
@@ -265,7 +649,12 @@ function EmptyPayroll({ onCreate }) {
             <h3>What the run will cover</h3>
             <div className="payroll-facts">
               <span>Period</span><strong>This month</strong>
-              <span>Employees</span><strong>All active</strong>
+              <span>Employees</span>
+              <strong>
+                {data
+                  ? `${data.assigned_employees} of ${data.active_employees} assigned`
+                  : 'All active'}
+              </strong>
               <span>Estimated gross</span><strong>Calculated on create</strong>
               <span>Pay day</span><strong>Period end</strong>
             </div>
@@ -286,6 +675,13 @@ function EmptyPayroll({ onCreate }) {
           </section>
         </aside>
       </div>
+
+      <SetupWizard
+        open={setupOpen}
+        onClose={() => setSetupOpen(false)}
+        checks={checks}
+        onChanged={readiness.reload}
+      />
     </div>
   );
 }

@@ -78,6 +78,16 @@ export function fmtDuration(seconds) {
   return `${hours}h ${String(mins).padStart(2, '0')}m`;
 }
 
+/** Like fmtDuration but drops a zero hour: "38m" rather than "0h 38m".
+ *  Used where a short span is the point (a break), not elapsed shift time. */
+export function fmtDurationShort(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const mins = Math.floor((total % 3600) / 60);
+  if (!hours) return `${mins}m`;
+  return `${hours}h ${String(mins).padStart(2, '0')}m`;
+}
+
 export function initials(name) {
   if (!name) return '?';
   const parts = String(name).trim().split(/\s+/).filter(Boolean);

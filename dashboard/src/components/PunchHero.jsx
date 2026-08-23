@@ -3,7 +3,7 @@ import hr from '../api/hr';
 import { useToast } from '../hooks/useToast';
 import { Button } from './ui';
 import { Icon } from './Icon';
-import { fmtDuration, fmtTime, toDate } from '../api/format';
+import { fmtDuration, fmtDurationShort, fmtTime, toDate } from '../api/format';
 
 const HERO_DATE = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -64,6 +64,7 @@ export default function PunchHero({ today, defaultShift, onDone }) {
     }
   };
 
+  const breakSeconds = Number(today?.break_seconds) || 0;
   const state = checkedIn ? 'Checked in' : today?.first_in ? 'Checked out' : 'Not checked in';
   const stamp = toDate(today?.first_in) || new Date();
   const shiftName = today?.shift || defaultShift?.shift_type;
@@ -89,8 +90,17 @@ export default function PunchHero({ today, defaultShift, onDone }) {
         <div className="punch__fact">
           <div className="punch__fact-label">In</div>
           <div className="punch__fact-value">{today?.first_in ? fmtTime(today.first_in) : '—'}</div>
-          <div className="punch__fact-meta">{today?.last_log ? `Last log ${fmtTime(today.last_log)}` : ' '}</div>
+          <div className="punch__fact-meta">
+            {today?.location || (today?.last_log ? `Last log ${fmtTime(today.last_log)}` : ' ')}
+          </div>
         </div>
+        {breakSeconds > 0 && (
+          <div className="punch__fact">
+            <div className="punch__fact-label">Break</div>
+            <div className="punch__fact-value">{fmtDurationShort(breakSeconds)}</div>
+            <div className="punch__fact-meta">{' '}</div>
+          </div>
+        )}
         <div className="punch__fact">
           <div className="punch__fact-label">Shift</div>
           <div className="punch__fact-value">{shiftName || '—'}</div>

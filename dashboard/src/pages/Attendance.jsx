@@ -302,20 +302,20 @@ export default function Attendance() {
                         : null
                     }
                   >
-                    <div className="row" style={{ gap: 'var(--space-6)', flexWrap: 'wrap' }}>
-                      <div>
-                        <div className="stat__value" style={{ fontSize: 22 }}>{summary.days_present ?? 0}</div>
-                        <div className="stat__label">Present</div>
+                    <div className="rail-stats">
+                      <div className="rail-stats__item">
+                        <div className="rail-stats__value">{summary.days_present ?? 0}</div>
+                        <div className="rail-stats__label">Present</div>
                       </div>
-                      <div>
-                        <div className="stat__value" style={{ fontSize: 22 }}>{summary.work_from_home ?? 0}</div>
-                        <div className="stat__label">WFH</div>
+                      <div className="rail-stats__item">
+                        <div className="rail-stats__value">{summary.work_from_home ?? 0}</div>
+                        <div className="rail-stats__label">WFH</div>
                       </div>
-                      <div>
-                        <div className="stat__value" style={{ fontSize: 22, color: summary.on_leave ? 'var(--warning)' : undefined }}>
+                      <div className="rail-stats__item">
+                        <div className={`rail-stats__value${summary.on_leave ? ' rail-stats__value--warn' : ''}`}>
                           {summary.on_leave ?? 0}
                         </div>
-                        <div className="stat__label">On leave</div>
+                        <div className="rail-stats__label">On leave</div>
                       </div>
                     </div>
                   </Card>
@@ -327,9 +327,9 @@ export default function Attendance() {
                     >
                       <div className="stack">
                         {needsAction.map((row) => (
-                          <div className="callout callout--danger" key={row.date} style={{ display: 'block' }}>
-                            <div style={{ fontWeight: 600 }}>{row.reason} · {fmtDateShort(row.date)}</div>
-                            <p className="small" style={{ marginTop: 3 }}>
+                          <div className="callout callout--danger callout--action" key={row.date}>
+                            <div className="callout__head">{row.reason} · {fmtDateShort(row.date)}</div>
+                            <p className="small callout__body">
                               {row.in_time ? `Checked in ${fmtTime(row.in_time)}, no closing punch.` : 'No closing punch recorded.'}
                             </p>
                             <Button
@@ -352,26 +352,26 @@ export default function Attendance() {
                     ) : (
                       <div className="stack">
                         {upcoming.map((row) => (
-                          <div className="row row--between" key={row.date}>
-                            <div className="truncate">
-                              <div className="small" style={{ fontWeight: 600 }}>{fmtDateShort(row.date)}</div>
-                              {row.holiday ? null : (
-                                <div className="small subtle truncate">
-                                  {row.shift?.shift_type || 'No shift assigned'}
-                                </div>
-                              )}
-                            </div>
+                          <div className="shift-row" key={row.date}>
+                            <span className="shift-row__day">{fmtDateShort(row.date)}</span>
                             {row.holiday ? (
                               <Pill tone="warning">
                                 {row.weekly_off
                                   ? 'Weekly off'
                                   : `Holiday${row.holiday.description ? ` · ${row.holiday.description}` : ''}`}
                               </Pill>
-                            ) : row.shift?.start_time && row.shift?.end_time ? (
-                              <span className="small subtle tabular">
-                                {String(row.shift.start_time).slice(0, 5)} – {String(row.shift.end_time).slice(0, 5)}
-                              </span>
-                            ) : null}
+                            ) : (
+                              <>
+                                <span className="shift-row__name truncate">
+                                  {row.shift?.shift_type || 'No shift assigned'}
+                                </span>
+                                {row.shift?.start_time && row.shift?.end_time ? (
+                                  <span className="shift-row__time tabular">
+                                    {String(row.shift.start_time).slice(0, 5)}–{String(row.shift.end_time).slice(0, 5)}
+                                  </span>
+                                ) : null}
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>

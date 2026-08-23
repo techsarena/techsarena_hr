@@ -24,6 +24,21 @@
 }
 .card--eyebrow .stat-aside { font-size: 14px; font-weight: 700; color: var(--ink); }
 
+/* Rail stat row — the three figures under an eyebrow card ("4 PRESENT ·
+   1 WFH · 1 ON LEAVE"). Sized larger than a generic .stat so the numbers
+   carry the card, and evenly divided so the labels line up. */
+.rail-stats { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+.rail-stats__item { flex: 1 1 0; min-width: 64px; }
+.rail-stats__value {
+  font-size: 30px; font-weight: 700; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums; line-height: 1.05;
+}
+.rail-stats__value--warn { color: var(--warning); }
+.rail-stats__label {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--text-subtle); margin-top: 4px;
+}
+
 /* ---------- Section heading ---------- */
 .section-heading { margin-bottom: var(--space-4); }
 .section-heading__label {
@@ -174,7 +189,7 @@
 .meter__fill--danger  { background: var(--danger); }
 
 /* ---------- Tabs ---------- */
-.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--divider); margin-bottom: var(--space-5); overflow-x: auto; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--divider); margin-bottom: var(--space-5); }
 .tab {
   background: none; border: none; border-bottom: 2px solid transparent;
   padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--text-muted);
@@ -317,6 +332,8 @@
 .cal__legend { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
 .cal__legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
 .cal__swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+/* Round marker used by the attendance legend, matching the mockup. */
+.cal__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 
 @media (max-width: 900px) {
   .cal { --cal-name: 130px; --cal-day: 22px; }
@@ -380,6 +397,12 @@
 .callout--warning { background: var(--warning-bg); color: var(--warning); }
 .callout--danger { background: var(--danger-bg); color: var(--danger); }
 .callout__icon { flex: none; margin-top: 1px; }
+/* Needs-your-action panel: the heading carries the alarm, the explanation
+   underneath stays readable grey rather than a second line of red. Scoped to
+   this card so other danger callouts keep their single-colour treatment. */
+.callout--action { display: block; padding: var(--space-4); }
+.callout--action .callout__head { font-weight: 700; color: var(--danger); }
+.callout--action .callout__body { color: var(--text-muted); margin-top: 3px; }
 
 /* ---------- Punch hero ----------
    The live state of today: how long you have worked, when you came in, and
@@ -423,6 +446,14 @@
   .punch__clock { font-size: 34px; }
   .punch__action { margin-left: 0; width: 100%; justify-content: center; }
 }
+
+/* Upcoming shift row — day, shift name, window on one line, the way the
+   mockup's "Your shifts" rail reads. The holiday pill takes the name slot. */
+.shift-row { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.shift-row__day { font-size: 12.5px; font-weight: 600; flex: none; min-width: 52px; }
+.shift-row__name { font-size: 12.5px; color: var(--text-muted); flex: 1; min-width: 0; }
+.shift-row__time { font-size: 12px; color: var(--text-subtle); flex: none; }
+.shift-row .pill { margin-left: auto; }
 
 /* ---------- Page split: main plane + action rail ---------- */
 .split { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-4); align-items: start; }
@@ -879,6 +910,59 @@
 }
 .payroll-alert--warning { background: var(--warning-bg); color: var(--warning); }
 .payroll-alert p { margin-top: 2px; font-size: 12px; }
+
+/* Assign-structures modal: a labelled control plus a scrolling picker of the
+   employees who still have no submitted assignment. */
+.payroll-field { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.payroll-field .subtle { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.payroll-field select,
+.payroll-field input { margin-top: 6px; height: 42px; border-radius: var(--radius-md); width: 100%; }
+.payroll-assign-list {
+  max-height: 280px; overflow-y: auto; border: 1px solid var(--divider-soft);
+  border-radius: var(--radius-md);
+}
+.payroll-assign-row {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 9px var(--space-4); cursor: pointer;
+}
+.payroll-assign-row + .payroll-assign-row { border-top: 1px solid var(--divider-soft); }
+.payroll-assign-row:hover { background: var(--surface-muted); }
+.payroll-assign-row input { flex: none; width: 15px; height: 15px; }
+.payroll-assign-row span { display: flex; flex-direction: column; min-width: 0; }
+.payroll-assign-row strong { font-size: 13px; font-weight: 600; }
+.payroll-assign-row em { font-size: 11.5px; font-style: normal; }
+/* The checklist's unfinished rows carry a button, not a static label. */
+.payroll-check .btn { flex: none; margin-left: auto; }
+
+/* Guided payroll setup — step rail above the active step's form. */
+.payroll-wizard { display: grid; gap: var(--space-4); }
+.payroll-wizard__steps {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--divider-soft); padding-bottom: var(--space-3);
+}
+.payroll-wizard__step {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 11px; border-radius: var(--radius-pill);
+  border: 1px solid var(--divider); background: var(--surface);
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted); cursor: pointer;
+}
+.payroll-wizard__step span {
+  width: 17px; height: 17px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-muted); color: var(--text-subtle);
+  font-size: 10px; font-weight: 700;
+}
+.payroll-wizard__step.is-active {
+  border-color: var(--primary); color: var(--primary); background: var(--primary-100);
+}
+.payroll-wizard__step.is-done span { background: var(--success-bg); color: var(--success); }
+.payroll-wizard__body { min-height: 220px; }
+
+/* One component line: picker + amount + remove. */
+.payroll-comp-row { display: flex; gap: var(--space-3); align-items: center; }
+.payroll-comp-row select,
+.payroll-comp-row input { height: 38px; border-radius: var(--radius-md); flex: 1; min-width: 0; }
+.payroll-comp-row input[type="number"] { max-width: 130px; }
 .payroll-mobile-submit, .payroll-mobile-panels { display: none; }
 
 @media (max-width: 1200px) {
@@ -989,7 +1073,12 @@
 .aday__note--holiday { color: var(--warning); font-weight: 600; }
 
 .aday--weekend { background: var(--surface-muted); border-color: transparent; }
-.aday--weekend .aday__num { color: var(--text-subtle); }
+.aday--weekend .aday__num { color: var(--text-subtle); font-weight: 500; }
+.aday__note--weekend { color: var(--text-subtle); font-weight: 500; }
+/* Days with nothing recorded stay as faint outlines so the eye lands on the
+   days that carry punches — the mockup's dashed empty cells. */
+.aday--empty { border-style: dashed; border-color: var(--divider-soft); background: transparent; }
+.aday--empty .aday__num { color: var(--text-subtle); font-weight: 500; }
 .aday--outside { opacity: .45; }
 .aday--today {
   border-color: var(--accent-700); box-shadow: inset 0 0 0 1px var(--accent-700);
@@ -997,13 +1086,15 @@
 }
 .aday--today .aday__num { color: var(--accent-800); }
 
-.aday--present  { border-left: 3px solid var(--success); }
-.aday--wfh      { border-left: 3px solid var(--accent-400); }
-.aday--leave    { border-left: 3px solid var(--primary-400); }
-.aday--holiday  { background: var(--surface-muted); border-color: transparent; }
-.aday--missing  { border-color: var(--danger); background: var(--danger-bg); }
+/* The mockup rings a recorded day in its state colour rather than tagging it
+   with a left border, so the grid reads as coloured outlines at a glance. */
+.aday--present  { border-color: var(--accent-700); box-shadow: inset 0 0 0 1px var(--accent-700); }
+.aday--wfh      { border-color: var(--secondary-300); box-shadow: inset 0 0 0 1px var(--secondary-300); }
+.aday--leave    { border-color: var(--primary-400); box-shadow: inset 0 0 0 1px var(--primary-400); }
+.aday--holiday  { background: var(--surface); border-color: var(--divider-soft); }
+.aday--missing  { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); background: var(--danger-bg); }
 .aday--missing .aday__num { color: var(--danger); }
-.aday--absent   { border-left: 3px solid var(--danger); }
+.aday--absent   { border-color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
 
 @media (max-width: 700px) {
   .amonth__head, .amonth__grid { gap: 4px; }

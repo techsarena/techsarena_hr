@@ -50,11 +50,23 @@ function stripHtml(value) {
   return (el.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
+// Learned from bootstrap when the page was not served by Frappe's Jinja
+// template (i.e. `vite dev`), where window.csrf_token stays a literal
+// placeholder. Frappe rejects every POST without a matching token —
+// developer_mode does NOT bypass that check, only the site's ignore_csrf does.
+let runtimeCsrfToken = null;
+
+/** Called once bootstrap returns, so later writes carry a valid token. */
+export function setCsrfToken(token) {
+  if (token && token !== '{{ frappe.session.csrf_token }}') runtimeCsrfToken = token;
+}
+
 function csrfToken() {
-  // Set by www/dashboard.html in production; absent under `vite dev`, where
-  // Frappe accepts the request on the session cookie alone in developer mode.
+  // Set by www/dashboard.html in production; under `vite dev` the placeholder
+  // survives and we fall back to the token bootstrap handed us.
   const token = window.csrf_token;
-  return token && token !== '{{ frappe.session.csrf_token }}' ? token : null;
+  if (token && token !== '{{ frappe.session.csrf_token }}') return token;
+  return runtimeCsrfToken;
 }
 
 async function parse(response) {

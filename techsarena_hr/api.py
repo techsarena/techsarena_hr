@@ -142,6 +142,15 @@ def _attendance(employee: str) -> dict:
 	if pending_in and is_checked_in:
 		seconds += max(0, int((now_datetime() - pending_in).total_seconds()))
 
+	# Time on site that was not counted as worked — the gap between the first
+	# punch and the last (or now, while still in) minus the paired intervals.
+	# This is what the punch bar shows as "Break".
+	break_seconds = 0
+	if logs:
+		anchor = now_datetime() if is_checked_in else get_datetime(last_log.time)
+		on_site = max(0, int((anchor - get_datetime(logs[0].time)).total_seconds()))
+		break_seconds = max(0, on_site - seconds)
+
 	attendance = frappe.db.get_value(
 		"Attendance",
 		{"employee": employee, "attendance_date": day, "docstatus": ["<", 2]},
@@ -153,6 +162,9 @@ def _attendance(employee: str) -> dict:
 		"first_in": _as_text(logs[0].time) if logs else None,
 		"last_log": _as_text(last_log.time) if last_log else None,
 		"working_seconds": seconds,
+		"break_seconds": break_seconds,
+		# Where the punch was taken, when the device recorded it.
+		"location": (last_log.device_id if last_log else None) or None,
 		"shift": (last_log.shift if last_log else None) or (attendance.shift if attendance else None),
 		"status": attendance.status if attendance else None,
 		"working_hours": attendance.working_hours if attendance else None,
@@ -1759,12 +1771,28 @@ def bootstrap() -> dict:
 	can_manage_hr = bool(roles.intersection(HR_ROLES))
 	can_approve = can_manage_hr or bool(roles.intersection(MANAGER_ROLES))
 	dashboard_context = build_role_dashboards(user, roles, employee)
+	# Only meaningful inside a real HTTP request; generating one needs a live
+	# session object, so never let this break bootstrap in a console or job.
+	csrf_token = None
+	try:
+		if frappe.request:
+			from frappe.sessions import get_csrf_token
+
+			csrf_token = get_csrf_token()
+	except Exception:
+		csrf_token = None
+
 	return {
 		"user": {
 			"id": user,
 			"full_name": frappe.utils.get_fullname(user),
 			"roles": sorted(roles),
 		},
+		# Under `vite dev` the page is served by Vite, so Frappe's Jinja template
+		# never renders window.csrf_token and every POST would fail the CSRF
+		# check. Handing the token to the already-authenticated client here lets
+		# writes work in dev without relaxing CSRF on the site.
+		"csrf_token": csrf_token,
 		"capabilities": {
 			"employee_self_service": has_employee_access,
 			"can_approve_leave": can_approve,
@@ -1945,6 +1973,10 @@ def _expiring_allocations(employee: str) -> list[dict]:
 	)
 
 
+#: Rows the "Your team this week" home card shows before it truncates.
+TEAM_WEEK_LIMIT = 5
+
+
 def _team_week(employee: str, employee_doc) -> dict:
 	"""Mon–Fri attendance/leave grid for the employee's team.
 
@@ -1956,15 +1988,17 @@ def _team_week(employee: str, employee_doc) -> dict:
 	monday = frappe.utils.add_days(today, -today.weekday())
 	friday = frappe.utils.add_days(monday, 4)
 
-	members = []
-	if employee_doc.reports_to:
-		members = frappe.get_all(
-			"Employee",
-			filters={"status": "Active", "reports_to": employee_doc.reports_to},
-			fields=["name", "employee_name"],
-			order_by="employee_name asc",
-			limit_page_length=0,
-		)
+	# get_list (not get_all) so Employee permissions and User Permissions decide
+	# the scope, matching team_calendar: HR reads the whole company while a
+	# self-service user only sees the records they may read. Keying off
+	# reports_to alone showed a lone row whenever the reporting tree was unset.
+	members = frappe.get_list(
+		"Employee",
+		filters={"status": "Active"},
+		fields=["name", "employee_name"],
+		order_by="employee_name asc",
+		limit_page_length=0,
+	)
 	if not any(member.name == employee for member in members):
 		members.append(
 			frappe._dict({"name": employee, "employee_name": employee_doc.employee_name})
@@ -2006,11 +2040,29 @@ def _team_week(employee: str, employee_doc) -> dict:
 			}
 		)
 
+	# The home card is a glance, not a roster: show at most TEAM_WEEK_LIMIT rows.
+	# Keep the viewer and whoever is actually away, since an alphabetical head
+	# would just show people with empty weeks on a large team.
+	total = len(rows)
+	if total > TEAM_WEEK_LIMIT:
+		ranked = sorted(
+			rows,
+			key=lambda row: (
+				not row["is_self"],
+				all(state == "none" for state in row["days"]),
+				row["employee_name"] or "",
+			),
+		)
+		keep = {row["employee"] for row in ranked[:TEAM_WEEK_LIMIT]}
+		rows = [row for row in rows if row["employee"] in keep]
+
 	return {
 		"week_start": str(monday),
 		"days": [str(day) for day in days],
 		"department": employee_doc.department,
 		"members": rows,
+		# Lets the card say "5 of 9" instead of implying the team is only 5.
+		"total_members": total,
 	}
 
 
@@ -2314,8 +2366,9 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 	"""Who on your team is away between two dates, plus your holiday list.
 
 	Powers the leave calendar and the overlap warning shown before submitting a
-	request.  "Team" is everyone reporting to the same manager as you, plus your
-	own reports — the people whose absence actually affects your cover.
+	request.  "Team" is every active employee the caller is permitted to read,
+	so HR sees the whole company while a self-service user sees only the records
+	their User Permissions allow.
 	"""
 	user = _require_login()
 	_require_hrms()
@@ -2329,21 +2382,20 @@ def team_calendar(from_date: str, to_date: str) -> dict:
 		frappe.throw(_("The end date cannot be before the start date."))
 
 	employee_doc = frappe.get_doc("Employee", employee)
-	peers = frappe.get_all(
-		"Employee",
-		filters={
-			"status": "Active",
-			"name": ["!=", employee],
-			"reports_to": employee_doc.reports_to or "",
-		},
-		pluck="name",
-	) if employee_doc.reports_to else []
-	reports = frappe.get_all(
-		"Employee",
-		filters={"status": "Active", "reports_to": employee},
-		pluck="name",
+	# get_list (not get_all) so Employee permissions and User Permissions decide
+	# the scope: HR reads the whole company, while a self-service user is pinned
+	# to the records they may see. The old peers-and-reports rule returned an
+	# empty team — and so an empty calendar — for anyone whose reporting tree
+	# was not filled in, which is every employee on a fresh site.
+	team = sorted(
+		row.name
+		for row in frappe.get_list(
+			"Employee",
+			filters={"status": "Active", "name": ["!=", employee]},
+			fields=["name"],
+			limit_page_length=0,
+		)
 	)
-	team = sorted(set(peers) | set(reports))
 
 	entries = []
 	if team:
@@ -3016,7 +3068,13 @@ def create_payroll_run(
 	entry.currency = company_defaults.default_currency
 	entry.exchange_rate = 1
 	entry.payroll_payable_account = company_defaults.default_payroll_payable_account
-	entry.fill_employee_details()
+	# HRMS raises its own "No employees found" with an HTML body listing the
+	# criteria. Swallow it and fall through to the actionable message below,
+	# which names the setup step that is actually missing.
+	try:
+		entry.fill_employee_details()
+	except frappe.ValidationError:
+		frappe.clear_last_message()
 
 	eligible_rows = list(entry.employees or [])
 	if requested:
@@ -3035,6 +3093,17 @@ def create_payroll_run(
 		eligible_rows = [row for row in eligible_rows if row.employee not in relieving]
 
 	if not eligible_rows:
+		# Distinguish "nothing is set up yet" from "this period excludes
+		# everyone", because the fix is completely different.
+		assigned = frappe.db.count("Salary Structure Assignment", {"docstatus": 1})
+		if not assigned:
+			frappe.throw(
+				_(
+					"No employee has a submitted Salary Structure Assignment yet, so "
+					"there is nothing to generate. Assign a salary structure to your "
+					"employees first, then create the payroll run."
+				)
+			)
 		frappe.throw(
 			_(
 				"No selected employees are eligible for this payroll period. "
@@ -3138,6 +3207,274 @@ def assign_salary_structure(employee: str, salary_structure: str, base: float | 
 	assignment.insert()
 	assignment.submit()
 	return {"name": assignment.name, "employee": employee}
+
+
+@frappe.whitelist()
+def payroll_readiness(company: str | None = None) -> dict:
+	"""What still stands between this company and its first payroll run.
+
+	The first-run screen used to hard-code these as satisfied, which told the
+	user everything was ready right up until the run failed. Each check reports
+	its real state plus the action that clears it.
+	"""
+	user = _require_login()
+	_require_hrms()
+	_require_payroll_access(user)
+
+	if not company:
+		company = frappe.defaults.get_user_default("Company")
+	if not company:
+		import erpnext
+
+		company = erpnext.get_default_company()
+
+	active = frappe.db.count("Employee", {"status": "Active"})
+	assigned = len(
+		set(
+			frappe.get_all(
+				"Salary Structure Assignment",
+				filters={"docstatus": 1},
+				pluck="employee",
+				limit_page_length=0,
+			)
+		)
+	)
+	structures = frappe.db.count("Salary Structure", {"docstatus": 1, "is_active": "Yes"})
+	components = frappe.db.count("Salary Component")
+	payable = (
+		frappe.db.get_value("Company", company, "default_payroll_payable_account")
+		if company
+		else None
+	)
+
+	checks = [
+		{
+			"id": "structures",
+			"title": "Salary structure created",
+			"body": (
+				f"{structures} active structure{'' if structures == 1 else 's'} ready to assign."
+				if structures
+				else "Create and submit a salary structure before assigning anyone."
+			),
+			"done": bool(structures),
+			"action": None if structures else "structure",
+			"action_label": "Create structure",
+		},
+		{
+			"id": "assignments",
+			"title": "Salary structures assigned",
+			"body": (
+				f"{assigned} of {active} active employees have a submitted assignment."
+				if assigned
+				else f"None of the {active} active employees can be paid until they are assigned."
+			),
+			"done": bool(active) and assigned >= active,
+			# Assigning is the one step the dashboard can complete in place.
+			"action": None if (active and assigned >= active) else "assign",
+			"action_label": "Assign structures",
+		},
+		{
+			"id": "components",
+			"title": "Salary components configured",
+			"body": (
+				f"{components} earning and deduction component{'' if components == 1 else 's'} configured."
+				if components
+				else "Earnings and deductions must exist before slips can calculate."
+			),
+			"done": bool(components),
+			"action": None if components else "components",
+			"action_label": "Configure",
+		},
+		{
+			"id": "payable",
+			"title": "Payment account set" if payable else "Payment account not set",
+			"body": (
+				f"Payable account: {payable}."
+				if payable
+				else "A payable account is needed before submission."
+			),
+			"done": bool(payable),
+			"action": None if payable else "account",
+			"action_label": "Set account",
+		},
+	]
+
+	return {
+		"company": company,
+		"active_employees": active,
+		"assigned_employees": assigned,
+		"unassigned_employees": max(0, active - assigned),
+		"checks": checks,
+		"ready": all(check["done"] for check in checks),
+		"ready_count": sum(1 for check in checks if check["done"]),
+	}
+
+
+@frappe.whitelist()
+def unassigned_employees() -> list[dict]:
+	"""Active employees with no submitted salary structure assignment."""
+	user = _require_login()
+	_require_hrms()
+	_require_payroll_access(user)
+
+	assigned = set(
+		frappe.get_all(
+			"Salary Structure Assignment",
+			filters={"docstatus": 1},
+			pluck="employee",
+			limit_page_length=0,
+		)
+	)
+	rows = frappe.get_all(
+		"Employee",
+		filters={"status": "Active"},
+		fields=["name", "employee_name", "department", "designation", "company", "date_of_joining"],
+		order_by="employee_name asc",
+		limit_page_length=0,
+	)
+	return [row for row in rows if row.name not in assigned]
+
+
+@frappe.whitelist()
+def salary_components() -> dict:
+	"""Earning and deduction components, for the structure builder's pickers."""
+	_require_hrms()
+	_require_payroll_access()
+	rows = frappe.get_all(
+		"Salary Component",
+		fields=["name", "type", "salary_component_abbr"],
+		order_by="type asc, name asc",
+		limit_page_length=0,
+	)
+	return {
+		"earnings": [r for r in rows if r.type == "Earning"],
+		"deductions": [r for r in rows if r.type == "Deduction"],
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_salary_component(component_name: str, component_type: str = "Earning") -> dict:
+	"""Adds a component so the structure builder never dead-ends in Desk."""
+	user = _require_login()
+	_require_hrms()
+	_require_payroll_access(user)
+
+	name = (component_name or "").strip()
+	if not name:
+		frappe.throw(_("Give the salary component a name."))
+	if component_type not in ("Earning", "Deduction"):
+		frappe.throw(_("A salary component is either an Earning or a Deduction."))
+	if frappe.db.exists("Salary Component", name):
+		frappe.throw(_("A salary component called {0} already exists.").format(name))
+
+	doc = frappe.new_doc("Salary Component")
+	doc.salary_component = name
+	doc.type = component_type
+	doc.insert()
+	return {"name": doc.name, "type": doc.type}
+
+
+@frappe.whitelist()
+def draft_salary_structures() -> list[dict]:
+	"""Structures that exist but are not submitted, so the UI can offer to
+	submit one instead of making the user build a duplicate."""
+	_require_hrms()
+	_require_payroll_access()
+	return frappe.get_all(
+		"Salary Structure",
+		filters={"docstatus": 0},
+		fields=["name", "company", "currency", "payroll_frequency"],
+		order_by="modified desc",
+		limit_page_length=20,
+	)
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_salary_structure(name: str) -> dict:
+	"""Submits an existing draft structure so it can be assigned."""
+	user = _require_login()
+	_require_hrms()
+	_require_payroll_access(user)
+
+	doc = frappe.get_doc("Salary Structure", name)
+	if doc.docstatus == 1:
+		return {"name": doc.name, "already_submitted": True}
+	if doc.docstatus == 2:
+		frappe.throw(_("{0} is cancelled and cannot be submitted.").format(name))
+	doc.submit()
+	return {"name": doc.name, "already_submitted": False}
+
+
+@frappe.whitelist(methods=["POST"])
+def create_salary_structure(
+	structure_name: str,
+	earnings: str | list | None = None,
+	deductions: str | list | None = None,
+	company: str | None = None,
+	currency: str | None = None,
+	payroll_frequency: str = "Monthly",
+	submit: int | str = 1,
+) -> dict:
+	"""Builds a Salary Structure from the dashboard and submits it.
+
+	Rows arrive as [{"salary_component": str, "amount": number}]. Submitting is
+	what makes the structure assignable, so it is the default.
+	"""
+	user = _require_login()
+	_require_hrms()
+	_require_payroll_access(user)
+
+	name = (structure_name or "").strip()
+	if not name:
+		frappe.throw(_("Give the salary structure a name."))
+	if frappe.db.exists("Salary Structure", name):
+		frappe.throw(_("A salary structure called {0} already exists.").format(name))
+
+	def _rows(value):
+		parsed = frappe.parse_json(value) if isinstance(value, str) else value
+		return parsed or []
+
+	earning_rows = _rows(earnings)
+	deduction_rows = _rows(deductions)
+	if not earning_rows:
+		frappe.throw(_("Add at least one earning component."))
+
+	if not company:
+		company = frappe.defaults.get_user_default("Company")
+	if not company:
+		import erpnext
+
+		company = erpnext.get_default_company()
+	if not company:
+		frappe.throw(_("Set a default Company before creating a salary structure."))
+
+	if not currency:
+		currency = frappe.db.get_value("Company", company, "default_currency")
+
+	doc = frappe.new_doc("Salary Structure")
+	doc.name = name
+	doc.__newname = name
+	doc.company = company
+	doc.currency = currency
+	doc.payroll_frequency = payroll_frequency or "Monthly"
+	doc.is_active = "Yes"
+
+	for field, rows in (("earnings", earning_rows), ("deductions", deduction_rows)):
+		for row in rows:
+			component = (row or {}).get("salary_component")
+			if not component:
+				continue
+			if not frappe.db.exists("Salary Component", component):
+				frappe.throw(_("Salary component {0} does not exist.").format(component))
+			doc.append(
+				field,
+				{"salary_component": component, "amount": flt((row or {}).get("amount") or 0)},
+			)
+
+	doc.insert()
+	if cint(submit):
+		doc.submit()
+	return {"name": doc.name, "docstatus": doc.docstatus, "company": company, "currency": currency}
 
 
 @frappe.whitelist()

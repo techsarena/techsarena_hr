@@ -222,6 +222,8 @@ function TeamWeekCard() {
   const { summary, profile } = useWorkspace();
   const team = summary?.team_week;
   const members = team?.members || [];
+  // The API caps the grid, so say "5 of 9" rather than implying a 5-person team.
+  const total = team?.total_members ?? members.length;
   const dayLabels = (team?.days || []).map((day) =>
     new Date(day).toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 3).toUpperCase(),
   );
@@ -230,7 +232,10 @@ function TeamWeekCard() {
     <section className="home-card home-card--team">
       <header>
         <h2>Your team this week</h2>
-        <span>{profile?.department || team?.department || 'Team'} · {members.length || 0} people</span>
+        <span>
+          {profile?.department || team?.department || 'Team'} ·{' '}
+          {total > members.length ? `${members.length} of ${total}` : `${total || 0}`} people
+        </span>
       </header>
       {members.length ? (
         <>
@@ -252,7 +257,7 @@ function TeamWeekCard() {
           </div>
         </>
       ) : (
-        <EmptyState title="No team calendar" body="Team leave will appear once your employee record has peers or reports." icon={<Icon name="people" size={20} />} />
+        <EmptyState title="No team calendar" body="Team leave will appear once you have access to other employee records." icon={<Icon name="people" size={20} />} />
       )}
     </section>
   );

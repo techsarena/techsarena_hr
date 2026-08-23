@@ -60,9 +60,22 @@ export const hr = {
 
   /* ---- Payroll ---- */
   payrollRun: (name, opts) => call(`${NS}.payroll_run`, { name }, opts),
+  payrollReadiness: (opts) => call(`${NS}.payroll_readiness`, undefined, opts),
+  unassignedEmployees: (opts) => call(`${NS}.unassigned_employees`, undefined, opts),
   createPayrollRun: (payload) => post(`${NS}.create_payroll_run`, payload),
   submitPayrollRun: (name) => post(`${NS}.submit_payroll_run`, { name }),
   salaryStructures: (opts) => call(`${NS}.salary_structures`, undefined, opts),
+  draftSalaryStructures: (opts) => call(`${NS}.draft_salary_structures`, undefined, opts),
+  salaryComponents: (opts) => call(`${NS}.salary_components`, undefined, opts),
+  createSalaryComponent: (componentName, componentType) =>
+    post(`${NS}.create_salary_component`, { component_name: componentName, component_type: componentType }),
+  submitSalaryStructure: (name) => post(`${NS}.submit_salary_structure`, { name }),
+  createSalaryStructure: (payload) =>
+    post(`${NS}.create_salary_structure`, {
+      ...payload,
+      earnings: JSON.stringify(payload.earnings || []),
+      deductions: JSON.stringify(payload.deductions || []),
+    }),
   assignSalaryStructure: (employee, salaryStructure, base) =>
     post(`${NS}.assign_salary_structure`, { employee, salary_structure: salaryStructure, base }),
 

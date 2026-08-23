@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import hr from '../api/hr';
-import { auth, resource } from '../api/client';
+import { auth, resource, setCsrfToken } from '../api/client';
 
 /**
  * App-wide store — the React counterpart of WorkspaceController.
@@ -44,6 +44,9 @@ export function WorkspaceProvider({ children }) {
         return;
       }
       const payload = await hr.bootstrap();
+      // Under `vite dev` this is the only place a valid CSRF token reaches the
+      // client, and every POST needs it.
+      setCsrfToken(payload?.csrf_token);
       setBoot(payload);
       setStatus('ready');
     } catch (err) {

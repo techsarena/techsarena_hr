@@ -21,10 +21,10 @@ function dayClass({ record, holiday, weekend, needsAction }) {
 export function AttendanceMonthLegend() {
   return (
     <div className="cal__legend">
-      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--success)' }} />Present</span>
-      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--accent-400)' }} />Work from home</span>
-      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--primary-400)' }} />Leave</span>
-      <span className="cal__legend-item"><span className="cal__swatch" style={{ background: 'var(--danger)' }} />Missing punch</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--accent-700)' }} />Present</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--secondary-300)' }} />Work from home</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--primary-400)' }} />Leave</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--danger)' }} />Missing punch</span>
     </div>
   );
 }
@@ -74,6 +74,9 @@ export function AttendanceMonth({ month, days = [], holidays = [], needsAction =
           const isToday = cell.key === today;
           const classes = ['aday'];
           if (kind) classes.push(`aday--${kind}`);
+          // Nothing recorded and nothing scheduled: draw it as a faint outline
+          // so the days that do carry punches are what the eye lands on.
+          if (!kind && !cell.record) classes.push('aday--empty');
           if (isToday) classes.push('aday--today');
 
           const rec = cell.record;
@@ -118,6 +121,8 @@ export function AttendanceMonth({ month, days = [], holidays = [], needsAction =
                 >
                   {rec.status}
                 </div>
+              ) : cell.weekend ? (
+                <div className="aday__note aday__note--weekend">Weekend</div>
               ) : null}
             </button>
           );
