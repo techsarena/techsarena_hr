@@ -49,6 +49,7 @@ export const NAV_GROUPS = [
     label: 'Company',
     items: [
       { to: '/people', label: 'People', icon: 'people', capability: 'can_view_directory' },
+      { to: '/lifecycle', label: 'Lifecycle', icon: 'briefcase', capability: 'can_manage_hr' },
       { to: '/payroll', label: 'Payroll', icon: 'payroll', capability: 'can_run_payroll' },
       { to: '/insights', label: 'Insights', icon: 'chart', capability: 'can_manage_hr' },
       { to: '/leave-admin', label: 'Leave admin', icon: 'ledger', capability: 'can_manage_hr' },

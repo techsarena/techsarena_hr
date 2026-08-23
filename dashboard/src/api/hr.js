@@ -14,6 +14,8 @@ const FUNDS = 'techsarena_hr.funds';
 const LOANS = 'techsarena_hr.loans';
 const GPS = 'techsarena_hr.gps_attendance.api.attendance';
 const EXIT = 'techsarena_hr.offboarding';
+const LIFE = 'techsarena_hr.lifecycle';
+const PERF = 'techsarena_hr.performance';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -152,10 +154,60 @@ export const hr = {
   /* ---- Insights ---- */
   insights: (months, opts) => call(`${NS}.insights`, months ? { months } : undefined, opts),
 
-  /* ---- Goals & appraisal ----
-     Returns only {goals, appraisals}; rate_goal / submit_self_assessment are
-     not implemented server-side, so the screen stays read-only. */
+  /* ---- Goals & appraisal ---- */
   goalsAndAppraisal: (opts) => call(`${NS}.goals_and_appraisal`, undefined, opts),
+  // Progress updates and self-assessment now write back; scoring stays HRMS's.
+  rateGoal: (name, progress, status) => post(`${PERF}.rate_goal`, { name, progress, status }),
+  appraisalDetail: (name, opts) => call(`${PERF}.appraisal_detail`, { name }, opts),
+  // `ratings` is [{criteria, rating}] with rating in stars (1..star_count).
+  submitSelfAssessment: (name, reflections, ratings) =>
+    post(`${PERF}.submit_self_assessment`, {
+      name,
+      reflections,
+      ratings: JSON.stringify(ratings || []),
+    }),
+  addAppraisalFeedback: (name, feedback, ratings) =>
+    post(`${PERF}.add_appraisal_feedback`, {
+      name,
+      feedback,
+      ratings: JSON.stringify(ratings || []),
+    }),
+
+  /* ---- Leave encashment ---- */
+  encashableLeave: (employee, opts) =>
+    call(`${PERF}.encashable_leave`, employee ? { employee } : undefined, opts),
+  createLeaveEncashment: (employee, leaveType, leavePeriod, days) =>
+    post(`${PERF}.create_leave_encashment`, {
+      employee,
+      leave_type: leaveType,
+      leave_period: leavePeriod,
+      encashment_days: days,
+    }),
+
+  /* ---- Lifecycle: promotion, transfer, grievance, travel ---- */
+  propertyFields: (opts) => call(`${LIFE}.property_fields`, undefined, opts),
+  promotions: (employee, opts) => call(`${LIFE}.promotions`, employee ? { employee } : undefined, opts),
+  // `changes` is {fieldname: newValue}; the server reads current values itself.
+  createPromotion: (payload) =>
+    post(`${LIFE}.create_promotion`, { ...payload, changes: JSON.stringify(payload.changes || {}) }),
+  transfers: (employee, opts) => call(`${LIFE}.transfers`, employee ? { employee } : undefined, opts),
+  createTransfer: (payload) =>
+    post(`${LIFE}.create_transfer`, { ...payload, changes: JSON.stringify(payload.changes || {}) }),
+  grievances: (status, opts) => call(`${LIFE}.grievances`, status ? { status } : undefined, opts),
+  raiseGrievance: (payload) => post(`${LIFE}.raise_grievance`, payload),
+  resolveGrievance: (name, status, resolutionDetail, causeOfGrievance) =>
+    post(`${LIFE}.resolve_grievance`, {
+      name,
+      status,
+      resolution_detail: resolutionDetail,
+      cause_of_grievance: causeOfGrievance,
+    }),
+  travelRequests: (opts) => call(`${LIFE}.travel_requests`, undefined, opts),
+  submitTravelRequest: (payload) =>
+    post(`${LIFE}.submit_travel_request`, {
+      ...payload,
+      itinerary: JSON.stringify(payload.itinerary || []),
+    }),
 
   /* ---- Announcements ---- */
   announcements: (opts) => call(`${NS}.announcements`, undefined, opts),
