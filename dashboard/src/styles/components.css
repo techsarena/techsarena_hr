@@ -1754,3 +1754,53 @@
 .policy-body td, .policy-body th {
   border: 1px solid var(--divider-soft); padding: 6px 8px; text-align: start;
 }
+
+/* ---------------- Training & certifications ----------------
+   Shares the list shape used by tickets and policies: what state a row is in
+   leads, and the detail follows underneath. */
+.train-list { list-style: none; margin: 0; padding: 0; }
+
+.train-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  width: 100%; padding: var(--space-4) var(--space-5);
+  border: 0; border-bottom: 1px solid var(--divider-soft);
+  background: none; cursor: pointer; text-align: start; font: inherit;
+}
+.train-row:hover { background: var(--surface-muted); }
+.train-list li:last-child .train-row { border-bottom: 0; }
+
+/* A lapsing certificate is the only thing here needing action, so it carries
+   the one piece of colour. */
+.cert-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--divider-soft);
+  border-inline-start: 2px solid transparent;
+}
+.cert-row:last-child { border-bottom: 0; }
+.cert-row--expiring { border-inline-start-color: var(--warning); }
+.cert-row--expired  { border-inline-start-color: var(--danger); }
+.cert-row__expiry { font-weight: 600; }
+.cert-row__expiry--expiring { color: var(--warning); }
+.cert-row__expiry--expired  { color: var(--danger); }
+.cert-row__expiry--valid, .cert-row__expiry--none { color: var(--text-subtle); font-weight: 500; }
+
+.roster-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px var(--space-2); border-bottom: 1px solid var(--divider-soft);
+}
+.roster-row:last-child { border-bottom: 0; }
+
+.matrix-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--divider-soft);
+}
+.matrix-row:last-child { border-bottom: 0; }
+.matrix-certs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+
+@media (max-width: 700px) {
+  .train-row, .cert-row, .matrix-row {
+    flex-direction: column; align-items: flex-start; gap: var(--space-2);
+  }
+  .matrix-certs { justify-content: flex-start; }
+}

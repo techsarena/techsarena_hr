@@ -20,6 +20,7 @@ const NOTIF = 'techsarena_hr.notifications';
 const I18N = 'techsarena_hr.i18n';
 const DESK = 'techsarena_hr.helpdesk';
 const POL = 'techsarena_hr.policies';
+const TRAIN = 'techsarena_hr.training';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -189,6 +190,21 @@ export const hr = {
   policyDetail: (name, opts) => call(`${POL}.policy_detail`, { name }, opts),
   acknowledgePolicy: (policy, version) => post(`${POL}.acknowledge_policy`, { policy, version }),
   policyCompliance: (policy, opts) => call(`${POL}.policy_compliance`, policy ? { policy } : undefined, opts),
+
+  /* ---- Training & certifications ----
+     Training is HRMS's own model (Training Event and its attendee table); this
+     only surfaces it. Certifications are Employee Documents filtered to the
+     qualification types, so they share the expiry sweep. */
+  myTraining: (opts) => call(`${TRAIN}.my_training`, undefined, opts),
+  trainingCalendar: (params, opts) => call(`${TRAIN}.training_calendar`, params, opts),
+  trainingEventDetail: (name, opts) => call(`${TRAIN}.training_event_detail`, { name }, opts),
+  markTrainingAttendance: (event, records) =>
+    post(`${TRAIN}.mark_attendance`, { event, records: JSON.stringify(records) }),
+  submitTrainingFeedback: (event, feedback) =>
+    post(`${TRAIN}.submit_training_feedback`, { event, feedback }),
+  myCertifications: (opts) => call(`${TRAIN}.my_certifications`, undefined, opts),
+  certificationMatrix: (days, opts) =>
+    call(`${TRAIN}.certification_matrix`, days ? { days } : undefined, opts),
 
   /* ---- Org chart ----
      Flat nodes with parent pointers; the client assembles the tree. `root`

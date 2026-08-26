@@ -30,6 +30,7 @@ import LeaveAdmin from './pages/LeaveAdmin';
 import Announcements from './pages/Announcements';
 import Helpdesk from './pages/Helpdesk';
 import Policies from './pages/Policies';
+import Training from './pages/Training';
 import Hiring from './pages/Hiring';
 import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
@@ -106,6 +107,7 @@ function Gate() {
         <Route path="/announcements" element={<Announcements />} />
         <Route path="/helpdesk" element={<Helpdesk />} />
         <Route path="/policies" element={<Policies />} />
+        <Route path="/training" element={guard('employee_self_service', <Training />)} />
         <Route path="/hiring" element={guard('can_manage_hr', <Hiring />)} />
         <Route path="/onboarding" element={guard('can_manage_hr', <Onboarding />)} />
         <Route path="/offboarding" element={guard('can_manage_hr', <Offboarding />)} />

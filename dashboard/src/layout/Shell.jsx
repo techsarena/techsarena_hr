@@ -282,6 +282,7 @@ const TITLES = {
   '/announcements': 'Announcements',
   '/helpdesk': 'Help & requests',
   '/policies': 'Policies',
+  '/training': 'Training',
   '/hiring': 'Job openings',
   '/onboarding': 'Onboarding',
   '/settings': 'Settings',
