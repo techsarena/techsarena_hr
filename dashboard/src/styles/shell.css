@@ -315,3 +315,21 @@
 @keyframes offline-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
 @media (max-width: 700px) { .offline-bar { font-size: 11.5px; } }
+
+/* Boot mark: shown while bootstrap is still answering, before any branding is
+   known. Slightly larger than the login tile because it stands alone. */
+.boot__logo {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--primary);
+  /* A cold start can be slow; a gentle pulse says "working", not "stuck". */
+  animation: boot-pulse 1.8s ease-in-out infinite;
+}
+.boot__logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+@keyframes boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
+
+/* Respect a reduced-motion preference: the mark still shows, it just sits still. */
+@media (prefers-reduced-motion: reduce) {
+  .boot__logo { animation: none; }
+}

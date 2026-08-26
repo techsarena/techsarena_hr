@@ -7,6 +7,8 @@ import { OfflineProvider } from './hooks/useOffline';
 import Shell from './layout/Shell';
 import Login from './pages/Login';
 import { ErrorState, Skeleton } from './components/ui';
+import { APP_LOGO, APP_NAME } from './api/brand';
+import { t } from './api/i18n';
 
 import Home from './pages/Home';
 import Attendance from './pages/Attendance';
@@ -40,11 +42,16 @@ function Gate() {
   const { status, error, reload, capabilities } = useWorkspace();
 
   if (status === 'checking') {
+    // Bootstrap has not answered yet, so there is no branding to read — this is
+    // the one place that must use the bundled mark directly.
     return (
       <div className="login">
-        <div className="col" style={{ alignItems: 'center', gap: 12 }}>
+        <div className="col" style={{ alignItems: 'center', gap: 14 }}>
+          <span className="boot__logo">
+            <img src={APP_LOGO} alt={APP_NAME} />
+          </span>
           <div className="skeleton" style={{ width: 120, height: 8, borderRadius: 99 }} />
-          <p className="small subtle">Loading your workspace…</p>
+          <p className="small subtle">{t('Loading your workspace…')}</p>
         </div>
       </div>
     );
@@ -53,10 +60,18 @@ function Gate() {
   if (status === 'anonymous') return <Login />;
 
   if (status === 'error') {
+    // Same mark as the boot state: a failed start should still look like the
+    // app, not an unbranded error page.
     return (
       <div className="login">
         <div className="login__card">
-          <ErrorState error={error} onRetry={reload} title="Could not start the workspace" />
+          <div className="login__brand">
+            <span className="login__logo"><img src={APP_LOGO} alt="" /></span>
+            <div>
+              <h1 style={{ fontSize: 17 }}>{APP_NAME}</h1>
+            </div>
+          </div>
+          <ErrorState error={error} onRetry={reload} title={t('Could not start the workspace')} />
         </div>
       </div>
     );
