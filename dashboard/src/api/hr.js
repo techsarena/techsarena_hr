@@ -6,7 +6,7 @@
  * Namespace note: the Frappe app is `techsarena_hr` (the Flutter repo
  * directory is still `techsarena_hcm`; that is cosmetic).
  */
-import { call, post, resource } from './client';
+import { call, post, resource, upload } from './client';
 
 const NS = 'techsarena_hr.api';
 const LEAVE = 'techsarena_hr.leave_engine';
@@ -16,6 +16,7 @@ const GPS = 'techsarena_hr.gps_attendance.api.attendance';
 const EXIT = 'techsarena_hr.offboarding';
 const LIFE = 'techsarena_hr.lifecycle';
 const PERF = 'techsarena_hr.performance';
+const NOTIF = 'techsarena_hr.notifications';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -145,11 +146,26 @@ export const hr = {
   submitExpenseClaim: (expenses, remark) =>
     post(`${NS}.submit_expense_claim`, { expenses: JSON.stringify(expenses), remark }),
   withdrawExpenseClaim: (name) => post(`${NS}.withdraw_expense_claim`, { name }),
+  // Receipts are Frappe Files re-pointed at the claim: upload first, attach second.
+  attachExpenseReceipt: (claim, fileUrl, fileName) =>
+    post(`${NS}.attach_expense_receipt`, { claim, file_url: fileUrl, file_name: fileName }),
+  removeExpenseReceipt: (claim, fileUrl) =>
+    post(`${NS}.remove_expense_receipt`, { claim, file_url: fileUrl }),
 
   /* ---- Hiring ---- */
   jobOpenings: (opts) => call(`${NS}.job_openings`, undefined, opts),
   jobOpeningDetail: (name, opts) => call(`${NS}.job_opening_detail`, { name }, opts),
   employeeOnboarding: (opts) => call(`${NS}.employee_onboarding`, undefined, opts),
+
+  /* ---- Org chart ----
+     Flat nodes with parent pointers; the client assembles the tree. `root`
+     focuses on one person and their descendants. */
+  orgChart: (root, opts) => call(`${NS}.org_chart`, root ? { root } : undefined, opts),
+
+  /* ---- Global search ----
+     Backs the command palette. Permission filtering is the server's; the
+     client renders whatever comes back. */
+  globalSearch: (query, opts) => call(`${NS}.global_search`, { query }, opts),
 
   /* ---- Insights ---- */
   insights: (months, opts) => call(`${NS}.insights`, months ? { months } : undefined, opts),
@@ -211,7 +227,41 @@ export const hr = {
 
   /* ---- Announcements ---- */
   announcements: (opts) => call(`${NS}.announcements`, undefined, opts),
+
+  /* ---- Notifications ----
+     bootstrap carries the first page for the bell; these page beyond it and
+     own read-state and per-category preferences. */
   markNotificationRead: (name) => post(`${NS}.mark_notification_read`, { name }),
+  notifications: ({ limit, start, unreadOnly } = {}, opts) =>
+    call(`${NOTIF}.notifications`, { limit, start, unread_only: unreadOnly ? 1 : 0 }, opts),
+  markAllNotificationsRead: () => post(`${NOTIF}.mark_all_read`),
+  notificationPreferences: (opts) => call(`${NOTIF}.notification_preferences`, undefined, opts),
+  saveNotificationPreferences: (preferences) =>
+    post(`${NOTIF}.save_notification_preferences`, { preferences: JSON.stringify(preferences) }),
+
+  /* ---- Profile self-service ----
+     Employees propose corrections; HR applies them. The editable field list is
+     served by the backend rather than hardcoded here, so the form can never
+     offer a field the server would reject. */
+  profileChangeOptions: (opts) => call(`${NS}.profile_change_options`, undefined, opts),
+  myProfileChangeRequests: (opts) => call(`${NS}.my_profile_change_requests`, undefined, opts),
+  submitProfileChange: (changes, reason) =>
+    post(`${NS}.submit_profile_change`, { changes: JSON.stringify(changes || {}), reason }),
+  withdrawProfileChange: (name) => post(`${NS}.withdraw_profile_change`, { name }),
+
+  /* ---- Employee documents ----
+     `uploadFile` moves the bytes through Frappe's own handler; the save call
+     then records what the file is. Two steps, because the metadata is ours and
+     the storage is Frappe's. */
+  uploadFile: (file, options) => upload(file, options),
+  employeeDocuments: (employee, opts) =>
+    call(`${NS}.employee_documents`, employee ? { employee } : undefined, opts),
+  saveEmployeeDocument: (payload) => post(`${NS}.save_employee_document`, payload),
+  verifyEmployeeDocument: (name, verified = 1) =>
+    post(`${NS}.verify_employee_document`, { name, verified: verified ? 1 : 0 }),
+  deleteEmployeeDocument: (name) => post(`${NS}.delete_employee_document`, { name }),
+  expiringDocuments: (days, opts) =>
+    call(`${NS}.expiring_documents`, days ? { days } : undefined, opts),
 
   /* ---- Settings ---- */
   settingsHub: (opts) => call(`${NS}.settings_hub`, undefined, opts),

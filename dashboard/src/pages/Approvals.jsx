@@ -13,6 +13,7 @@ const KIND_LABEL = {
   expense: 'Expense',
   attendance: 'Attendance',
   'comp-off': 'Comp-off',
+  profile: 'Profile change',
 };
 
 /* ---------- Detail drawer ---------- */
@@ -80,6 +81,26 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
                   <FieldRow label="Designation" value={row.designation} />
                   <FieldRow label="Reason" value={row.reason} />
                 </Card>
+
+                {/* A profile change is decided on the difference, so the
+                    current value sits beside the proposed one rather than the
+                    approver having to open the employee record to compare. */}
+                {(row.changes || []).length > 0 && (
+                  <Card title="Requested changes">
+                    <ul className="diff-list">
+                      {row.changes.map((change) => (
+                        <li className="diff-row" key={change.fieldname}>
+                          <span className="diff-row__label">{change.label}</span>
+                          <span className="diff-row__values">
+                            <span className="diff-row__from">{change.current || '—'}</span>
+                            <span className="diff-row__arrow" aria-label="changes to">→</span>
+                            <span className="diff-row__to">{String(change.value)}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
 
                 {checks.length > 0 && (
                   <Card title="Team cover">

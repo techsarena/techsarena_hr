@@ -18,6 +18,8 @@ import Funds from './pages/Funds';
 import Loans from './pages/Loans';
 import Approvals from './pages/Approvals';
 import People from './pages/People';
+import OrgChart from './pages/OrgChart';
+import Profile from './pages/Profile';
 import Payroll from './pages/Payroll';
 const Insights = lazy(() => import('./pages/Insights'));
 import LeaveAdmin from './pages/LeaveAdmin';
@@ -65,6 +67,7 @@ function Gate() {
     <Routes>
       <Route element={<Shell />}>
         <Route index element={<Home />} />
+        <Route path="/profile" element={guard('employee_self_service', <Profile />)} />
         <Route path="/attendance" element={guard('employee_self_service', <Attendance />)} />
         <Route path="/leave" element={guard('employee_self_service', <Leave />)} />
         <Route path="/leave/team" element={guard('employee_self_service', <LeaveTeamCalendar />)} />
@@ -77,6 +80,7 @@ function Gate() {
         <Route path="/approvals" element={guard('can_approve_leave', <Approvals />)} />
         <Route path="/people" element={guard('can_view_directory', <People />)} />
         <Route path="/people/:employee" element={guard('can_view_directory', <People />)} />
+        <Route path="/org" element={guard('can_view_directory', <OrgChart />)} />
         <Route path="/payroll" element={guard('can_run_payroll', <Payroll />)} />
         <Route path="/insights" element={guard('can_manage_hr', <Insights />)} />
         <Route path="/leave-admin" element={guard('can_manage_hr', <LeaveAdmin />)} />

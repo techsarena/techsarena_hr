@@ -76,12 +76,35 @@ LEAVE_TYPE_FIELDS = {
 }
 
 
+#: Where a user's muted notification categories are stored. Hidden: it is
+#: written through the preferences endpoint, not edited by hand in the desk.
+NOTIFICATION_FIELDS = {
+	"User": [
+		{
+			"fieldname": "techsarena_notification_prefs",
+			"fieldtype": "Small Text",
+			"label": "Techsarena Notification Preferences",
+			"insert_after": "thread_notify",
+			"hidden": 1,
+			"description": "JSON map of notification category to enabled flag.",
+		},
+	]
+}
+
+
 def after_install() -> None:
 	create_policy_fields()
+	create_notification_fields()
 
 
 def after_migrate() -> None:
 	create_policy_fields()
+	create_notification_fields()
+
+
+def create_notification_fields() -> None:
+	"""Add the per-user notification preference store."""
+	create_custom_fields(NOTIFICATION_FIELDS, ignore_validate=True)
 
 
 def create_policy_fields() -> None:

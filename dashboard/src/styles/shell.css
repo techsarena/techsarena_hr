@@ -78,11 +78,13 @@
   border-radius: var(--radius-pill); background: var(--surface);
   color: var(--text-subtle);
 }
-.topbar__search input {
-  border: 0; box-shadow: none; background: transparent; padding: 0;
-  min-width: 0; flex: 1; height: 100%; font-weight: 500;
+/* Now a button that opens the palette rather than an input of its own. */
+.topbar__search { cursor: pointer; text-align: left; font: inherit; }
+.topbar__search:hover { border-color: var(--divider-strong); background: var(--surface-muted); }
+.topbar__search-text {
+  flex: 1; min-width: 0; font-size: 13px; font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.topbar__search input:focus { border: 0; box-shadow: none; }
 .topbar__search kbd {
   border: 1px solid var(--divider-soft); border-radius: 6px;
   background: var(--surface-muted); color: var(--text-subtle);
@@ -111,9 +113,12 @@
 /* ---------- Notification panel ---------- */
 .notif-panel {
   position: absolute; top: calc(var(--topbar-h) - 6px); right: var(--space-6);
-  width: min(380px, calc(100vw - 32px)); max-height: 420px; overflow-y: auto;
+  width: min(380px, calc(100vw - 32px)); max-height: 420px;
+  display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface); border: 1px solid var(--divider);
-  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); z-index: 50;
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  /* Above the scrim that closes it, or its own controls are unclickable. */
+  z-index: 70;
 }
 .notif-item { padding: 11px var(--space-4); border-bottom: 1px solid var(--divider-soft); cursor: pointer; }
 .notif-item:hover { background: var(--surface-muted); }
@@ -166,4 +171,126 @@
   .topbar { padding: 0 var(--space-4); }
   .topbar__search { display: none; }
   .notif-panel { right: var(--space-4); }
+}
+
+/* ---------------- Notification panel ----------------
+   The panel is now an inbox rather than a list: a header that carries the
+   unread count and its controls, a scrolling body, and a preferences pane
+   that swaps in behind the same frame. */
+.notif-head {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-2);
+  padding: 10px var(--space-4); border-bottom: 1px solid var(--divider-soft);
+  flex: none; background: var(--surface);
+}
+.notif-head__title { font-size: 13px; }
+.notif-head__count {
+  min-width: 18px; padding: 0 5px; border-radius: var(--radius-pill);
+  background: var(--primary-100); color: var(--primary-700);
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+}
+.notif-head__btn {
+  border: 0; background: none; cursor: pointer;
+  padding: 3px 7px; border-radius: var(--radius-sm);
+  font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.notif-head__btn:hover { background: var(--surface-muted); color: var(--ink); }
+.notif-head__btn.is-on { background: var(--primary-100); color: var(--primary-700); }
+
+/* The only scroller in the panel — the header stays put, and "Load older"
+   stays reachable at the end of the list. */
+.notif-list { flex: 1; min-height: 0; overflow-y: auto; }
+
+.notif-more {
+  display: block; width: 100%; padding: 10px; border: 0; cursor: pointer;
+  background: none; border-top: 1px solid var(--divider-soft);
+  font-size: 12px; font-weight: 600; color: var(--primary-600);
+}
+.notif-more:hover:not(:disabled) { background: var(--surface-muted); }
+.notif-more:disabled { color: var(--text-subtle); cursor: default; }
+
+.notif-prefs { padding: var(--space-4); display: grid; gap: var(--space-3); overflow-y: auto; }
+.notif-pref { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; }
+.notif-pref input { width: auto; margin: 0; }
+
+/* ---------------- Command palette ----------------
+   Anchored near the top rather than centred: the list grows downward, and a
+   vertically-centred dialog would jump as results arrive. */
+.palette {
+  position: fixed; top: 12vh; left: 50%; transform: translateX(-50%);
+  width: min(600px, calc(100vw - 32px)); max-height: 66vh;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--divider);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+  z-index: 70;
+}
+
+.palette__input {
+  display: flex; align-items: center; gap: 10px; flex: none;
+  padding: 0 14px; height: 52px;
+  border-bottom: 1px solid var(--divider-soft); color: var(--text-subtle);
+}
+.palette__input input {
+  flex: 1; min-width: 0; height: 100%;
+  border: 0; box-shadow: none; background: transparent; padding: 0;
+  font-size: 15px; font-weight: 500; color: var(--ink);
+}
+.palette__input input:focus { border: 0; box-shadow: none; }
+.palette__input kbd {
+  border: 1px solid var(--divider-soft); border-radius: 6px;
+  background: var(--surface-muted); color: var(--text-subtle);
+  padding: 1px 6px; font: inherit; font-size: 10.5px; font-weight: 700;
+}
+
+.palette__spinner {
+  width: 13px; height: 13px; flex: none; border-radius: 50%;
+  border: 2px solid var(--primary-200); border-top-color: var(--primary-600);
+  animation: palette-spin .6s linear infinite;
+}
+@keyframes palette-spin { to { transform: rotate(360deg); } }
+
+.palette__results { flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-2) 0; }
+.palette__group + .palette__group { margin-top: var(--space-2); }
+.palette__label {
+  padding: 4px var(--space-4); font-size: 10.5px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--text-subtle);
+}
+
+.palette__row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px var(--space-4); border: 0; background: none;
+  cursor: pointer; text-align: left; font: inherit;
+  border-left: 2px solid transparent;
+}
+.palette__row.is-active { background: var(--surface-muted); border-left-color: var(--primary); }
+
+.palette__icon {
+  width: 26px; height: 26px; flex: none; border-radius: var(--radius-sm);
+  display: grid; place-items: center;
+  background: var(--surface-muted); color: var(--text-muted);
+}
+.palette__row.is-active .palette__icon { background: var(--primary-100); color: var(--primary-700); }
+
+.palette__text { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.palette__title { font-size: 13.5px; font-weight: 500; color: var(--ink); }
+.palette__sub { font-size: 11.5px; color: var(--text-subtle); }
+
+.palette__empty { padding: var(--space-6); text-align: center; }
+.palette__hint { padding: var(--space-4); margin: 0; font-size: 12px; color: var(--text-subtle); text-align: center; }
+
+.palette__foot {
+  flex: none; display: flex; gap: var(--space-4);
+  padding: 8px var(--space-4); border-top: 1px solid var(--divider-soft);
+  font-size: 11px; color: var(--text-subtle);
+}
+.palette__foot kbd {
+  border: 1px solid var(--divider-soft); border-radius: 4px;
+  background: var(--surface-muted); padding: 0 4px; margin-right: 3px;
+  font: inherit; font-size: 10px; font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .palette { top: 6vh; max-height: 80vh; }
+  /* The hint is meaningless without a hardware keyboard. */
+  .palette__foot { display: none; }
 }

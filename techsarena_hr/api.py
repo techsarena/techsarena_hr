@@ -537,10 +537,13 @@ def _users() -> list[dict]:
 
 
 def _notifications(user: str) -> list[dict]:
+	"""The first page for the bell. The full inbox pages through
+	`techsarena_hr.notifications.notifications`, which this deliberately
+	mirrors so the first render and the first page agree."""
 	return frappe.get_list(
 		"Notification Log",
 		filters={"for_user": user},
-		fields=["name", "subject", "type", "document_type", "document_name", "read", "creation"],
+		fields=["name", "subject", "email_content", "type", "document_type", "document_name", "read", "creation"],
 		order_by="creation desc",
 		limit_page_length=20,
 	)
@@ -3967,6 +3970,23 @@ APPROVAL_SOURCES: dict[str, dict] = {
 			"creation",
 		),
 	},
+	# Self-service profile corrections. No approver field: like attendance and
+	# comp-off, the reporting line decides, and submitting is the approval.
+	"Employee Profile Change Request": {
+		"kind": "profile",
+		"approver_field": None,
+		"filters": {"docstatus": 0, "status": "Pending"},
+		"fields": (
+			"name",
+			"employee",
+			"employee_name",
+			"department",
+			"changes",
+			"reason",
+			"requested_on",
+			"creation",
+		),
+	},
 }
 
 
@@ -3993,6 +4013,14 @@ def _approval_row(doctype: str, source: dict, row) -> dict:
 		subtitle = row.reason
 		from_date, to_date = row.from_date, row.to_date
 		reason = row.explanation
+	elif kind == "profile":
+		changed = _parse_changes(row.get("changes"))
+		title = _("Profile change")
+		# Name the fields in the subtitle: an approver decides this on what is
+		# being changed, and there are no dates to summarise it by.
+		subtitle = ", ".join(item["label"] for item in changed) or None
+		from_date = to_date = None
+		reason = row.reason
 	else:
 		title = _("Comp-off request")
 		subtitle = row.leave_type
@@ -4015,6 +4043,7 @@ def _approval_row(doctype: str, source: dict, row) -> dict:
 		"half_day": bool(row.get("half_day")),
 		"reason": reason,
 		"leave_balance": flt(row.leave_balance) if row.get("leave_balance") is not None else None,
+		"changes": _parse_changes(row.get("changes")) if kind == "profile" else None,
 		"created_at": str(row.creation) if row.creation else None,
 	}
 
@@ -4182,6 +4211,12 @@ def approval_detail(doctype: str, name: str) -> dict:
 			order_by="idx asc",
 			limit_page_length=0,
 		)
+	if doctype == "Employee Profile Change Request":
+		# Pair each proposed value with what the record holds now — an approver
+		# is deciding on the difference, not on the new value alone.
+		current = frappe.db.get_value("Employee", doc.employee, "*", as_dict=True) or {}
+		for item in detail.get("changes") or []:
+			item["current"] = current.get(item["fieldname"])
 	return detail
 
 
@@ -4239,6 +4274,25 @@ def _decide_one(doctype: str, name: str, approve: bool, comment: str | None, use
 		doc.save()
 		if approve:
 			doc.submit()
+	elif doctype == "Employee Profile Change Request":
+		# A rejection here must leave a trace: the employee needs to see that it
+		# was refused and why, so the draft is marked rather than deleted.
+		if approve:
+			doc.submit()
+		else:
+			doc.status = "Rejected"
+			doc.decided_by = user
+			doc.decided_on = now_datetime()
+			doc.decision_comment = comment
+			doc.flags.ignore_permissions = True
+			doc.save()
+			_publish_to_employee(
+				doc.employee,
+				"request_decided",
+				{"doctype": doctype, "name": doc.name, "status": "Rejected"},
+			)
+			_publish("approval_queue_changed", {"doctype": doctype, "name": doc.name})
+			return {"name": doc.name, "doctype": doctype, "status": "Rejected"}
 	else:
 		# Attendance and comp-off requests carry no approval field: submitting is
 		# the approval, and a rejection is a cancellation of the draft.
@@ -5050,3 +5104,862 @@ def _resolved_branding() -> dict:
 def app_branding() -> dict:
 	"""Public brand shown on the login screen, before sign-in."""
 	return _resolved_branding()
+
+
+# ---------------------------------------------------------------------------
+# Profile self-service
+#
+# Employees propose corrections to their own record rather than writing to it:
+# contact and bank details feed payroll and statutory filings, so the change is
+# staged on an Employee Profile Change Request and applied by HR on approval.
+# The editable whitelist lives on that doctype, never on the client.
+# ---------------------------------------------------------------------------
+
+
+@frappe.whitelist()
+def profile_change_options() -> dict:
+	"""Which fields self-service may propose, with their current values.
+
+	The client renders its form from this rather than a hardcoded list, so the
+	form can never offer a field the server would reject.
+	"""
+	from techsarena_hr.techsarena_hr.doctype.employee_profile_change_request.employee_profile_change_request import (
+		EDITABLE_FIELDS,
+	)
+
+	user = _require_login()
+	_require_hrms()
+	employee = _current_employee(user)
+
+	meta = frappe.get_meta("Employee")
+	record = frappe.db.get_value("Employee", employee, "*", as_dict=True) or {}
+
+	groups = []
+	for group, fieldnames in EDITABLE_FIELDS.items():
+		fields = []
+		for fieldname in fieldnames:
+			if not meta.has_field(fieldname):
+				continue
+			df = meta.get_field(fieldname)
+			fields.append(
+				{
+					"fieldname": fieldname,
+					"label": _(df.label or fieldname),
+					"fieldtype": df.fieldtype,
+					"options": df.options,
+					"value": record.get(fieldname),
+				}
+			)
+		if fields:
+			groups.append({"group": group, "fields": fields})
+
+	return {"employee": employee, "groups": groups}
+
+
+@frappe.whitelist()
+def my_profile_change_requests() -> dict:
+	"""This employee's own change requests, newest first."""
+	user = _require_login()
+	_require_hrms()
+	employee = _current_employee(user)
+
+	rows = frappe.get_all(
+		"Employee Profile Change Request",
+		filters={"employee": employee},
+		fields=(
+			"name",
+			"status",
+			"changes",
+			"reason",
+			"requested_on",
+			"decided_by",
+			"decided_on",
+			"decision_comment",
+			"docstatus",
+			"creation",
+		),
+		order_by="creation desc",
+		limit_page_length=50,
+	)
+	for row in rows:
+		row["changes"] = _parse_changes(row.get("changes"))
+	return {"requests": rows, "pending": sum(1 for r in rows if r["status"] == "Pending")}
+
+
+def _parse_changes(raw) -> list[dict]:
+	"""Renders the stored JSON as labelled rows the client can show as-is."""
+	try:
+		parsed = json.loads(raw or "{}")
+	except (TypeError, ValueError):
+		return []
+	if not isinstance(parsed, dict):
+		return []
+	meta = frappe.get_meta("Employee")
+	rows = []
+	for fieldname, value in parsed.items():
+		df = meta.get_field(fieldname) if meta.has_field(fieldname) else None
+		rows.append(
+			{
+				"fieldname": fieldname,
+				"label": _(df.label) if df and df.label else fieldname,
+				"value": value,
+			}
+		)
+	return rows
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_profile_change(changes: str, reason: str | None = None) -> dict:
+	"""Stage a self-service profile correction for HR approval.
+
+	`changes` is a JSON object of {fieldname: new value}. The employee is taken
+	from the session — never from the client — so this cannot be used to edit
+	somebody else's record.
+	"""
+	user = _require_login()
+	_require_hrms()
+	employee = _current_employee(user)
+
+	try:
+		payload = json.loads(changes or "{}")
+	except (TypeError, ValueError):
+		frappe.throw(_("The requested changes could not be read."))
+	if not isinstance(payload, dict) or not payload:
+		frappe.throw(_("Update at least one detail before submitting."))
+
+	# One open request at a time keeps the approver's inbox unambiguous and
+	# stops two pending requests from applying conflicting values.
+	existing = frappe.db.exists(
+		"Employee Profile Change Request",
+		{"employee": employee, "status": "Pending", "docstatus": 0},
+	)
+	if existing:
+		frappe.throw(
+			_("You already have a profile change request awaiting approval ({0}).").format(existing)
+		)
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Employee Profile Change Request",
+			"employee": employee,
+			"changes": json.dumps(payload, default=str),
+			"reason": reason,
+			"status": "Pending",
+		}
+	)
+	# The employee may create their own request but holds no write permission on
+	# the doctype beyond that; the whitelist on the controller is what actually
+	# constrains the payload.
+	doc.insert(ignore_permissions=True)
+
+	_publish("approval_queue_changed", {"doctype": doc.doctype, "name": doc.name})
+	return {
+		"name": doc.name,
+		"status": doc.status,
+		"changes": _parse_changes(doc.changes),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def withdraw_profile_change(name: str) -> dict:
+	"""Take back a request that has not been decided yet."""
+	user = _require_login()
+	_require_hrms()
+	employee = _current_employee(user)
+
+	doc = frappe.get_doc("Employee Profile Change Request", name)
+	if doc.employee != employee:
+		frappe.throw(_("You can only withdraw your own requests."), frappe.PermissionError)
+	if doc.docstatus != 0:
+		frappe.throw(_("{0} has already been decided.").format(name))
+
+	doc.delete(ignore_permissions=True)
+	_publish("approval_queue_changed", {"doctype": "Employee Profile Change Request", "name": name})
+	return {"name": name, "status": "Withdrawn"}
+
+
+# ---------------------------------------------------------------------------
+# Employee documents
+#
+# The vault behind the profile's Records tab. Files themselves travel through
+# Frappe's own `upload_file` handler; these endpoints own the metadata, the
+# expiry tracking, and who is allowed to see whose documents.
+# ---------------------------------------------------------------------------
+
+#: Types an employee may file against their own record. Contracts and anything
+#: that constitutes an HR decision stay HR-created, so an employee cannot post a
+#: document that purports to change their terms.
+SELF_UPLOADABLE_DOCUMENT_TYPES = {
+	"National ID",
+	"Passport",
+	"Visa",
+	"Work Permit",
+	"Driving Licence",
+	"Educational Certificate",
+	"Professional Certification",
+	"Medical",
+	"Other",
+}
+
+#: How far ahead the vault flags an expiring document.
+EXPIRY_WARNING_DAYS = 60
+
+
+def _assert_document_access(employee: str, user: str, *, write: bool = False) -> bool:
+	"""Mirror of employee_profile's rule: self, reporting subtree, or HR.
+
+	Returns whether the caller is acting as HR, which decides the fields they
+	are allowed to set. Write access is narrower than read: a manager may see a
+	report's documents but only HR and the owner may change them.
+	"""
+	own = _current_employee(user, required=False)
+	is_hr = bool(set(frappe.get_roles(user)).intersection(HR_ROLES))
+	if is_hr:
+		return True
+	if employee == own:
+		return False
+	if not write and employee in _visible_employee_names(own):
+		return False
+	frappe.throw(_("You are not allowed to view this employee's documents."), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def employee_documents(employee: str | None = None) -> dict:
+	"""The document vault for one employee, with expiry state per row."""
+	user = _require_login()
+	_require_hrms()
+	employee = employee or _current_employee(user)
+	is_hr = _assert_document_access(employee, user)
+
+	rows = frappe.get_all(
+		"Employee Document",
+		filters={"employee": employee},
+		fields=(
+			"name",
+			"document_type",
+			"title",
+			"document_number",
+			"issued_on",
+			"expires_on",
+			"is_verified",
+			"attachment",
+			"notes",
+			"owner",
+			"creation",
+		),
+		order_by="expires_on asc, creation desc",
+		limit_page_length=100,
+	)
+
+	today = getdate(nowdate())
+	expiring = 0
+	expired = 0
+	for row in rows:
+		if row.get("expires_on"):
+			days = (getdate(row["expires_on"]) - today).days
+			row["days_to_expiry"] = days
+			if days < 0:
+				row["expiry_state"] = "expired"
+				expired += 1
+			elif days <= EXPIRY_WARNING_DAYS:
+				row["expiry_state"] = "expiring"
+				expiring += 1
+			else:
+				row["expiry_state"] = "valid"
+		else:
+			row["days_to_expiry"] = None
+			row["expiry_state"] = "none"
+
+	return {
+		"employee": employee,
+		"documents": rows,
+		"can_verify": is_hr,
+		"document_types": sorted(SELF_UPLOADABLE_DOCUMENT_TYPES) if not is_hr else None,
+		"counts": {"all": len(rows), "expiring": expiring, "expired": expired},
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def save_employee_document(
+	attachment: str,
+	document_type: str,
+	employee: str | None = None,
+	name: str | None = None,
+	title: str | None = None,
+	document_number: str | None = None,
+	issued_on: str | None = None,
+	expires_on: str | None = None,
+	notes: str | None = None,
+) -> dict:
+	"""Create or update one document row against an already-uploaded file.
+
+	`attachment` is the file_url returned by Frappe's upload handler — this
+	endpoint records what the file *is*, it does not receive the bytes.
+	"""
+	user = _require_login()
+	_require_hrms()
+	employee = employee or _current_employee(user)
+	is_hr = _assert_document_access(employee, user, write=True)
+
+	if not is_hr and document_type not in SELF_UPLOADABLE_DOCUMENT_TYPES:
+		frappe.throw(
+			_("{0} documents are filed by HR.").format(document_type), frappe.PermissionError
+		)
+
+	if name:
+		doc = frappe.get_doc("Employee Document", name)
+		if doc.employee != employee:
+			frappe.throw(_("That document belongs to another employee."), frappe.PermissionError)
+		# An employee may correct their own filing; HR may correct anyone's.
+		if not is_hr and doc.owner != user:
+			frappe.throw(_("You can only edit documents you uploaded."), frappe.PermissionError)
+	else:
+		doc = frappe.new_doc("Employee Document")
+		doc.employee = employee
+
+	doc.update(
+		{
+			"document_type": document_type,
+			"title": title,
+			"document_number": document_number,
+			"issued_on": issued_on or None,
+			"expires_on": expires_on or None,
+			"notes": notes,
+			"attachment": attachment,
+		}
+	)
+	doc.save(ignore_permissions=True)
+
+	_publish_to_employee(employee, "documents_changed", {"name": doc.name})
+	return {"name": doc.name, "document_type": doc.document_type, "title": doc.title}
+
+
+@frappe.whitelist(methods=["POST"])
+def verify_employee_document(name: str, verified: int = 1) -> dict:
+	"""HR's confirmation that the original was sighted."""
+	_require_hr_access()
+	_require_hrms()
+
+	doc = frappe.get_doc("Employee Document", name)
+	doc.is_verified = 1 if cint(verified) else 0
+	doc.save(ignore_permissions=True)
+
+	_publish_to_employee(doc.employee, "documents_changed", {"name": doc.name})
+	return {"name": doc.name, "is_verified": bool(doc.is_verified)}
+
+
+@frappe.whitelist(methods=["POST"])
+def delete_employee_document(name: str) -> dict:
+	"""Remove a document row and the file behind it."""
+	user = _require_login()
+	_require_hrms()
+
+	doc = frappe.get_doc("Employee Document", name)
+	is_hr = _assert_document_access(doc.employee, user, write=True)
+	if not is_hr and doc.owner != user:
+		frappe.throw(_("You can only remove documents you uploaded."), frappe.PermissionError)
+	# A verified document is a record HR has vouched for; only HR retires it.
+	if doc.is_verified and not is_hr:
+		frappe.throw(_("A verified document can only be removed by HR."), frappe.PermissionError)
+
+	employee, file_url = doc.employee, doc.attachment
+	doc.delete(ignore_permissions=True)
+
+	# Drop the orphaned File too, so removing a document does not leave the
+	# bytes readable at a guessable URL.
+	if file_url:
+		for file_name in frappe.get_all("File", filters={"file_url": file_url}, pluck="name"):
+			try:
+				frappe.delete_doc("File", file_name, ignore_permissions=True, delete_permanently=True)
+			except Exception:
+				frappe.log_error(f"Could not delete file {file_name} for {name}")
+
+	_publish_to_employee(employee, "documents_changed", {"name": name})
+	return {"name": name, "status": "Deleted"}
+
+
+@frappe.whitelist()
+def expiring_documents(days: int = EXPIRY_WARNING_DAYS) -> dict:
+	"""Company-wide expiry watchlist for HR.
+
+	Visa and permit lapses are a compliance problem long before anyone notices
+	them on an individual profile, so HR gets them in one place.
+	"""
+	_require_hr_access()
+	_require_hrms()
+
+	horizon = add_days(nowdate(), cint(days))
+	rows = frappe.get_all(
+		"Employee Document",
+		# Both bounds on one field: a dict literal would silently drop the first.
+		filters=[
+			["expires_on", "is", "set"],
+			["expires_on", "<=", horizon],
+		],
+		fields=(
+			"name",
+			"employee",
+			"employee_name",
+			"document_type",
+			"title",
+			"expires_on",
+			"is_verified",
+		),
+		order_by="expires_on asc",
+		limit_page_length=200,
+	)
+	today = getdate(nowdate())
+	for row in rows:
+		row["days_to_expiry"] = (getdate(row["expires_on"]) - today).days
+		row["expiry_state"] = "expired" if row["days_to_expiry"] < 0 else "expiring"
+
+	return {
+		"documents": rows,
+		"horizon_days": cint(days),
+		"counts": {
+			"expired": sum(1 for r in rows if r["expiry_state"] == "expired"),
+			"expiring": sum(1 for r in rows if r["expiry_state"] == "expiring"),
+		},
+	}
+
+
+# ---------------------------------------------------------------------------
+# Expense receipts
+#
+# The read path already returns a claim's attachments; these own the write.
+# A receipt is an ordinary Frappe File against the Expense Claim, so nothing
+# here invents a parallel store — it enforces who may attach to which claim and
+# at what point in the claim's life.
+# ---------------------------------------------------------------------------
+
+
+def _own_claim(name: str, user: str):
+	"""The caller's own claim, or a permission error.
+
+	Receipts are attached by the person making the claim: an approver reads them
+	but does not add to someone else's evidence.
+	"""
+	_unused_user, employee = _require_employee_user(user)
+	claim = frappe.db.get_value(
+		"Expense Claim", name, ["name", "employee", "docstatus", "approval_status"], as_dict=True
+	)
+	if not claim:
+		frappe.throw(_("Expense claim {0} was not found.").format(name), frappe.DoesNotExistError)
+	if claim.employee != employee:
+		frappe.throw(_("You can only attach receipts to your own claims."), frappe.PermissionError)
+	return claim
+
+
+@frappe.whitelist(methods=["POST"])
+def attach_expense_receipt(claim: str, file_url: str, file_name: str | None = None) -> dict:
+	"""Attach an already-uploaded file to one of the caller's own claims.
+
+	`file_url` comes from Frappe's upload handler. The File row is re-pointed at
+	the claim rather than copied, so there is exactly one copy of the bytes.
+	"""
+	user = _require_login()
+	_require_hrms()
+	doc = _own_claim(claim, user)
+
+	# Evidence must not change after a decision has been made on it.
+	if doc.docstatus != 0:
+		frappe.throw(_("This claim has already been submitted and cannot be changed."))
+
+	file_doc = frappe.db.get_value(
+		"File", {"file_url": file_url}, ["name", "attached_to_doctype", "attached_to_name"], as_dict=True
+	)
+	if not file_doc:
+		frappe.throw(_("That upload could not be found. Please try attaching it again."))
+	# A file already attached elsewhere is not ours to move.
+	if file_doc.attached_to_name and file_doc.attached_to_name != claim:
+		frappe.throw(_("That file is already attached to another document."))
+
+	record = frappe.get_doc("File", file_doc.name)
+	record.attached_to_doctype = "Expense Claim"
+	record.attached_to_name = claim
+	record.is_private = 1
+	if file_name:
+		record.file_name = file_name
+	record.save(ignore_permissions=True)
+
+	_publish_to_employee(doc.employee, "claims_changed", {"name": claim})
+	return {
+		"claim": claim,
+		"file_name": record.file_name,
+		"file_url": record.file_url,
+		"file_size": cint(record.file_size),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def remove_expense_receipt(claim: str, file_url: str) -> dict:
+	"""Detach and delete one receipt from a claim that is still a draft."""
+	user = _require_login()
+	_require_hrms()
+	doc = _own_claim(claim, user)
+
+	if doc.docstatus != 0:
+		frappe.throw(_("This claim has already been submitted and cannot be changed."))
+
+	file_name = frappe.db.get_value(
+		"File", {"file_url": file_url, "attached_to_doctype": "Expense Claim", "attached_to_name": claim}, "name"
+	)
+	if not file_name:
+		frappe.throw(_("That receipt is not attached to this claim."))
+
+	frappe.delete_doc("File", file_name, ignore_permissions=True, delete_permanently=True)
+	_publish_to_employee(doc.employee, "claims_changed", {"name": claim})
+	return {"claim": claim, "file_url": file_url, "status": "Removed"}
+
+
+# ---------------------------------------------------------------------------
+# Global search
+#
+# Backs the command palette. Every result is something the caller could already
+# open by navigating to it — the same visibility rules `employee_profile` and
+# `_directory` apply, re-checked here rather than trusted from the client.
+#
+# Deliberately not indexed: salary slips, payroll runs, and salary structures.
+# A palette that autocompletes pay figures leaks them to anyone glancing at the
+# screen, and there is no self-service question that needs it.
+# ---------------------------------------------------------------------------
+
+#: Below this a query matches most of the table and the palette is noise.
+MIN_SEARCH_CHARS = 2
+
+#: Per-section cap. The palette shows a handful of each rather than 50 of one.
+SEARCH_SECTION_LIMIT = 6
+
+
+def _like(term: str) -> str:
+	"""Escapes a user term for a LIKE, so `%` and `_` match literally."""
+	escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+	return f"%{escaped}%"
+
+
+def _search_people(term: str, *, unrestricted: bool, visible: set[str]) -> list[dict]:
+	"""Directory matches, by name, designation, or employee number."""
+	if not unrestricted and not visible:
+		return []
+
+	filters: list = [["status", "=", "Active"]]
+	if not unrestricted:
+		filters.append(["name", "in", sorted(visible)])
+
+	pattern = _like(term)
+	rows = frappe.get_all(
+		"Employee",
+		filters=filters,
+		or_filters=[
+			["employee_name", "like", pattern],
+			["designation", "like", pattern],
+			["employee_number", "like", pattern],
+		],
+		fields=["name", "employee_name", "image", "designation", "department"],
+		order_by="employee_name asc",
+		limit_page_length=SEARCH_SECTION_LIMIT,
+	)
+	return [
+		{
+			"id": row.name,
+			"kind": "person",
+			"title": row.employee_name,
+			"subtitle": " · ".join(x for x in (row.designation, row.department) if x) or None,
+			"image": row.image,
+			"to": f"/people/{row.name}",
+		}
+		for row in rows
+	]
+
+
+def _search_own_documents(term: str, employee: str | None) -> list[dict]:
+	"""The caller's own document vault. Never anyone else's, HR included —
+	a palette is the wrong surface for reading someone's passport."""
+	if not employee or not frappe.db.table_exists("Employee Document"):
+		return []
+	pattern = _like(term)
+	rows = frappe.get_all(
+		"Employee Document",
+		filters=[["employee", "=", employee]],
+		or_filters=[
+			["title", "like", pattern],
+			["document_type", "like", pattern],
+		],
+		fields=["name", "title", "document_type", "expires_on"],
+		order_by="creation desc",
+		limit_page_length=SEARCH_SECTION_LIMIT,
+	)
+	return [
+		{
+			"id": row.name,
+			"kind": "document",
+			"title": row.title or row.document_type,
+			"subtitle": row.document_type,
+			"to": "/profile",
+		}
+		for row in rows
+	]
+
+
+def _search_own_claims(term: str, employee: str | None) -> list[dict]:
+	"""The caller's own expense claims, by name or remark."""
+	if not employee:
+		return []
+	pattern = _like(term)
+	rows = frappe.get_all(
+		"Expense Claim",
+		filters=[["employee", "=", employee], ["docstatus", "<", 2]],
+		or_filters=[["name", "like", pattern], ["remark", "like", pattern]],
+		fields=["name", "remark", "posting_date", "total_claimed_amount", "approval_status"],
+		order_by="posting_date desc",
+		limit_page_length=SEARCH_SECTION_LIMIT,
+	)
+	return [
+		{
+			"id": row.name,
+			"kind": "claim",
+			"title": (row.remark or "").strip() or row.name,
+			"subtitle": " · ".join(
+				x for x in (row.approval_status, str(row.posting_date) if row.posting_date else None) if x
+			) or None,
+			"to": "/claims",
+		}
+		for row in rows
+	]
+
+
+def _search_leave(term: str, employee: str | None) -> list[dict]:
+	"""The caller's own leave applications, by type or reason."""
+	if not employee:
+		return []
+	pattern = _like(term)
+	rows = frappe.get_all(
+		"Leave Application",
+		filters=[["employee", "=", employee], ["docstatus", "<", 2]],
+		or_filters=[["leave_type", "like", pattern], ["description", "like", pattern]],
+		fields=["name", "leave_type", "from_date", "to_date", "status"],
+		order_by="from_date desc",
+		limit_page_length=SEARCH_SECTION_LIMIT,
+	)
+	return [
+		{
+			"id": row.name,
+			"kind": "leave",
+			"title": row.leave_type or _("Leave"),
+			"subtitle": " · ".join(
+				x for x in (row.status, f"{row.from_date} → {row.to_date}" if row.from_date else None) if x
+			) or None,
+			"to": "/leave",
+		}
+		for row in rows
+	]
+
+
+def _search_announcements(term: str, employee: str | None) -> list[dict]:
+	"""Announcements this employee would actually be shown.
+
+	Applies the same audience and lifetime rules as `announcements()`: an
+	unpublished, future-dated, expired, or differently-targeted notice must not
+	surface here just because its title matched.
+	"""
+	if not frappe.db.table_exists("HR Announcement"):
+		return []
+	pattern = _like(term)
+	rows = frappe.get_all(
+		"HR Announcement",
+		filters=[
+			["is_published", "=", 1],
+			["published_on", "<=", nowdate()],
+			["title", "like", pattern],
+		],
+		or_filters=[["expires_on", ">=", nowdate()], ["expires_on", "is", "not set"]],
+		fields=["name", "title", "category", "published_on", "company", "department"],
+		order_by="published_on desc",
+		limit_page_length=SEARCH_SECTION_LIMIT,
+	)
+	if employee:
+		profile = frappe.db.get_value("Employee", employee, ["company", "department"], as_dict=True) or {}
+		rows = [
+			row
+			for row in rows
+			if (not row.company or row.company == profile.get("company"))
+			and (not row.department or row.department == profile.get("department"))
+		]
+	return [
+		{
+			"id": row.name,
+			"kind": "announcement",
+			"title": row.title,
+			"subtitle": row.category,
+			"to": "/announcements",
+		}
+		for row in rows
+	]
+
+
+@frappe.whitelist()
+def global_search(query: str) -> dict:
+	"""Everything matching `query` that this user is allowed to see.
+
+	Sections are returned separately rather than as one ranked list: the client
+	groups them, and a person and a claim are not comparable enough for a single
+	relevance score to mean anything.
+	"""
+	user = _require_login()
+	_require_hrms()
+
+	term = (query or "").strip()
+	if len(term) < MIN_SEARCH_CHARS:
+		return {"query": term, "sections": [], "total": 0}
+
+	roles = set(frappe.get_roles(user))
+	can_manage_hr = bool(roles.intersection(HR_ROLES))
+	employee = _current_employee(user, required=False)
+	# Directory reach mirrors bootstrap's: HR sees everyone, everyone else sees
+	# their own reporting subtree.
+	visible = set() if can_manage_hr else _visible_employee_names(employee)
+
+	sections = []
+
+	if frappe.has_permission("Employee", "read"):
+		people = _search_people(term, unrestricted=can_manage_hr, visible=visible)
+		if people:
+			sections.append({"key": "people", "label": _("People"), "results": people})
+
+	for key, label, results in (
+		("leave", _("My leave"), _search_leave(term, employee)),
+		("claims", _("My expenses"), _search_own_claims(term, employee)),
+		("documents", _("My documents"), _search_own_documents(term, employee)),
+		("announcements", _("Announcements"), _search_announcements(term, employee)),
+	):
+		if results:
+			sections.append({"key": key, "label": label, "results": results})
+
+	return {
+		"query": term,
+		"sections": sections,
+		"total": sum(len(section["results"]) for section in sections),
+	}
+
+
+# ---------------------------------------------------------------------------
+# Org chart
+#
+# Built from `reports_to`, the only record of hierarchy a stock HRMS keeps.
+# The endpoint returns a flat node list with parent pointers rather than a
+# nested tree: the client needs to look nodes up by id to expand and focus
+# them, and a nested payload would have to be re-flattened to do that.
+#
+# A site that has not filled in `reports_to` is the normal starting state, not
+# an error — the response says so explicitly so the screen can explain itself
+# instead of drawing nine disconnected roots.
+# ---------------------------------------------------------------------------
+
+
+def _org_visible(user: str, employee: str | None) -> tuple[bool, set[str]]:
+	"""Who this user may see in the chart.
+
+	Mirrors the directory rule: HR (and anyone with unrestricted Employee read)
+	sees the whole company, everyone else sees their own reporting subtree. The
+	chart is a directory view, so it must not widen what the directory shows.
+	"""
+	roles = set(frappe.get_roles(user))
+	if roles.intersection(HR_ROLES):
+		return True, set()
+	return False, _visible_employee_names(employee)
+
+
+@frappe.whitelist()
+def org_chart(root: str | None = None) -> dict:
+	"""The reporting tree, as nodes the client assembles.
+
+	`root` focuses the chart on one person and their descendants; omitted, it
+	returns everyone in scope. Each node carries `report_count` (direct reports)
+	so a collapsed branch can say how much it is hiding without loading it.
+	"""
+	user = _require_login()
+	_require_hrms()
+	if not frappe.has_permission("Employee", "read"):
+		frappe.throw(_("You are not allowed to view the directory."), frappe.PermissionError)
+
+	own = _current_employee(user, required=False)
+	unrestricted, visible = _org_visible(user, own)
+
+	filters: dict = {"status": "Active"}
+	if not unrestricted:
+		if not visible:
+			return {
+				"nodes": [], "roots": [], "self": own, "root": None,
+				"total": 0, "unlinked": 0, "has_hierarchy": False,
+			}
+		filters["name"] = ["in", sorted(visible)]
+
+	rows = frappe.get_all(
+		"Employee",
+		filters=filters,
+		fields=[
+			"name", "employee_name", "image", "designation",
+			"department", "reports_to", "user_id",
+		],
+		order_by="employee_name asc",
+		limit_page_length=0,
+	)
+	in_scope = {row.name for row in rows}
+
+	# A manager outside the caller's scope must not become a dangling parent —
+	# the node would point at an id the client never receives.
+	nodes = []
+	for row in rows:
+		parent = row.reports_to if row.reports_to in in_scope else None
+		nodes.append(
+			{
+				"id": row.name,
+				"name": row.employee_name,
+				"image": row.image,
+				"designation": row.designation,
+				"department": row.department,
+				"parent": parent,
+				"is_self": row.name == own,
+				"report_count": 0,
+			}
+		)
+
+	by_id = {node["id"]: node for node in nodes}
+	for node in nodes:
+		if node["parent"]:
+			by_id[node["parent"]]["report_count"] += 1
+
+	# Focusing keeps one person and everything beneath them.
+	if root:
+		if root not in by_id:
+			frappe.throw(_("That employee is not in your part of the organisation."), frappe.PermissionError)
+		keep = {root}
+		queue = [root]
+		children: dict[str, list[str]] = {}
+		for node in nodes:
+			if node["parent"]:
+				children.setdefault(node["parent"], []).append(node["id"])
+		while queue:
+			for child in children.get(queue.pop(), ()):
+				if child not in keep:
+					keep.add(child)
+					queue.append(child)
+		nodes = [node for node in nodes if node["id"] in keep]
+		# The focused node is the root of what is returned, whatever sits above it.
+		by_id = {node["id"]: node for node in nodes}
+		by_id[root]["parent"] = None
+
+	roots = [node["id"] for node in nodes if not node["parent"]]
+	# Everyone being a root means the reporting line is simply not filled in.
+	has_hierarchy = any(node["parent"] for node in nodes)
+
+	return {
+		"nodes": nodes,
+		"roots": roots,
+		"self": own,
+		"root": root,
+		"total": len(nodes),
+		# What HR would need to fix to make the chart meaningful.
+		"unlinked": sum(1 for node in nodes if not node["parent"] and not node["report_count"]),
+		"has_hierarchy": has_hierarchy,
+	}

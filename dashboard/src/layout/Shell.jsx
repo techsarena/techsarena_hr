@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { visibleGroups } from './nav';
 import { Icon } from '../components/Icon';
+import hr from '../api/hr';
 import { Avatar } from '../components/ui';
+import CommandPalette from '../components/CommandPalette';
 import { fmtRelative } from '../api/format';
 
 /** Brand mark: logos arrive inline as data: URIs to dodge static-file CORS. */
@@ -88,38 +90,174 @@ function Sidebar({ open, onNavigate }) {
 }
 
 function Notifications({ open, onClose }) {
-  const { notifications, markNotificationRead } = useWorkspace();
+  const { notifications, unreadCount, markNotificationRead, markAllNotificationsRead } = useWorkspace();
+  // Bootstrap carries the first page; anything the user pages past it lives
+  // here, so the bell stays instant and the history is only fetched on demand.
+  const [extra, setExtra] = useState([]);
+  const [nextStart, setNextStart] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+
+  // A fresh open should not show stale paging from the last one.
+  useEffect(() => {
+    if (!open) { setExtra([]); setNextStart(null); setShowPrefs(false); setUnreadOnly(false); }
+  }, [open]);
+
+  const rows = [...notifications, ...extra];
+  const visible = unreadOnly ? rows.filter((n) => !n.read) : rows;
+  const canPage = nextStart !== null || extra.length === 0;
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      const start = nextStart ?? notifications.length;
+      const page = await hr.notifications({ start, limit: 20 });
+      // Bootstrap's page and this one can overlap if something arrived between.
+      setExtra((prev) => {
+        const seen = new Set([...notifications, ...prev].map((n) => n.name));
+        return [...prev, ...page.notifications.filter((n) => !seen.has(n.name))];
+      });
+      setNextStart(page.next_start);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextStart, notifications]);
+
+  // The context clears bootstrap's page; the rows this panel paged in are its
+  // own state and have to be cleared alongside them.
+  const markAll = useCallback(async () => {
+    await markAllNotificationsRead();
+    setExtra((prev) => prev.map((n) => ({ ...n, read: 1 })));
+  }, [markAllNotificationsRead]);
+
   if (!open) return null;
+
   return (
     <>
       <div className="scrim no-print" style={{ background: 'transparent' }} onClick={onClose} />
       <div className="notif-panel no-print" role="dialog" aria-label="Notifications">
-        {notifications.length === 0 ? (
-          <div className="state" style={{ padding: 'var(--space-6)' }}>
-            <div className="state__title">You're all caught up</div>
-            <p className="state__body">New notifications will show here.</p>
+        <header className="notif-head">
+          <div className="row" style={{ gap: 'var(--space-2)', alignItems: 'center' }}>
+            <strong className="notif-head__title">Notifications</strong>
+            {unreadCount > 0 && <span className="notif-head__count">{unreadCount}</span>}
           </div>
-        ) : (
-          notifications.map((item) => (
-            <div
-              key={item.name}
-              className={`notif-item${item.read ? '' : ' is-unread'}`}
-              onClick={() => !item.read && markNotificationRead(item.name)}
+          <div className="row" style={{ gap: 4 }}>
+            <button
+              type="button"
+              className={`notif-head__btn${unreadOnly ? ' is-on' : ''}`}
+              onClick={() => setUnreadOnly((v) => !v)}
             >
-              <div className="notif-item__subject">{item.subject}</div>
-              <div className="notif-item__meta">
-                {[item.document_type, fmtRelative(item.creation)].filter(Boolean).join(' · ')}
+              Unread
+            </button>
+            {unreadCount > 0 && (
+              <button type="button" className="notif-head__btn" onClick={markAll}>
+                Mark all read
+              </button>
+            )}
+            <button
+              type="button"
+              className={`notif-head__btn${showPrefs ? ' is-on' : ''}`}
+              onClick={() => setShowPrefs((v) => !v)}
+              aria-label="Notification settings"
+            >
+              <Icon name="settings" size={13} />
+            </button>
+          </div>
+        </header>
+
+        {showPrefs ? (
+          <NotificationPreferences />
+        ) : (
+          <div className="notif-list">
+            {visible.length === 0 ? (
+              <div className="state" style={{ padding: 'var(--space-6)' }}>
+                <div className="state__title">
+                  {unreadOnly ? 'Nothing unread' : "You're all caught up"}
+                </div>
+                <p className="state__body">New notifications will show here.</p>
               </div>
-            </div>
-          ))
+            ) : (
+              visible.map((item) => (
+                <div
+                  key={item.name}
+                  className={`notif-item${item.read ? '' : ' is-unread'}`}
+                  onClick={() => !item.read && markNotificationRead(item.name)}
+                >
+                  <div className="notif-item__subject">{item.subject}</div>
+                  <div className="notif-item__meta">
+                    {[item.document_type, fmtRelative(item.creation)].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+              ))
+            )}
+
+            {canPage && visible.length > 0 && (
+              <button
+                type="button"
+                className="notif-more"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? 'Loading…' : 'Load older'}
+              </button>
+            )}
+          </div>
         )}
       </div>
     </>
   );
 }
 
+/** Per-category mute switches, saved as one map. */
+function NotificationPreferences() {
+  const [categories, setCategories] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    hr.notificationPreferences()
+      .then((data) => { if (live) setCategories(data.categories); })
+      .catch(() => { if (live) setCategories([]); });
+    return () => { live = false; };
+  }, []);
+
+  const toggle = async (key) => {
+    const next = categories.map((c) => (c.key === key ? { ...c, enabled: !c.enabled } : c));
+    setCategories(next);
+    setSaving(true);
+    try {
+      await hr.saveNotificationPreferences(
+        Object.fromEntries(next.map((c) => [c.key, c.enabled])),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!categories) return <div className="notif-prefs"><p className="small subtle">Loading…</p></div>;
+
+  return (
+    <div className="notif-prefs">
+      <p className="small subtle" style={{ marginTop: 0 }}>Choose what you are told about.</p>
+      {categories.map((cat) => (
+        <label className="notif-pref" key={cat.key}>
+          <input
+            type="checkbox"
+            checked={cat.enabled}
+            disabled={saving}
+            onChange={() => toggle(cat.key)}
+          />
+          <span className="small">{cat.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 const TITLES = {
   '/': 'Home',
+  '/profile': 'My profile',
   '/attendance': 'Attendance & shifts',
   '/leave': 'My leave',
   '/leave/team': 'Team calendar',
@@ -131,6 +269,7 @@ const TITLES = {
   '/loans': 'My loans',
   '/approvals': 'Approval inbox',
   '/people': 'People',
+  '/org': 'Org chart',
   '/payroll': 'Payroll',
   '/insights': 'Insights',
   '/leave-admin': 'Leave admin',
@@ -145,11 +284,32 @@ export default function Shell() {
   const { unreadCount, reload } = useWorkspace();
   const [navOpen, setNavOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const location = useLocation();
+
+  // ⌘K on a Mac, Ctrl-K elsewhere. Shown as whichever the user's platform uses,
+  // so the hint matches the key they actually press.
+  const shortcutHint = useMemo(
+    () => (typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '') ? '⌘K' : 'Ctrl K'),
+    [],
+  );
 
   // Close the mobile drawer on navigation, and keep the tab title in sync so
   // browser history and bookmarks read properly — plain web affordances.
   useEffect(() => { setNavOpen(false); setNotifOpen(false); }, [location.pathname]);
+
+  // The palette opens from anywhere, so the shortcut lives on the document.
+  // Bound once, and only toggles state — the palette owns its own keys.
+  useEffect(() => {
+    const onKey = (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen((open) => !open);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
   useEffect(() => {
     const title = TITLES[location.pathname] || 'Techsarena HCM';
     document.title = `${title} · Techsarena HCM`;
@@ -157,6 +317,7 @@ export default function Shell() {
 
   return (
     <div className="shell">
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       {navOpen && <div className="scrim no-print" onClick={() => setNavOpen(false)} />}
       <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
 
@@ -166,11 +327,16 @@ export default function Shell() {
             <Icon name="menu" />
           </button>
           <span className="topbar__title">{TITLES[location.pathname] || 'Techsarena HCM'}</span>
-          <div className="topbar__search">
+          <button
+            type="button"
+            className="topbar__search"
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Search"
+          >
             <Icon name="search" size={16} />
-            <input type="search" placeholder="Search people, policies, claims..." aria-label="Search" />
-            <kbd>⌘K</kbd>
-          </div>
+            <span className="topbar__search-text">Search people, leave, expenses…</span>
+            <kbd>{shortcutHint}</kbd>
+          </button>
           <div className="topbar__spacer" />
           <button type="button" className="topbar__btn" onClick={reload} title="Refresh" aria-label="Refresh">
             <Icon name="refresh" size={17} />

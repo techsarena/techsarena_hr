@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import hr from '../api/hr';
 import { useAsync } from '../hooks/useAsync';
 import { useWorkspace } from '../hooks/WorkspaceContext';
@@ -7,6 +7,8 @@ import { Async, Button, Card, Drawer, EmptyState, Field, Pill } from '../compone
 import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDateShort, fmtMoney, isoDate, toDate } from '../api/format';
+
+const MAX_RECEIPT_MB = 10;
 
 /** April-start financial year, matching the HRMS default. */
 function fyOf(value) {
@@ -380,6 +382,49 @@ function ClaimDetail({ claim, currency, onChanged }) {
     && claim.approval_status !== 'Approved'
     && !(Number(claim.total_amount_reimbursed) > 0);
 
+  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Receipts may only be added or removed before the claim is submitted.
+  const isDraft = claim.docstatus === 0;
+
+  const addReceipt = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > MAX_RECEIPT_MB * 1024 * 1024) {
+      toast.error(`That file is over ${MAX_RECEIPT_MB}MB. Please attach a smaller scan.`);
+      return;
+    }
+    setUploading(true);
+    setProgress(0);
+    try {
+      const uploaded = await hr.uploadFile(file, { isPrivate: true, onProgress: setProgress });
+      await hr.attachExpenseReceipt(claim.name, uploaded.file_url, file.name);
+      toast.success('Receipt attached.');
+      await onChanged?.();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setUploading(false);
+      setProgress(0);
+    }
+  };
+
+  const removeReceipt = async (fileUrl) => {
+    setBusy(true);
+    try {
+      await hr.removeExpenseReceipt(claim.name, fileUrl);
+      toast.success('Receipt removed.');
+      await onChanged?.();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const withdraw = async () => {
     setBusy(true);
     try {
@@ -461,17 +506,29 @@ function ClaimDetail({ claim, currency, onChanged }) {
         <section className="claim-receipts">
           <div className="section-heading__label">Receipts</div>
           {receipts.map((file) => (
-            <a
-              className="claim-receipt"
-              key={file.file_url}
-              href={file.file_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <Icon name="receipt" size={15} />
-              <span className="claim-receipt__name truncate">{file.file_name}</span>
-              {fmtBytes(file.file_size) && <span className="small subtle">{fmtBytes(file.file_size)}</span>}
-            </a>
+            <div className="claim-receipt-row" key={file.file_url}>
+              <a
+                className="claim-receipt"
+                href={file.file_url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Icon name="receipt" size={15} />
+                <span className="claim-receipt__name truncate">{file.file_name}</span>
+                {fmtBytes(file.file_size) && <span className="small subtle">{fmtBytes(file.file_size)}</span>}
+              </a>
+              {/* Evidence is only editable while the claim is still a draft. */}
+              {isDraft && (
+                <Button
+                  size="sm"
+                  onClick={() => removeReceipt(file.file_url)}
+                  disabled={busy || uploading}
+                  aria-label={`Remove ${file.file_name}`}
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
           ))}
         </section>
       )}
@@ -498,12 +555,28 @@ function ClaimDetail({ claim, currency, onChanged }) {
       </section>
 
       <div className="claim-actions">
-        {/* Attachments are added against the document itself, so this opens the
-            claim in Frappe's own form rather than half-implementing an
-            uploader that would bypass its validation. */}
-        <a className="btn btn--ghost" href={`/app/expense-claim/${encodeURIComponent(claim.name)}`} target="_blank" rel="noreferrer">
-          <Icon name="plus" size={15} /> Add a receipt
-        </a>
+        {/* Receipts attach in place now. A submitted claim is evidence an
+            approver has already seen, so the control is only offered on a
+            draft — the same rule the backend enforces. */}
+        {isDraft && (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg,.webp"
+              style={{ display: 'none' }}
+              onChange={addReceipt}
+            />
+            <Button
+              variant="ghost"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading || busy}
+            >
+              <Icon name="plus" size={15} />
+              {uploading ? `Uploading ${progress}%` : ' Add a receipt'}
+            </Button>
+          </>
+        )}
         {canWithdraw && (
           <Button variant="danger" onClick={withdraw} disabled={busy}>
             {busy ? 'Withdrawing…' : 'Withdraw claim'}

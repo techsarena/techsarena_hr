@@ -18,6 +18,7 @@ export const NAV_GROUPS = [
     label: 'My workspace',
     capability: 'employee_self_service',
     items: [
+      { to: '/profile', label: 'My profile', icon: 'people' },
       { to: '/attendance', label: 'Attendance', icon: 'clock' },
       {
         to: '/leave',
@@ -49,6 +50,7 @@ export const NAV_GROUPS = [
     label: 'Company',
     items: [
       { to: '/people', label: 'People', icon: 'people', capability: 'can_view_directory' },
+      { to: '/org', label: 'Org chart', icon: 'chart', capability: 'can_view_directory' },
       { to: '/lifecycle', label: 'Lifecycle', icon: 'briefcase', capability: 'can_manage_hr' },
       { to: '/payroll', label: 'Payroll', icon: 'payroll', capability: 'can_run_payroll' },
       { to: '/insights', label: 'Insights', icon: 'chart', capability: 'can_manage_hr' },

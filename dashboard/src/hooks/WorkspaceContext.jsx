@@ -138,6 +138,36 @@ export function WorkspaceProvider({ children }) {
         case 'approval_queue_changed':
           scheduleRefresh();
           break;
+        case 'notification':
+          // The payload is the whole row, so the bell updates without a
+          // bootstrap refetch. Guarded against a duplicate arriving twice.
+          setBoot((prev) => {
+            if (!prev) return prev;
+            const list = prev.notifications || [];
+            if (list.some((n) => n.name === payload.name)) return prev;
+            return {
+              ...prev,
+              notifications: [
+                {
+                  name: payload.name,
+                  subject: payload.subject,
+                  document_type: payload.document_type,
+                  document_name: payload.document_name,
+                  read: 0,
+                  creation: new Date().toISOString(),
+                },
+                ...list,
+              ],
+            };
+          });
+          break;
+        case 'notifications_read':
+          // Another tab cleared them; match it rather than showing a stale count.
+          setBoot((prev) => prev && {
+            ...prev,
+            notifications: (prev.notifications || []).map((n) => ({ ...n, read: 1 })),
+          });
+          break;
         default:
           break;
       }
@@ -165,6 +195,14 @@ export function WorkspaceProvider({ children }) {
     setBoot((prev) => prev && {
       ...prev,
       notifications: (prev.notifications || []).map((n) => (n.name === name ? { ...n, read: 1 } : n)),
+    });
+  }, []);
+
+  const markAllNotificationsRead = useCallback(async () => {
+    await hr.markAllNotificationsRead();
+    setBoot((prev) => prev && {
+      ...prev,
+      notifications: (prev.notifications || []).map((n) => ({ ...n, read: 1 })),
     });
   }, []);
 
@@ -196,8 +234,9 @@ export function WorkspaceProvider({ children }) {
       notifications,
       unreadCount: notifications.filter((n) => !n.read).length,
       markNotificationRead,
+      markAllNotificationsRead,
     };
-  }, [status, error, load, signIn, signOut, boot, summary, currency, markNotificationRead]);
+  }, [status, error, load, signIn, signOut, boot, summary, currency, markNotificationRead, markAllNotificationsRead]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

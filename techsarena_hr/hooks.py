@@ -150,14 +150,6 @@ after_migrate = "techsarena_hr.install.after_migrate"
 # }
 
 doc_events = {
-	"Salary Slip": {
-		# Computes the monthly income-tax deduction from the employee's Income Tax
-		# Slab. No-op unless enabled in Techsarena Payroll Settings. Independent of
-		# the arrears path (which settles via Additional Salary).
-		"before_save": "techsarena_hr.techsarena_payroll.income_tax.apply_monthly_tax",
-		# Seat-licence gate: block payroll when over the licensed employee count.
-		"before_submit": "techsarena_hr.techsarena_subscription.subscription.check_payroll",
-	},
 	"Payroll Entry": {
 		"before_submit": "techsarena_hr.techsarena_subscription.subscription.check_payroll",
 	},
@@ -165,12 +157,41 @@ doc_events = {
 		# Block creating / activating an employee beyond the licensed seat count.
 		"validate": "techsarena_hr.techsarena_subscription.subscription.check_new_employee",
 	},
+	# Tell people what happened to the things they asked for. Each handler
+	# notifies only the employee the document belongs to.
+	"Leave Application": {
+		"on_update_after_submit": "techsarena_hr.notifications.on_leave_decision",
+		"on_submit": "techsarena_hr.notifications.on_leave_decision",
+	},
+	"Expense Claim": {
+		"on_update_after_submit": "techsarena_hr.notifications.on_expense_decision",
+		"on_submit": "techsarena_hr.notifications.on_expense_decision",
+	},
+	"Salary Slip": {
+		# Computes the monthly income-tax deduction from the employee's Income Tax
+		# Slab. No-op unless enabled in Techsarena Payroll Settings. Independent of
+		# the arrears path (which settles via Additional Salary).
+		"before_save": "techsarena_hr.techsarena_payroll.income_tax.apply_monthly_tax",
+		# Seat-licence gate: block payroll when over the licensed employee count.
+		"before_submit": "techsarena_hr.techsarena_subscription.subscription.check_payroll",
+		# Tell the employee their payslip is available.
+		"on_submit": "techsarena_hr.notifications.on_salary_slip_submit",
+	},
+	"Employee Profile Change Request": {
+		"on_submit": "techsarena_hr.notifications.on_profile_change_decided",
+		"on_update": "techsarena_hr.notifications.on_profile_change_decided",
+	},
 }
 
 # Scheduled Tasks
 # ---------------
 
 scheduler_events = {
+	"daily": [
+		# Warns employees whose documents are about to lapse. Only fires on set
+		# day-counts, so a document raises one notification per milestone.
+		"techsarena_hr.notifications.notify_expiring_documents",
+	],
 	"monthly": [
 		# Idempotent, opt-in monthly leave accrual (no-op unless configured via
 		# techsarena_leave_monthly_accrual / techsarena_leave_accrual_type).

@@ -192,6 +192,69 @@ export async function resource(doctype, params, options = {}) {
   return data?.data ?? [];
 }
 
+/**
+ * Upload a file through Frappe's own handler.
+ *
+ * Multipart, so it cannot go through `request()` — that sets a JSON
+ * Content-Type, and letting fetch set the boundary itself is the whole point.
+ * Uses XHR rather than fetch because only XHR reports upload progress, and a
+ * scan of a passport over a phone connection needs a progress bar.
+ *
+ * Returns the created File doc, whose `file_url` is what the metadata
+ * endpoints then record.
+ */
+export function upload(file, { isPrivate = true, folder = 'Home', onProgress, signal } = {}) {
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('is_private', isPrivate ? '1' : '0');
+    form.append('folder', folder);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${METHOD_ROOT}/upload_file`, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader('Accept', 'application/json');
+    const token = csrfToken();
+    if (token) xhr.setRequestHeader('X-Frappe-CSRF-Token', token);
+
+    if (onProgress) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+      };
+    }
+
+    const fail = (message, status = 0) => reject(new ApiError(message, { status }));
+
+    xhr.onload = () => {
+      let data = null;
+      try {
+        data = JSON.parse(xhr.responseText || 'null');
+      } catch {
+        /* handled as a non-JSON failure below */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const doc = data?.message ?? data;
+        if (doc?.file_url) return resolve(doc);
+        return fail('The upload did not return a file.', xhr.status);
+      }
+      if (xhr.status === 401 || xhr.status === 403) notifySessionLost();
+      fail(
+        readServerMessages(data) || stripHtml(data?.message) || data?.exception || 'Upload failed',
+        xhr.status,
+      );
+    };
+    xhr.onerror = () => fail('Could not reach the server. Check your connection.');
+    xhr.onabort = () => reject(new DOMException('Upload aborted', 'AbortError'));
+
+    if (signal) {
+      if (signal.aborted) return xhr.abort();
+      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+
+    xhr.send(form);
+  });
+}
+
 export const auth = {
   login: (usr, pwd) => post('login', { usr, pwd }),
   logout: () => post('logout'),
