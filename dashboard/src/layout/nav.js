@@ -108,15 +108,9 @@ export const NAV_GROUPS = [
       { to: '/offboarding', label: 'Offboarding', icon: 'logout' },
     ],
   },
-  {
-    id: 'setup',
-    label: 'Setup',
-    capability: 'can_manage_hr',
-    items: [
-      { to: '/settings', label: 'Settings', icon: 'settings' },
-      { to: '/users', label: 'Users & roles', icon: 'shield', capability: 'can_manage_users' },
-    ],
-  },
+  // Setup (Settings, Users & roles) is not a sidebar group: it lives in the
+  // account menu beside the profile, with the site-level things rather than
+  // among the screens people work in daily.
 ];
 
 /** Filters the model down to what this user's capabilities allow. */

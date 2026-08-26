@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { visibleGroups } from './nav';
@@ -22,8 +22,75 @@ function BrandMark({ branding, className }) {
   );
 }
 
+/**
+ * Account menu — the gear beside the profile link.
+ *
+ * Holds the things that are about the session or the site rather than about a
+ * screen: setup, and signing out. Setup entries are capability-gated exactly
+ * as their routes are, so the menu never offers a destination that would
+ * redirect Home on arrival.
+ */
+function AccountMenu({ onNavigate }) {
+  const { capabilities, signOut } = useWorkspace();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  // Close on outside click and on Escape: a menu that survives either is a menu
+  // the user has to fight.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (event) => { if (!ref.current?.contains(event.target)) setOpen(false); };
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  const go = () => { setOpen(false); onNavigate?.(); };
+
+  const setupLinks = [
+    capabilities.can_manage_hr && { to: '/settings', label: t('Settings'), icon: 'settings' },
+    capabilities.can_manage_users && { to: '/users', label: t('Users & roles'), icon: 'shield' },
+  ].filter(Boolean);
+
+  return (
+    <div className="account" ref={ref}>
+      <button
+        type="button"
+        className={`sidebar__signout${open ? ' is-open' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+        title={t('Account')}
+        aria-label={t('Account')}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <Icon name="settings" size={16} />
+      </button>
+
+      {open && (
+        <div className="account__menu" role="menu">
+          {setupLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} role="menuitem" className="account__item" onClick={go}>
+              <Icon name={link.icon} size={15} />
+              <span>{link.label}</span>
+            </NavLink>
+          ))}
+          {setupLinks.length > 0 && <div className="account__rule" />}
+          <button type="button" role="menuitem" className="account__item account__item--danger" onClick={signOut}>
+            <Icon name="logout" size={15} />
+            <span>{t('Sign out')}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Sidebar({ open, onNavigate }) {
-  const { capabilities, branding, user, profile, approvals, signOut } = useWorkspace();
+  const { capabilities, branding, user, profile, approvals } = useWorkspace();
   const { pathname } = useLocation();
   const groups = visibleGroups(capabilities);
   const badges = { approvals: approvals.length };
@@ -96,9 +163,7 @@ function Sidebar({ open, onNavigate }) {
             <div className="sidebar__user-mail truncate">{user?.id}</div>
           </div>
         </NavLink>
-        <button type="button" className="sidebar__signout" onClick={signOut} title={t('Sign out')} aria-label={t('Sign out')}>
-          <Icon name="logout" size={16} />
-        </button>
+        <AccountMenu onNavigate={onNavigate} />
       </div>
     </nav>
   );
