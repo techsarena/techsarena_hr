@@ -36,6 +36,7 @@ export const NAV_GROUPS = [
       { to: '/claims', label: 'Expenses', icon: 'receipt' },
       { to: '/goals', label: 'Goals', icon: 'target' },
       { to: '/helpdesk', label: 'Help & requests', icon: 'inbox' },
+      { to: '/policies', label: 'Policies', icon: 'checklist' },
       { to: '/funds', label: 'Funds', icon: 'vault' },
       { to: '/loans', label: 'Loans', icon: 'bank' },
     ],

@@ -19,6 +19,7 @@ const PERF = 'techsarena_hr.performance';
 const NOTIF = 'techsarena_hr.notifications';
 const I18N = 'techsarena_hr.i18n';
 const DESK = 'techsarena_hr.helpdesk';
+const POL = 'techsarena_hr.policies';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -177,6 +178,14 @@ export const hr = {
     post(`${DESK}.reply_to_ticket`, { name, message, internal: internal ? 1 : 0 }),
   updateTicket: (name, changes) => post(`${DESK}.update_ticket`, { name, ...changes }),
   helpdeskAgents: (opts) => call(`${DESK}.helpdesk_agents`, undefined, opts),
+
+  /* ---- Policy acknowledgement ----
+     Versioned: acknowledging names the exact version read, so a later revision
+     does not silently convert an old confirmation into a new one. */
+  myPolicies: (opts) => call(`${POL}.my_policies`, undefined, opts),
+  policyDetail: (name, opts) => call(`${POL}.policy_detail`, { name }, opts),
+  acknowledgePolicy: (policy, version) => post(`${POL}.acknowledge_policy`, { policy, version }),
+  policyCompliance: (policy, opts) => call(`${POL}.policy_compliance`, policy ? { policy } : undefined, opts),
 
   /* ---- Org chart ----
      Flat nodes with parent pointers; the client assembles the tree. `root`

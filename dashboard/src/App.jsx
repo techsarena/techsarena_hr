@@ -26,6 +26,7 @@ const Insights = lazy(() => import('./pages/Insights'));
 import LeaveAdmin from './pages/LeaveAdmin';
 import Announcements from './pages/Announcements';
 import Helpdesk from './pages/Helpdesk';
+import Policies from './pages/Policies';
 import Hiring from './pages/Hiring';
 import Onboarding from './pages/Onboarding';
 import Offboarding from './pages/Offboarding';
@@ -88,6 +89,7 @@ function Gate() {
         <Route path="/leave-admin" element={guard('can_manage_hr', <LeaveAdmin />)} />
         <Route path="/announcements" element={<Announcements />} />
         <Route path="/helpdesk" element={<Helpdesk />} />
+        <Route path="/policies" element={<Policies />} />
         <Route path="/hiring" element={guard('can_manage_hr', <Hiring />)} />
         <Route path="/onboarding" element={guard('can_manage_hr', <Onboarding />)} />
         <Route path="/offboarding" element={guard('can_manage_hr', <Offboarding />)} />

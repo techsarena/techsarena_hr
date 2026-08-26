@@ -1718,3 +1718,39 @@
   .ticket-row { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
   .ticket-row__agent { display: none; }
 }
+
+/* ---------------- Policies ----------------
+   An outstanding policy is the only thing on this screen that needs action, so
+   it gets the one piece of colour; everything confirmed recedes. */
+.policy-list { list-style: none; margin: 0; padding: 0; }
+.policy-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+  width: 100%; padding: var(--space-4) var(--space-5);
+  border: 0; border-bottom: 1px solid var(--divider-soft);
+  border-inline-start: 2px solid transparent;
+  background: none; cursor: pointer; text-align: start; font: inherit;
+  color: var(--text-subtle);
+}
+.policy-row:hover { background: var(--surface-muted); }
+.policy-row.is-outstanding { border-inline-start-color: var(--warning); }
+.policy-list li:last-child .policy-row { border-bottom: 0; }
+
+.policy-pending {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: 9px 0; border-bottom: 1px solid var(--divider-soft);
+}
+.policy-pending:last-child { border-bottom: 0; }
+
+/* HR authors the body in the desk's rich-text editor, so it arrives as real
+   markup and needs readable defaults rather than the app's tight spacing. */
+.policy-body { font-size: 13.5px; line-height: 1.65; color: var(--ink); }
+.policy-body p { margin: 0 0 var(--space-3); }
+.policy-body h1, .policy-body h2, .policy-body h3 {
+  margin: var(--space-4) 0 var(--space-2); font-size: 15px; font-weight: 700;
+}
+.policy-body ul, .policy-body ol { margin: 0 0 var(--space-3); padding-inline-start: var(--space-5); }
+.policy-body li { margin-bottom: 4px; }
+.policy-body table { width: 100%; border-collapse: collapse; margin-bottom: var(--space-3); }
+.policy-body td, .policy-body th {
+  border: 1px solid var(--divider-soft); padding: 6px 8px; text-align: start;
+}

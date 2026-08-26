@@ -276,6 +276,7 @@ const TITLES = {
   '/leave-admin': 'Leave admin',
   '/announcements': 'Announcements',
   '/helpdesk': 'Help & requests',
+  '/policies': 'Policies',
   '/hiring': 'Job openings',
   '/onboarding': 'Onboarding',
   '/settings': 'Settings',
