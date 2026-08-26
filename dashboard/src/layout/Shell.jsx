@@ -4,18 +4,22 @@ import { useWorkspace } from '../hooks/WorkspaceContext';
 import { visibleGroups } from './nav';
 import { Icon } from '../components/Icon';
 import { t } from '../api/i18n';
+import { brandLogo, brandName } from '../api/brand';
 import { useOffline } from '../hooks/useOffline';
 import hr from '../api/hr';
 import { Avatar } from '../components/ui';
 import CommandPalette from '../components/CommandPalette';
 import { fmtRelative } from '../api/format';
 
-/** Brand mark: logos arrive inline as data: URIs to dodge static-file CORS. */
+/** Brand mark: logos arrive inline as data: URIs to dodge static-file CORS,
+ *  falling back to the bundled product mark rather than text initials. */
 function BrandMark({ branding, className }) {
-  const logo = branding?.app_logo_data || branding?.app_logo;
-  const name = branding?.name || 'Techsarena HCM';
-  if (logo) return <span className={className}><img src={logo} alt={name} /></span>;
-  return <span className={className}>{name.slice(0, 2).toUpperCase()}</span>;
+  const name = brandName(branding);
+  return (
+    <span className={className}>
+      <img src={brandLogo(branding)} alt={name} />
+    </span>
+  );
 }
 
 function Sidebar({ open, onNavigate }) {

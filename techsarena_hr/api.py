@@ -5097,6 +5097,13 @@ def _logo_data_uri(path: str | None) -> str | None:
 	return None
 
 
+#: The product's own logo, served from the dashboard's built assets. Used
+#: wherever a site has not supplied its own — previously those places fell back
+#: to text initials, which is not a brand.
+DEFAULT_APP_LOGO = "/assets/techsarena_hr/dashboard/logo-128.png"
+DEFAULT_FAVICON = "/assets/techsarena_hr/dashboard/favicon-64.png"
+
+
 def _resolved_branding() -> dict:
 	"""Client brand (name + logos) for the app surfaces.
 
@@ -5111,15 +5118,17 @@ def _resolved_branding() -> dict:
 		from techsarena_branding.branding import resolve
 
 		r = resolve()
-		app_logo = r.get("navbar_logo")
-		login_logo = r.get("login_logo") or r.get("navbar_logo")
+		# A white-labelled site keeps its own mark; one that configured none gets
+		# the product's rather than falling through to text initials.
+		app_logo = r.get("navbar_logo") or DEFAULT_APP_LOGO
+		login_logo = r.get("login_logo") or r.get("navbar_logo") or DEFAULT_APP_LOGO
 		return {
 			"name": r.get("client_name") or "Techsarena HCM",
 			"app_logo": app_logo,
 			"login_logo": login_logo,
 			"app_logo_data": _logo_data_uri(app_logo),
 			"login_logo_data": _logo_data_uri(login_logo),
-			"favicon": r.get("favicon"),
+			"favicon": r.get("favicon") or DEFAULT_FAVICON,
 			"copyright": r.get("copyright"),
 			"developed_by": r.get("dev_name"),
 			"developer_logo": r.get("dev_logo"),
@@ -5128,11 +5137,11 @@ def _resolved_branding() -> dict:
 	except Exception:
 		return {
 			"name": "Techsarena HCM",
-			"app_logo": None,
-			"login_logo": None,
-			"app_logo_data": None,
-			"login_logo_data": None,
-			"favicon": None,
+			"app_logo": DEFAULT_APP_LOGO,
+			"login_logo": DEFAULT_APP_LOGO,
+			"app_logo_data": _logo_data_uri(DEFAULT_APP_LOGO),
+			"login_logo_data": _logo_data_uri(DEFAULT_APP_LOGO),
+			"favicon": DEFAULT_FAVICON,
 			"copyright": "© Techs Arena",
 			"developed_by": "Techs Arena",
 			"developer_logo": None,

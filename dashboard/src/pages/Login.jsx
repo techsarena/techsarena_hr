@@ -3,6 +3,7 @@ import { useWorkspace } from '../hooks/WorkspaceContext';
 import { Button } from '../components/ui';
 import hr from '../api/hr';
 import { t } from '../api/i18n';
+import { brandLogo, brandName } from '../api/brand';
 
 export default function Login() {
   const { signIn } = useWorkspace();
@@ -34,14 +35,14 @@ export default function Login() {
     }
   };
 
-  const logo = branding?.login_logo_data || branding?.app_logo_data;
-  const name = branding?.name || 'Techsarena HCM';
+  const logo = brandLogo(branding, { login: true });
+  const name = brandName(branding);
 
   return (
     <div className="login">
       <form className="login__card" onSubmit={submit}>
         <div className="login__brand">
-          <span className="login__logo">{logo ? <img src={logo} alt="" /> : name.slice(0, 2).toUpperCase()}</span>
+          <span className="login__logo"><img src={logo} alt="" /></span>
           <div>
             <h1 style={{ fontSize: 17 }}>{name}</h1>
             <p className="small subtle">{t("HR & administration")}</p>

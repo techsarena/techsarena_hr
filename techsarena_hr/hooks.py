@@ -4,6 +4,9 @@ app_publisher = "Techs arena"
 app_description = "Human capital management by Techs Arena"
 app_email = "info@techsarena.com"
 app_license = "mit"
+# Shown on the Frappe desk's app switcher and navbar, so the desk and the
+# dashboard present the same mark rather than two different brands.
+app_logo_url = "/assets/techsarena_hr/dashboard/logo-128.png"
 
 # Apps
 # ------------------

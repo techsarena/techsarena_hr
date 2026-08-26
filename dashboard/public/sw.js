@@ -20,16 +20,16 @@
  *     losing it costs the employee paid time.
  */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL_CACHE = `techsarena-shell-${VERSION}`;
 const BASE = '/assets/techsarena_hr/dashboard';
 
 // The document itself is handled network-first, so only static assets are
 // precached here. Hashed bundles are added as they are requested.
 const SHELL_ASSETS = [
+  `${BASE}/logo-128.png`,
+  `${BASE}/favicon-64.png`,
   `${BASE}/icon-192.png`,
-  `${BASE}/icon-512.png`,
-  `${BASE}/favicon.svg`,
 ];
 
 const OFFLINE_HTML = `<!doctype html>
