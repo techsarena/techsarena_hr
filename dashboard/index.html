@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/assets/techsarena_hr/dashboard/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0F172A" />
+
+    <!-- Installable app. Icons and manifest are served from the built asset
+         directory, which is where Frappe exposes this app's public files. -->
+    <link rel="manifest" href="/assets/techsarena_hr/dashboard/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/techsarena_hr/dashboard/apple-touch-icon.png" />
+    <!-- iOS ignores the manifest's display mode and reads these instead. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Techsarena" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <title>Techsarena HCM</title>
   </head>
   <body>

@@ -31,7 +31,10 @@ export const hr = {
   /* ---- Attendance ---- */
   attendanceMonth: (month, opts) => call(`${NS}.attendance_month`, { month }, opts),
   shiftTypes: (opts) => call(`${NS}.shift_types`, undefined, opts),
-  checkInOut: (logType) => post(`${NS}.check_in_out`, { log_type: logType }),
+  // `punchedAt` lets a punch queued offline be stamped when it happened rather
+  // than when the queue drained; the server still bounds how far back it trusts.
+  checkInOut: (logType, punchedAt) =>
+    post(`${NS}.check_in_out`, { log_type: logType, punched_at: punchedAt }),
 
   /* ---- Geofenced attendance (GPS) ----
      Separate from checkInOut: this path enforces an HR-approved device and the

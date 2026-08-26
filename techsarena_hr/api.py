@@ -3026,8 +3026,48 @@ def my_blocked_dates(from_date: str, to_date: str) -> dict:
 	}
 
 
+#: How far back a client-supplied punch time is honoured. Long enough to cover a
+#: shift spent out of signal, short enough that a stale queue cannot rewrite last
+#: week's attendance.
+OFFLINE_PUNCH_MAX_AGE_HOURS = 24
+
+
+def _punch_time(punched_at: str | None):
+	"""Server time, unless the client supplied a defensible earlier moment."""
+	server_now = now_datetime()
+	if not punched_at:
+		return server_now
+	try:
+		claimed = get_datetime(punched_at)
+	except Exception:
+		return server_now
+	# A future timestamp means a wrong client clock, not a real punch.
+	if claimed > server_now:
+		return server_now
+	if (server_now - claimed).total_seconds() > OFFLINE_PUNCH_MAX_AGE_HOURS * 3600:
+		frappe.throw(
+			_("That punch is more than {0} hours old and cannot be recorded automatically. "
+			  "Please raise an attendance regularisation request.").format(OFFLINE_PUNCH_MAX_AGE_HOURS)
+		)
+	return claimed
+
+
 @frappe.whitelist(methods=["POST"])
-def check_in_out(log_type: str, latitude=None, longitude=None, device_id: str | None = None) -> dict:
+def check_in_out(
+	log_type: str,
+	latitude=None,
+	longitude=None,
+	device_id: str | None = None,
+	punched_at: str | None = None,
+) -> dict:
+	"""Record a punch.
+
+	`punched_at` exists for punches taken offline and synced later: without it a
+	punch made at 09:00 and delivered at 17:00 would be stamped 17:00 and count
+	eight hours that were not worked. It is accepted only in the past and only
+	within OFFLINE_PUNCH_MAX_AGE_HOURS, so it cannot be used to backdate
+	attendance arbitrarily — a client clock is not a trusted source.
+	"""
 	user = _require_login()
 	_require_hrms()
 	_unused_user, employee = _require_employee_user(user)
@@ -3052,7 +3092,7 @@ def check_in_out(log_type: str, latitude=None, longitude=None, device_id: str | 
 
 	doc = frappe.new_doc("Employee Checkin")
 	doc.employee = employee
-	doc.time = now_datetime()
+	doc.time = _punch_time(punched_at)
 	doc.log_type = log_type
 	doc.device_id = device_id or "Techs Arena HCM"
 	doc.latitude = latitude

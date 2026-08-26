@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import hr from '../api/hr';
 import { useToast } from '../hooks/useToast';
+import { useOffline } from '../hooks/useOffline';
 import { Button } from './ui';
 import { Icon } from './Icon';
 import { fmtDuration, fmtDurationShort, fmtTime, toDate } from '../api/format';
@@ -26,6 +27,7 @@ function shiftSeconds(shift) {
 
 export default function PunchHero({ today, defaultShift, onDone }) {
   const toast = useToast();
+  const { refreshQueue } = useOffline();
   const [busy, setBusy] = useState(false);
 
   const checkedIn = Boolean(today?.checked_in);
@@ -55,8 +57,23 @@ export default function PunchHero({ today, defaultShift, onDone }) {
   const punch = async (logType) => {
     setBusy(true);
     try {
-      await hr.checkInOut(logType);
-      toast.success(logType === 'IN' ? 'Checked in.' : 'Checked out.');
+      // The client's own clock is sent so a punch queued offline is recorded at
+      // the moment it happened, not the moment the queue drained.
+      const punchedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const result = await hr.checkInOut(logType, punchedAt);
+      if (result?.queued) {
+        // Saying "Checked in" here would be a lie — nothing reached the server.
+        toast.push(
+          logType === 'IN'
+            ? t('Saved offline. Your check-in will send when you reconnect.')
+            : t('Saved offline. Your check-out will send when you reconnect.'),
+          'default',
+          7000,
+        );
+        refreshQueue();
+      } else {
+        toast.success(logType === 'IN' ? t('Checked in.') : t('Checked out.'));
+      }
       onDone?.();
     } catch (error) {
       toast.error(error.message);

@@ -275,4 +275,13 @@ scheduler_events = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
-website_route_rules = [{'from_route': '/dashboard/<path:app_path>', 'to_route': 'dashboard'},]
+# Corrects the service worker's content type and scope; no-ops on every other
+# request. See techsarena_hr/utils.py for why this cannot be done in the page.
+after_request = ["techsarena_hr.utils.set_service_worker_headers"]
+
+website_route_rules = [
+	# Ahead of the SPA catch-all: the worker must be served from inside the
+	# scope it claims, and the catch-all would otherwise return the app shell.
+	{'from_route': '/dashboard/sw.js', 'to_route': 'service_worker'},
+	{'from_route': '/dashboard/<path:app_path>', 'to_route': 'dashboard'},
+]

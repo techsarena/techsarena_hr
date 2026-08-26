@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { WorkspaceProvider, useWorkspace } from './hooks/WorkspaceContext';
 import { ToastProvider } from './hooks/useToast';
 import { I18nProvider } from './hooks/useTranslation';
+import { OfflineProvider } from './hooks/useOffline';
 import Shell from './layout/Shell';
 import Login from './pages/Login';
 import { ErrorState, Skeleton } from './components/ui';
@@ -108,11 +109,13 @@ export default function App() {
     // Served at /dashboard in production; vite dev serves it at the root.
     <BrowserRouter basename={import.meta.env.DEV ? '/' : '/dashboard'}>
       <I18nProvider>
+        <OfflineProvider>
         <ToastProvider>
           <WorkspaceProvider>
             <Gate />
           </WorkspaceProvider>
         </ToastProvider>
+        </OfflineProvider>
       </I18nProvider>
     </BrowserRouter>
   );

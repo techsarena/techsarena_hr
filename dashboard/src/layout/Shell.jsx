@@ -4,6 +4,7 @@ import { useWorkspace } from '../hooks/WorkspaceContext';
 import { visibleGroups } from './nav';
 import { Icon } from '../components/Icon';
 import { t } from '../api/i18n';
+import { useOffline } from '../hooks/useOffline';
 import hr from '../api/hr';
 import { Avatar } from '../components/ui';
 import CommandPalette from '../components/CommandPalette';
@@ -283,6 +284,26 @@ const TITLES = {
   '/users': 'Users & roles',
 };
 
+/** Connection state and any punch still waiting to reach the server. */
+function OfflineBar() {
+  const { online, queued } = useOffline();
+  if (online && !queued) return null;
+  return (
+    <div className={`offline-bar no-print${online ? ' is-syncing' : ''}`} role="status">
+      <span className="offline-bar__dot" aria-hidden="true" />
+      {!online && t('Offline — showing what was already loaded.')}
+      {queued > 0 && (
+        <span>
+          {' '}
+          {queued === 1
+            ? t('1 punch waiting to send.')
+            : t('{0} punches waiting to send.', [queued])}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function Shell() {
   const { unreadCount, reload } = useWorkspace();
   const [navOpen, setNavOpen] = useState(false);
@@ -325,6 +346,7 @@ export default function Shell() {
       <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
 
       <div className="main">
+        <OfflineBar />
         <header className="topbar no-print">
           <button type="button" className="topbar__menu" onClick={() => setNavOpen(true)} aria-label="Open navigation">
             <Icon name="menu" />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { useToast } from '../hooks/useToast';
+import { useOffline } from '../hooks/useOffline';
 import hr from '../api/hr';
 import { Button, EmptyState, Meter, Pill } from '../components/ui';
 import { Icon } from '../components/Icon';
@@ -32,6 +33,7 @@ function shiftLabel(shift) {
 function PunchCard() {
   const { attendance, summary, reload } = useWorkspace();
   const toast = useToast();
+  const { refreshQueue } = useOffline();
   const [busy, setBusy] = useState(false);
   const checkedIn = Boolean(attendance?.checked_in);
   const worked = attendance?.working_seconds || 0;
@@ -41,9 +43,24 @@ function PunchCard() {
   const punch = async () => {
     setBusy(true);
     try {
-      await hr.checkInOut(checkedIn ? 'OUT' : 'IN');
-      toast.success(checkedIn ? 'Checked out.' : 'Checked in.');
-      await reload();
+      // The client's own clock travels with the punch so one taken offline is
+      // recorded when it happened, not when the queue drained.
+      const punchedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const result = await hr.checkInOut(checkedIn ? 'OUT' : 'IN', punchedAt);
+      if (result?.queued) {
+        // Claiming success here would be a lie — nothing reached the server.
+        toast.push(
+          checkedIn
+            ? t('Saved offline. Your check-out will send when you reconnect.')
+            : t('Saved offline. Your check-in will send when you reconnect.'),
+          'default',
+          7000,
+        );
+        refreshQueue();
+      } else {
+        toast.success(checkedIn ? t('Checked out.') : t('Checked in.'));
+        await reload();
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
