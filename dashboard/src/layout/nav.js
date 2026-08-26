@@ -13,14 +13,20 @@ export const NAV_GROUPS = [
     label: null,
     items: [
       { to: '/', label: 'Home', icon: 'home', end: true },
+      // Read-only for everyone, so it belongs beside Home rather than under an
+      // admin group — an employee reads announcements, they do not manage them.
+      { to: '/announcements', label: 'Announcements', icon: 'megaphone' },
     ],
   },
+
+  /* Self-service is split into three groups rather than one long list. Eleven
+     undifferentiated items is a wall; grouped by the question being asked —
+     "my time", "my money", "my record" — each is scannable. */
   {
-    id: 'me',
-    label: 'My workspace',
+    id: 'time',
+    label: 'Time & attendance',
     capability: 'employee_self_service',
     items: [
-      { to: '/profile', label: 'My profile', icon: 'people' },
       { to: '/attendance', label: 'Attendance', icon: 'clock' },
       {
         to: '/leave',
@@ -29,19 +35,37 @@ export const NAV_GROUPS = [
         children: [
           { to: '/leave', label: 'My leave', end: true },
           { to: '/leave/team', label: 'Team calendar' },
-          { to: '/leave/policies', label: 'Policies' },
+          // Qualified: this is the leave rulebook, not the company handbook,
+          // which lives under My record. Two items called "Policies" in one
+          // sidebar is a coin toss for the user.
+          { to: '/leave/policies', label: 'Leave rules' },
         ],
       },
+    ],
+  },
+  {
+    id: 'pay',
+    label: 'Pay & benefits',
+    capability: 'employee_self_service',
+    items: [
       { to: '/salary', label: 'Salary', icon: 'wallet' },
       { to: '/claims', label: 'Expenses', icon: 'receipt' },
-      { to: '/goals', label: 'Goals', icon: 'target' },
-      { to: '/helpdesk', label: 'Help & requests', icon: 'inbox' },
-      { to: '/policies', label: 'Policies', icon: 'checklist' },
-      { to: '/training', label: 'Training', icon: 'target' },
       { to: '/funds', label: 'Funds', icon: 'vault' },
       { to: '/loans', label: 'Loans', icon: 'bank' },
     ],
   },
+  {
+    id: 'me',
+    label: 'My record',
+    capability: 'employee_self_service',
+    items: [
+      { to: '/goals', label: 'Goals', icon: 'target' },
+      { to: '/training', label: 'Training', icon: 'learn' },
+      { to: '/policies', label: 'Company policies', icon: 'policy' },
+      { to: '/helpdesk', label: 'Help & requests', icon: 'chat' },
+    ],
+  },
+
   {
     id: 'approvals',
     label: 'Approvals',
@@ -50,27 +74,38 @@ export const NAV_GROUPS = [
       { to: '/approvals', label: 'Approval inbox', icon: 'inbox', badge: 'approvals' },
     ],
   },
+
+  /* Company splits people-you-look-up from records-you-administer: a manager
+     with directory access should not be shown a group that is mostly greyed
+     out for them. */
   {
-    id: 'company',
-    label: 'Company',
+    id: 'directory',
+    label: 'Directory',
     items: [
       { to: '/people', label: 'People', icon: 'people', capability: 'can_view_directory' },
       { to: '/org', label: 'Org chart', icon: 'chart', capability: 'can_view_directory' },
-      { to: '/lifecycle', label: 'Lifecycle', icon: 'briefcase', capability: 'can_manage_hr' },
+    ],
+  },
+  {
+    id: 'manage',
+    label: 'Manage',
+    items: [
       { to: '/payroll', label: 'Payroll', icon: 'payroll', capability: 'can_run_payroll' },
-      { to: '/insights', label: 'Insights', icon: 'chart', capability: 'can_manage_hr' },
       { to: '/leave-admin', label: 'Leave admin', icon: 'ledger', capability: 'can_manage_hr' },
-      { to: '/announcements', label: 'Announcements', icon: 'megaphone' },
+      { to: '/lifecycle', label: 'Lifecycle', icon: 'briefcase', capability: 'can_manage_hr' },
+      { to: '/insights', label: 'Insights', icon: 'chart', capability: 'can_manage_hr' },
     ],
   },
   {
     id: 'hiring',
-    label: 'Hiring',
+    label: 'Hiring & exits',
     capability: 'can_manage_hr',
     items: [
       { to: '/hiring', label: 'Job openings', icon: 'briefcase' },
       { to: '/onboarding', label: 'Onboarding', icon: 'checklist' },
-      { to: '/offboarding', label: 'Offboarding', icon: 'inbox' },
+      // Distinct from Onboarding's icon: they are opposite ends of the same
+      // journey and were previously easy to mis-click.
+      { to: '/offboarding', label: 'Offboarding', icon: 'logout' },
     ],
   },
   {

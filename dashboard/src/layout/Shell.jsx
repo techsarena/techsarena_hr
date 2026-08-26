@@ -82,12 +82,21 @@ function Sidebar({ open, onNavigate }) {
       </div>
 
       <div className="sidebar__foot">
-        <Avatar name={profile?.employee_name || user?.full_name} src={profile?.image || undefined} size="sm" />
-        <div className="sidebar__user truncate">
-          <div className="sidebar__user-name truncate">{profile?.employee_name || user?.full_name || '—'}</div>
-          <div className="sidebar__user-mail truncate">{user?.id}</div>
-        </div>
-        <button type="button" className="sidebar__signout" onClick={signOut} title="Sign out" aria-label="Sign out">
+        {/* The avatar is the way into the profile — a separate nav item for it
+            was redundant with the identity already sitting here. */}
+        <NavLink
+          to="/profile"
+          className={({ isActive }) => `sidebar__me${isActive ? ' is-active' : ''}`}
+          onClick={onNavigate}
+          title={t('View your profile')}
+        >
+          <Avatar name={profile?.employee_name || user?.full_name} src={profile?.image || undefined} size="sm" />
+          <div className="sidebar__user truncate">
+            <div className="sidebar__user-name truncate">{profile?.employee_name || user?.full_name || '—'}</div>
+            <div className="sidebar__user-mail truncate">{user?.id}</div>
+          </div>
+        </NavLink>
+        <button type="button" className="sidebar__signout" onClick={signOut} title={t('Sign out')} aria-label={t('Sign out')}>
           <Icon name="logout" size={16} />
         </button>
       </div>
@@ -267,7 +276,7 @@ const TITLES = {
   '/attendance': 'Attendance & shifts',
   '/leave': 'My leave',
   '/leave/team': 'Team calendar',
-  '/leave/policies': 'Leave policies',
+  '/leave/policies': 'Leave rules',
   '/salary': 'Salary',
   '/claims': 'Expense claims',
   '/goals': 'Goals & appraisal',
@@ -281,7 +290,7 @@ const TITLES = {
   '/leave-admin': 'Leave admin',
   '/announcements': 'Announcements',
   '/helpdesk': 'Help & requests',
-  '/policies': 'Policies',
+  '/policies': 'Company policies',
   '/training': 'Training',
   '/hiring': 'Job openings',
   '/onboarding': 'Onboarding',

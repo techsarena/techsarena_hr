@@ -9,6 +9,17 @@ const PATHS = {
   vault: <><rect x="3" y="4" width="14" height="12" rx="1.5" /><circle cx="10" cy="10" r="3" /><path d="M10 7v-1M10 14v-1" /></>,
   bank: <><path d="M3 8 10 4l7 4M4.5 8v6M8 8v6M12 8v6M15.5 8v6M3 16.5h14" /></>,
   inbox: <><path d="M3 11.5 5 4.5h10l2 7V16a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4.5Z" /><path d="M3 11.5h4l1 2h4l1-2h4" /></>,
+  // A single person, distinct from `people` (a group): "my profile" and "the
+  // directory" were previously the same glyph.
+  person: <><circle cx="10" cy="7" r="3" /><path d="M4.5 16.5c0-3 2.5-4.8 5.5-4.8s5.5 1.8 5.5 4.8" /></>,
+  // A speech bubble for a conversation, so Help & requests stops sharing the
+  // announcement megaphone.
+  chat: <><path d="M3.5 5.5A1.5 1.5 0 0 1 5 4h10a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 15 13H8l-3.5 3v-3H5a1.5 1.5 0 0 1-1.5-1.5v-6Z" /></>,
+  // A graduation cap: training is not the same as an onboarding checklist.
+  learn: <><path d="M10 4 2.5 7.5 10 11l7.5-3.5L10 4Z" /><path d="M5.5 9v4c0 1.4 2 2.5 4.5 2.5s4.5-1.1 4.5-2.5V9" /></>,
+  // A document with a seal, for the policy handbook — `shield` now belongs to
+  // Users & roles alone.
+  policy: <><path d="M5 3h7l3 3v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" /><path d="M11.5 3v3.5H15" /><path d="M7 11.5l1.8 1.8 3.4-3.6" /></>,
   people: <><circle cx="7.5" cy="7.5" r="2.8" /><path d="M2.5 16.5c0-2.6 2.2-4.2 5-4.2s5 1.6 5 4.2" /><path d="M13.5 6.2a2.6 2.6 0 0 1 0 4.9M14.5 12.6c1.8.4 3 1.8 3 3.9" /></>,
   payroll: <><rect x="2.5" y="5" width="15" height="10" rx="1.5" /><circle cx="10" cy="10" r="2.3" /><path d="M5.5 10h.01M14.5 10h.01" /></>,
   chart: <><path d="M3 16.5h14M6 13V8M10 16V5M14 16v-6" /></>,
