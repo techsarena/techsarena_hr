@@ -18,6 +18,7 @@ const LIFE = 'techsarena_hr.lifecycle';
 const PERF = 'techsarena_hr.performance';
 const NOTIF = 'techsarena_hr.notifications';
 const I18N = 'techsarena_hr.i18n';
+const DESK = 'techsarena_hr.helpdesk';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -164,6 +165,18 @@ export const hr = {
   translations: (lang, opts) => call(`${I18N}.translations`, lang ? { lang } : undefined, opts),
   languages: (opts) => call(`${I18N}.languages`, undefined, opts),
   setLanguage: (language) => post(`${I18N}.set_language`, { language }),
+
+  /* ---- Helpdesk ----
+     Routine questions for HR. Distinct from grievances: internal notes are
+     filtered server-side, so whatever comes back is safe to render. */
+  myTickets: (status, opts) => call(`${DESK}.my_tickets`, status ? { status } : undefined, opts),
+  ticketQueue: (params, opts) => call(`${DESK}.ticket_queue`, params, opts),
+  ticketDetail: (name, opts) => call(`${DESK}.ticket_detail`, { name }, opts),
+  raiseTicket: (payload) => post(`${DESK}.raise_ticket`, payload),
+  replyToTicket: (name, message, internal) =>
+    post(`${DESK}.reply_to_ticket`, { name, message, internal: internal ? 1 : 0 }),
+  updateTicket: (name, changes) => post(`${DESK}.update_ticket`, { name, ...changes }),
+  helpdeskAgents: (opts) => call(`${DESK}.helpdesk_agents`, undefined, opts),
 
   /* ---- Org chart ----
      Flat nodes with parent pointers; the client assembles the tree. `root`
