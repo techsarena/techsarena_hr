@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { visibleGroups } from './nav';
 import { Icon } from '../components/Icon';
+import { t } from '../api/i18n';
 import hr from '../api/hr';
 import { Avatar } from '../components/ui';
 import CommandPalette from '../components/CommandPalette';
@@ -311,7 +312,7 @@ export default function Shell() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   useEffect(() => {
-    const title = TITLES[location.pathname] || 'Techsarena HCM';
+    const title = t(TITLES[location.pathname] || 'Techsarena HCM');
     document.title = `${title} · Techsarena HCM`;
   }, [location.pathname]);
 
@@ -326,7 +327,7 @@ export default function Shell() {
           <button type="button" className="topbar__menu" onClick={() => setNavOpen(true)} aria-label="Open navigation">
             <Icon name="menu" />
           </button>
-          <span className="topbar__title">{TITLES[location.pathname] || 'Techsarena HCM'}</span>
+          <span className="topbar__title">{t(TITLES[location.pathname] || 'Techsarena HCM')}</span>
           <button
             type="button"
             className="topbar__search"

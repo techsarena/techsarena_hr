@@ -5,6 +5,8 @@
  * reads a role name to decide whether it appears. Anyone holding Employee gets
  * the self-service group; seniority adds groups rather than a separate shell.
  */
+import { t } from '../api/i18n';
+
 export const NAV_GROUPS = [
   {
     id: 'workspace',
@@ -83,11 +85,19 @@ export const NAV_GROUPS = [
 export function visibleGroups(capabilities) {
   return NAV_GROUPS.map((group) => {
     if (group.capability && !capabilities[group.capability]) return null;
+    // Labels are translated here, not in NAV_GROUPS: that constant is
+    // evaluated at import time, before any catalogue has loaded.
     const items = group.items
       .filter((item) => !item.capability || capabilities[item.capability])
-      .map((item) => (item.children
-        ? { ...item, children: item.children.filter((c) => !c.capability || capabilities[c.capability]) }
-        : item));
-    return items.length ? { ...group, items } : null;
+      .map((item) => ({
+        ...item,
+        label: t(item.label),
+        children: item.children
+          ? item.children
+            .filter((c) => !c.capability || capabilities[c.capability])
+            .map((c) => ({ ...c, label: t(c.label) }))
+          : undefined,
+      }));
+    return items.length ? { ...group, items, label: group.label ? t(group.label) : group.label } : null;
   }).filter(Boolean);
 }

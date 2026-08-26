@@ -15,6 +15,7 @@ import hr from '../api/hr';
 import { useAsync } from '../hooks/useAsync';
 import { Async, Avatar, Button, Card, EmptyState, SearchInput } from '../components/ui';
 import { Icon } from '../components/Icon';
+import { t } from '../api/i18n';
 
 /** Nests the flat node list, keeping the server's name ordering. */
 function buildTree(nodes, roots) {
@@ -89,11 +90,11 @@ export default function OrgChart() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Org chart</h1>
-          <p className="page-head__sub">Who reports to whom</p>
+          <h1 className="page-head__title">{t("Org chart")}</h1>
+          <p className="page-head__sub">{t("Who reports to whom")}</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-2)' }}>
-          <SearchInput value={query} onChange={setQuery} placeholder="Find someone…" />
+          <SearchInput value={query} onChange={setQuery} placeholder={t("Find someone…")} />
           {focus && (
             <Button size="sm" onClick={() => { setFocus(null); setQuery(''); }}>
               <Icon name="close" size={13} /> Clear focus
@@ -108,8 +109,8 @@ export default function OrgChart() {
             return (
               <Card>
                 <EmptyState
-                  title="Nobody to show"
-                  body="You do not have anyone reporting to you yet."
+                  title={t("Nobody to show")}
+                  body={t("You do not have anyone reporting to you yet.")}
                   icon={<Icon name="people" size={22} />}
                 />
               </Card>
@@ -125,7 +126,7 @@ export default function OrgChart() {
                   <div className="row" style={{ gap: 'var(--space-3)', alignItems: 'flex-start' }}>
                     <Icon name="people" size={18} />
                     <div>
-                      <strong>No reporting lines are set yet</strong>
+                      <strong>{t("No reporting lines are set yet")}</strong>
                       <p className="small subtle" style={{ margin: '2px 0 0' }}>
                         All {chart.total} people are shown flat because nobody has a manager
                         recorded. Set “Reports To” on each employee record and the hierarchy
@@ -137,7 +138,7 @@ export default function OrgChart() {
               )}
 
               {matches && matches.size === 0 && (
-                <Card><EmptyState title="No matches" body={`Nobody matches “${query.trim()}”.`} icon="◍" /></Card>
+                <Card><EmptyState title={t("No matches")} body={`Nobody matches “${query.trim()}”.`} icon="◍" /></Card>
               )}
 
               <Card flush>
@@ -204,7 +205,7 @@ function OrgNode({ node, depth, expanded, matches, onToggle, onFocus, onOpen }) 
         <button type="button" className="org-main" onClick={() => onOpen(node.id)}>
           <span className="org-name truncate">
             {node.name}
-            {node.is_self && <span className="org-you">You</span>}
+            {node.is_self && <span className="org-you">{t("You")}</span>}
           </span>
           <span className="org-meta truncate">
             {[node.designation, node.department].filter(Boolean).join(' · ')}
@@ -218,7 +219,7 @@ function OrgNode({ node, depth, expanded, matches, onToggle, onFocus, onOpen }) 
             </span>
           )}
           {node.report_count > 0 && (
-            <Button size="sm" onClick={() => onFocus(node.id)}>Focus</Button>
+            <Button size="sm" onClick={() => onFocus(node.id)}>{t("Focus")}</Button>
           )}
         </div>
       </div>

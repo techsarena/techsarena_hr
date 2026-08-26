@@ -7,6 +7,7 @@ import { LeaveDetailDrawer } from '../components/LeaveDetailDrawer';
 import { Icon } from '../components/Icon';
 import { TeamCalendarGrid, TeamCalendarLegend } from '../components/TeamCalendar';
 import { fmtDateShort, fmtRange, isoDate, statusTone, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 /** Leave types map onto the same four swatches the team calendar uses, so a
  *  type reads identically on both surfaces. */
@@ -120,25 +121,25 @@ export default function Leave() {
   }, [rows]);
 
   const csvColumns = [
-    { key: 'leave_type', header: 'Type' },
-    { key: 'from_date', header: 'From' },
+    { key: 'leave_type', header: t("Type") },
+    { key: 'from_date', header: t("From") },
     { key: 'to_date', header: 'To' },
-    { key: 'total_leave_days', header: 'Days' },
-    { key: '_status', header: 'Status' },
-    { key: 'leave_approver_name', header: 'Approver' },
-    { key: 'description', header: 'Reason' },
+    { key: 'total_leave_days', header: t("Days") },
+    { key: '_status', header: t("Status") },
+    { key: 'leave_approver_name', header: t("Approver") },
+    { key: 'description', header: t("Reason") },
   ];
 
   return (
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Leave</h1>
-          <p className="page-head__sub">Your balance and every request you have made</p>
+          <h1 className="page-head__title">{t("Leave")}</h1>
+          <p className="page-head__sub">{t("Your balance and every request you have made")}</p>
         </div>
 
         <div className="row" style={{ gap: 'var(--space-3)' }}>
-          <div className="segmented" role="tablist" aria-label="View">
+          <div className="segmented" role="tablist" aria-label={t("View")}>
             {['calendar', 'list'].map((id) => (
               <button
                 key={id}
@@ -175,7 +176,7 @@ export default function Leave() {
 
         {/* Totals the per-type tiles cannot show: what this year has cost. */}
         <div className="card balance-tile">
-          <div className="balance-tile__label">Taken this FY</div>
+          <div className="balance-tile__label">{t("Taken this FY")}</div>
           <div className="balance-tile__figure">
             <span className="balance-tile__value">{fmtBalance(takenThisFy)}</span>
             <span className="balance-tile__of">days</span>
@@ -189,7 +190,7 @@ export default function Leave() {
         <Card flush>
           {/* ---- Filter bar ---- */}
           <div className="leave-toolbar">
-            <div className="chips" role="tablist" aria-label="Filter by status">
+            <div className="chips" role="tablist" aria-label={t("Filter by status")}>
               {FILTERS.filter((f) => f === 'All' || counts[f]).map((f) => (
                 <button
                   key={f}
@@ -206,14 +207,14 @@ export default function Leave() {
             </div>
 
             <div className="leave-toolbar__right">
-              <SearchInput value={query} onChange={setQuery} placeholder="Search reason" />
-              <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Filter by leave type">
-                <option value="all">All types</option>
+              <SearchInput value={query} onChange={setQuery} placeholder={t("Search reason")} />
+              <select value={type} onChange={(e) => setType(e.target.value)} aria-label={t("Filter by leave type")}>
+                <option value="all">{t("All types")}</option>
                 {leaveTypes.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
               {years.length > 1 && (
-                <select value={fy} onChange={(e) => setFy(e.target.value)} aria-label="Filter by year">
-                  <option value="all">All years</option>
+                <select value={fy} onChange={(e) => setFy(e.target.value)} aria-label={t("Filter by year")}>
+                  <option value="all">{t("All years")}</option>
                   {years.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               )}
@@ -227,21 +228,21 @@ export default function Leave() {
               title={rows.length ? 'Nothing matches these filters' : 'No leave requests'}
               body={rows.length ? 'Clear a filter to see the rest of your history.' : 'Requests you submit will be listed here.'}
               action={rows.length
-                ? <Button onClick={() => { setFilter('All'); setQuery(''); setType('all'); setFy('all'); }}>Clear filters</Button>
-                : <Button variant="primary" onClick={() => setApplyOpen(true)}>Request time off</Button>}
+                ? <Button onClick={() => { setFilter('All'); setQuery(''); setType('all'); setFy('all'); }}>{t("Clear filters")}</Button>
+                : <Button variant="primary" onClick={() => setApplyOpen(true)}>{t("Request time off")}</Button>}
             />
           ) : (
             <div className="table-wrap">
               <table className="table leave-table">
                 <thead>
                   <tr>
-                    <th>Leave type</th>
-                    <th>Dates</th>
-                    <th className="num">Days</th>
-                    <th>Status</th>
-                    <th>Approver</th>
-                    <th>Applied</th>
-                    <th aria-label="Open" style={{ width: 32 }} />
+                    <th>{t("Leave type")}</th>
+                    <th>{t("Dates")}</th>
+                    <th className="num">{t("Days")}</th>
+                    <th>{t("Status")}</th>
+                    <th>{t("Approver")}</th>
+                    <th>{t("Applied")}</th>
+                    <th aria-label={t("Open")} style={{ width: 32 }} />
                   </tr>
                 </thead>
                 <tbody>
@@ -332,11 +333,11 @@ function LeaveCalendar({ rows, holidays, onOpen }) {
         <div className="row" style={{ gap: 'var(--space-3)' }}>
           <TeamCalendarLegend />
           <div className="row" style={{ gap: 4 }}>
-            <Button size="icon" aria-label="Previous month"
+            <Button size="icon" aria-label={t("Previous month")}
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>
               <Icon name="chevronLeft" size={15} />
             </Button>
-            <Button size="icon" aria-label="Next month"
+            <Button size="icon" aria-label={t("Next month")}
               onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>
               <Icon name="chevronRight" size={15} />
             </Button>
@@ -345,7 +346,7 @@ function LeaveCalendar({ rows, holidays, onOpen }) {
       }
     >
       {inMonth.length === 0 ? (
-        <EmptyState icon="▦" title="No leave this month" body="Approved and pending leave appears on this grid." />
+        <EmptyState icon="▦" title={t("No leave this month")} body={t("Approved and pending leave appears on this grid.")} />
       ) : (
         <>
           <TeamCalendarGrid

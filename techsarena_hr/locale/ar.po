@@ -1,0 +1,56 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "My profile"
+msgstr "ملفي الشخصي"
+
+msgid "My leave"
+msgstr "إجازاتي"
+
+msgid "My funds"
+msgstr "صناديقي"
+
+msgid "My loans"
+msgstr "قروضي"
+
+msgid "Expense claims"
+msgstr "مطالبات النفقات"
+
+msgid "Attendance & shifts"
+msgstr "الحضور والورديات"
+
+msgid "Org chart"
+msgstr "الهيكل التنظيمي"
+
+msgid "Announcements"
+msgstr "الإعلانات"
+
+msgid "Approval inbox"
+msgstr "صندوق الموافقات"
+
+msgid "Documents"
+msgstr "المستندات"
+
+msgid "Details"
+msgstr "التفاصيل"
+
+msgid "Language"
+msgstr "اللغة"
+
+msgid "Notifications"
+msgstr "الإشعارات"
+
+msgid "Mark all read"
+msgstr "تعليم الكل كمقروء"
+
+msgid "Add document"
+msgstr "إضافة مستند"
+
+msgid "Request a change"
+msgstr "طلب تعديل"
+
+msgid "Who reports to whom"
+msgstr "من يتبع لمن"

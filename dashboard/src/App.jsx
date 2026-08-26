@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { WorkspaceProvider, useWorkspace } from './hooks/WorkspaceContext';
 import { ToastProvider } from './hooks/useToast';
+import { I18nProvider } from './hooks/useTranslation';
 import Shell from './layout/Shell';
 import Login from './pages/Login';
 import { ErrorState, Skeleton } from './components/ui';
@@ -102,11 +103,13 @@ export default function App() {
   return (
     // Served at /dashboard in production; vite dev serves it at the root.
     <BrowserRouter basename={import.meta.env.DEV ? '/' : '/dashboard'}>
-      <ToastProvider>
-        <WorkspaceProvider>
-          <Gate />
-        </WorkspaceProvider>
-      </ToastProvider>
+      <I18nProvider>
+        <ToastProvider>
+          <WorkspaceProvider>
+            <Gate />
+          </WorkspaceProvider>
+        </ToastProvider>
+      </I18nProvider>
     </BrowserRouter>
   );
 }

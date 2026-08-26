@@ -7,6 +7,7 @@ import {
 } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtNumber, fmtRange, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /**
  * Goals and appraisal, now writable.
@@ -65,7 +66,7 @@ function GoalRow({ goal, onSaved }) {
       {goal.progress !== null && goal.progress !== undefined && !editing && (
         <div style={{ marginTop: 'var(--space-3)' }}>
           <div className="row row--between small" style={{ marginBottom: 4 }}>
-            <span className="subtle">Progress</span>
+            <span className="subtle">{t("Progress")}</span>
             <span className="tabular">{fmtNumber(goal.progress)}%</span>
           </div>
           <Meter
@@ -79,7 +80,7 @@ function GoalRow({ goal, onSaved }) {
       {editing && (
         <div style={{ marginTop: 'var(--space-3)' }}>
           <div className="row row--between small" style={{ marginBottom: 4 }}>
-            <span className="subtle">Progress</span>
+            <span className="subtle">{t("Progress")}</span>
             <span className="tabular">{value}%</span>
           </div>
           <input
@@ -95,8 +96,8 @@ function GoalRow({ goal, onSaved }) {
             <Button variant="primary" size="sm" onClick={save} disabled={busy}>
               {busy ? 'Saving…' : 'Save'}
             </Button>
-            <Button size="sm" onClick={() => setEditing(false)} disabled={busy}>Cancel</Button>
-            {value >= 100 && <span className="small subtle">Marks the goal complete.</span>}
+            <Button size="sm" onClick={() => setEditing(false)} disabled={busy}>{t("Cancel")}</Button>
+            {value >= 100 && <span className="small subtle">{t("Marks the goal complete.")}</span>}
           </div>
         </div>
       )}
@@ -152,11 +153,11 @@ function SelfAssessmentDrawer({ appraisal, onClose, onSaved }) {
     <Drawer
       open
       onClose={onClose}
-      title="Self-assessment"
+      title={t("Self-assessment")}
       subtitle={appraisal.appraisal_cycle || appraisal.name}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button
             variant="primary"
             onClick={() => save(state.data)}
@@ -182,8 +183,8 @@ function SelfAssessmentDrawer({ appraisal, onClose, onSaved }) {
           if (detail.docstatus !== 0) {
             return (
               <EmptyState
-                title="Appraisal submitted"
-                body="This appraisal has been submitted and can no longer be edited."
+                title={t("Appraisal submitted")}
+                body={t("This appraisal has been submitted and can no longer be edited.")}
                 icon="◷"
               />
             );
@@ -193,14 +194,14 @@ function SelfAssessmentDrawer({ appraisal, onClose, onSaved }) {
             <div className="stack">
               <Card className="card--muted">
                 <Stat
-                  label="Self score"
+                  label={t("Self score")}
                   value={fmtNumber(detail.scores.self_score, 2)}
                   meta="Recalculated by HRMS when you save"
                 />
               </Card>
 
               {ratings.length > 0 ? (
-                <Card title="Rate yourself">
+                <Card title={t("Rate yourself")}>
                   {ratings.map((row) => (
                     <div key={row.criteria} style={{ marginBottom: 'var(--space-4)' }}>
                       <div className="row row--between small" style={{ marginBottom: 4 }}>
@@ -224,13 +225,13 @@ function SelfAssessmentDrawer({ appraisal, onClose, onSaved }) {
                 </Card>
               ) : (
                 <EmptyState
-                  title="No rating criteria"
-                  body="This appraisal cycle defines no self-rating criteria. You can still write reflections."
+                  title={t("No rating criteria")}
+                  body={t("This appraisal cycle defines no self-rating criteria. You can still write reflections.")}
                   icon="◎"
                 />
               )}
 
-              <Field label="Reflections" hint="What went well, and what you would change">
+              <Field label={t("Reflections")} hint="What went well, and what you would change">
                 <textarea
                   rows={6}
                   value={reflections}
@@ -269,8 +270,8 @@ export default function Goals() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">Goals &amp; appraisal</h1>
-        <p className="page-head__sub">Track your goals and complete your self-assessment</p>
+        <h1 className="page-head__title">{t("Goals & appraisal")}</h1>
+        <p className="page-head__sub">{t("Track your goals and complete your self-assessment")}</p>
       </div>
 
       <Async state={state} rows={5}>
@@ -282,7 +283,7 @@ export default function Goals() {
             return (
               <Card>
                 <EmptyState
-                  title="No goals or appraisals"
+                  title={t("No goals or appraisals")}
                   body="Goal and Appraisal records are optional in a stock install. Once your organisation runs an appraisal cycle, it will show here."
                   icon={<Icon name="target" size={22} />}
                 />
@@ -308,25 +309,25 @@ export default function Goals() {
                       }
                     >
                       <Stat
-                        label="Final score"
+                        label={t("Final score")}
                         // Null means not scored — never rendered as 0.
                         value={appraisal.final_score !== null && appraisal.final_score !== undefined ? fmtNumber(appraisal.final_score, 2) : 'Not scored'}
                       />
                       <div style={{ marginTop: 'var(--space-4)' }}>
-                        <FieldRow label="Total score" value={appraisal.total_score !== null && appraisal.total_score !== undefined ? fmtNumber(appraisal.total_score, 2) : null} />
-                        <FieldRow label="Self score" value={appraisal.self_score !== null && appraisal.self_score !== undefined ? fmtNumber(appraisal.self_score, 2) : null} />
-                        <FieldRow label="Feedback average" value={appraisal.avg_feedback_score !== null && appraisal.avg_feedback_score !== undefined ? fmtNumber(appraisal.avg_feedback_score, 2) : null} />
-                        <FieldRow label="Goal score" value={appraisal.goal_score_percentage !== null && appraisal.goal_score_percentage !== undefined ? `${fmtNumber(appraisal.goal_score_percentage)}%` : null} />
-                        <FieldRow label="State" value={appraisal.docstatus === 1 ? 'Submitted' : 'Draft'} />
+                        <FieldRow label={t("Total score")} value={appraisal.total_score !== null && appraisal.total_score !== undefined ? fmtNumber(appraisal.total_score, 2) : null} />
+                        <FieldRow label={t("Self score")} value={appraisal.self_score !== null && appraisal.self_score !== undefined ? fmtNumber(appraisal.self_score, 2) : null} />
+                        <FieldRow label={t("Feedback average")} value={appraisal.avg_feedback_score !== null && appraisal.avg_feedback_score !== undefined ? fmtNumber(appraisal.avg_feedback_score, 2) : null} />
+                        <FieldRow label={t("Goal score")} value={appraisal.goal_score_percentage !== null && appraisal.goal_score_percentage !== undefined ? `${fmtNumber(appraisal.goal_score_percentage)}%` : null} />
+                        <FieldRow label={t("State")} value={appraisal.docstatus === 1 ? 'Submitted' : 'Draft'} />
                       </div>
                     </Card>
                   ))}
                 </div>
               )}
 
-              <Card title="Goals" subtitle={`${goals.length} recorded`}>
+              <Card title={t("Goals")} subtitle={`${goals.length} recorded`}>
                 {goals.length === 0 ? (
-                  <EmptyState title="No goals set" body="Goals assigned to you will appear here." icon="◎" />
+                  <EmptyState title={t("No goals set")} body={t("Goals assigned to you will appear here.")} icon="◎" />
                 ) : (
                   <div className="stack">
                     {goals.map((goal) => (

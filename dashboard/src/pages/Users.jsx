@@ -4,6 +4,7 @@ import { Avatar, Button, Card, Drawer, Pill, SearchInput, Stat } from '../compon
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtRelative } from '../api/format';
+import { t } from '../api/i18n';
 
 const NOISE_ROLES = new Set(['All', 'Guest', 'Desk User']);
 
@@ -32,7 +33,7 @@ export default function Users() {
     () => [
       {
         key: 'full_name',
-        header: 'User',
+        header: t("User"),
         render: (row) => (
           <div className="row" style={{ gap: 8 }}>
             <Avatar name={row.full_name} src={row.user_image || undefined} size="sm" />
@@ -44,14 +45,14 @@ export default function Users() {
         ),
         exportValue: (row) => row.full_name,
       },
-      { key: 'user_type', header: 'Type', render: (row) => <Pill tone={row.user_type === 'System User' ? 'primary' : 'default'}>{row.user_type}</Pill> },
+      { key: 'user_type', header: t("Type"), render: (row) => <Pill tone={row.user_type === 'System User' ? 'primary' : 'default'}>{row.user_type}</Pill> },
       {
         key: 'roles',
-        header: 'Roles',
+        header: t("Roles"),
         sortable: false,
         render: (row) => {
           const list = (row.roles || []).filter((r) => !NOISE_ROLES.has(r));
-          if (!list.length) return <span className="subtle">None</span>;
+          if (!list.length) return <span className="subtle">{t("None")}</span>;
           return (
             <div className="row" style={{ gap: 4, flexWrap: 'wrap' }}>
               {list.slice(0, 3).map((r) => <Pill key={r}>{r}</Pill>)}
@@ -63,8 +64,8 @@ export default function Users() {
       },
       {
         key: 'last_active',
-        header: 'Last active',
-        render: (row) => (row.last_active ? <span className="subtle">{fmtRelative(row.last_active)}</span> : <span className="subtle">Never</span>),
+        header: t("Last active"),
+        render: (row) => (row.last_active ? <span className="subtle">{fmtRelative(row.last_active)}</span> : <span className="subtle">{t("Never")}</span>),
         sortValue: (row) => row.last_active,
       },
     ],
@@ -77,8 +78,8 @@ export default function Users() {
     <div className="stack">
       <div className="row row--between page-head">
         <div>
-          <h1 className="page-head__title">Users &amp; roles</h1>
-          <p className="page-head__sub">Enabled accounts on this site and the roles they hold</p>
+          <h1 className="page-head__title">{t("Users & roles")}</h1>
+          <p className="page-head__sub">{t("Enabled accounts on this site and the roles they hold")}</p>
         </div>
         <Button onClick={() => exportCsv('users', columns, rows)} disabled={!rows.length}>
           <Icon name="download" size={15} /> Export
@@ -86,16 +87,16 @@ export default function Users() {
       </div>
 
       <div className="grid grid--3">
-        <div className="card"><Stat label="Enabled users" value={users.length} /></div>
-        <div className="card"><Stat label="System users" value={systemUsers} meta={`${users.length - systemUsers} website users`} /></div>
-        <div className="card"><Stat label="Distinct roles" value={roles.length} /></div>
+        <div className="card"><Stat label={t("Enabled users")} value={users.length} /></div>
+        <div className="card"><Stat label={t("System users")} value={systemUsers} meta={`${users.length - systemUsers} website users`} /></div>
+        <div className="card"><Stat label={t("Distinct roles")} value={roles.length} /></div>
       </div>
 
       <Card flush>
         <div className="toolbar" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0 }}>
-          <SearchInput value={query} onChange={setQuery} placeholder="Search users…" />
+          <SearchInput value={query} onChange={setQuery} placeholder={t("Search users…")} />
           <select value={role} onChange={(e) => setRole(e.target.value)} style={{ width: 'auto', minWidth: 190 }}>
-            <option value="">All roles</option>
+            <option value="">{t("All roles")}</option>
             {roles.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
           <div className="toolbar__spacer" />
@@ -137,11 +138,11 @@ export default function Users() {
                 <div className="small subtle">{open.user_type}</div>
               </div>
             </div>
-            <Card title="Roles">
+            <Card title={t("Roles")}>
               <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                 {(open.roles || []).filter((r) => !NOISE_ROLES.has(r)).map((r) => <Pill key={r}>{r}</Pill>)}
                 {(open.roles || []).filter((r) => !NOISE_ROLES.has(r)).length === 0 && (
-                  <span className="subtle small">No roles beyond the defaults.</span>
+                  <span className="subtle small">{t("No roles beyond the defaults.")}</span>
                 )}
               </div>
             </Card>

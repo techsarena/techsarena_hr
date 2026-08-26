@@ -7,6 +7,7 @@ import { Async, Avatar, Button, Card, Drawer, EmptyState, Field, FieldRow, Pill,
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDays, fmtMoney, fmtRange, fmtRelative, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 const KIND_LABEL = {
   leave: 'Leave',
@@ -51,7 +52,7 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
       subtitle={request ? [KIND_LABEL[request.kind] || request.kind, request.department].filter(Boolean).join(' · ') : undefined}
       footer={
         <>
-          <Button variant="danger" onClick={() => decide('reject')} disabled={busy}>Reject</Button>
+          <Button variant="danger" onClick={() => decide('reject')} disabled={busy}>{t("Reject")}</Button>
           <Button variant="primary" onClick={() => decide('approve')} disabled={busy}>
             {busy ? 'Working…' : 'Approve'}
           </Button>
@@ -71,29 +72,29 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
             return (
               <div className="stack">
                 <Card className="card--muted">
-                  <FieldRow label="Request" value={row.title} />
-                  <FieldRow label="Dates" value={row.from_date ? fmtRange(row.from_date, row.to_date) : null} />
-                  <FieldRow label="Days" value={row.days ? fmtDays(row.days) : null} />
-                  <FieldRow label="Amount" value={row.amount ? fmtMoney(row.amount, currency) : null} />
-                  <FieldRow label="Half day" value={row.half_day ? 'Yes' : null} />
-                  <FieldRow label="Leave balance" value={row.leave_balance !== null && row.leave_balance !== undefined ? fmtDays(row.leave_balance) : null} />
-                  <FieldRow label="Submitted" value={row.created_at ? fmtRelative(row.created_at) : null} />
-                  <FieldRow label="Designation" value={row.designation} />
-                  <FieldRow label="Reason" value={row.reason} />
+                  <FieldRow label={t("Request")} value={row.title} />
+                  <FieldRow label={t("Dates")} value={row.from_date ? fmtRange(row.from_date, row.to_date) : null} />
+                  <FieldRow label={t("Days")} value={row.days ? fmtDays(row.days) : null} />
+                  <FieldRow label={t("Amount")} value={row.amount ? fmtMoney(row.amount, currency) : null} />
+                  <FieldRow label={t("Half day")} value={row.half_day ? 'Yes' : null} />
+                  <FieldRow label={t("Leave balance")} value={row.leave_balance !== null && row.leave_balance !== undefined ? fmtDays(row.leave_balance) : null} />
+                  <FieldRow label={t("Submitted")} value={row.created_at ? fmtRelative(row.created_at) : null} />
+                  <FieldRow label={t("Designation")} value={row.designation} />
+                  <FieldRow label={t("Reason")} value={row.reason} />
                 </Card>
 
                 {/* A profile change is decided on the difference, so the
                     current value sits beside the proposed one rather than the
                     approver having to open the employee record to compare. */}
                 {(row.changes || []).length > 0 && (
-                  <Card title="Requested changes">
+                  <Card title={t("Requested changes")}>
                     <ul className="diff-list">
                       {row.changes.map((change) => (
                         <li className="diff-row" key={change.fieldname}>
                           <span className="diff-row__label">{change.label}</span>
                           <span className="diff-row__values">
                             <span className="diff-row__from">{change.current || '—'}</span>
-                            <span className="diff-row__arrow" aria-label="changes to">→</span>
+                            <span className="diff-row__arrow" aria-label={t("changes to")}>→</span>
                             <span className="diff-row__to">{String(change.value)}</span>
                           </span>
                         </li>
@@ -103,7 +104,7 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
                 )}
 
                 {checks.length > 0 && (
-                  <Card title="Team cover">
+                  <Card title={t("Team cover")}>
                     <div className="stack">
                       {checks.map((check, index) => (
                         <div className="row" key={index} style={{ gap: 8, alignItems: 'flex-start' }}>
@@ -121,15 +122,15 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
                 )}
 
                 {history && (
-                  <Card title="Requester history">
-                    <FieldRow label="Days taken" value={history.days_taken !== undefined ? fmtDays(history.days_taken) : null} />
-                    <FieldRow label="Requests" value={history.requests ?? null} />
-                    <FieldRow label="Previously rejected" value={history.rejected ?? null} />
+                  <Card title={t("Requester history")}>
+                    <FieldRow label={t("Days taken")} value={history.days_taken !== undefined ? fmtDays(history.days_taken) : null} />
+                    <FieldRow label={t("Requests")} value={history.requests ?? null} />
+                    <FieldRow label={t("Previously rejected")} value={history.rejected ?? null} />
                   </Card>
                 )}
 
                 {attachments.length > 0 && (
-                  <Card title="Attachments">
+                  <Card title={t("Attachments")}>
                     <div className="stack">
                       {attachments.map((file) => (
                         <a key={file.file_url || file.name} href={file.file_url} target="_blank" rel="noreferrer" className="row" style={{ gap: 8 }}>
@@ -141,7 +142,7 @@ function DetailDrawer({ request, currency, onClose, onDecided }) {
                   </Card>
                 )}
 
-                <Field label="Comment" hint="Sent with your decision.">
+                <Field label={t("Comment")} hint="Sent with your decision.">
                   <textarea rows={3} value={comment} onChange={(e) => setComment(e.target.value)} />
                 </Field>
               </div>
@@ -195,8 +196,8 @@ function BulkBar({ selected, rows, onDone, onClear }) {
     >
       <strong>{selected.size} selected</strong>
       <div className="toolbar__spacer" />
-      <Button size="sm" onClick={onClear}>Clear</Button>
-      <Button size="sm" variant="danger" onClick={() => decide('reject')} disabled={busy}>Reject all</Button>
+      <Button size="sm" onClick={onClear}>{t("Clear")}</Button>
+      <Button size="sm" variant="danger" onClick={() => decide('reject')} disabled={busy}>{t("Reject all")}</Button>
       <Button size="sm" variant="primary" onClick={() => decide('approve')} disabled={busy}>
         {busy ? 'Working…' : 'Approve all'}
       </Button>
@@ -219,7 +220,7 @@ export default function Approvals() {
     () => [
       {
         key: 'employee_name',
-        header: 'Employee',
+        header: t("Employee"),
         render: (row) => (
           <div className="row" style={{ gap: 8 }}>
             <Avatar name={row.employee_name} size="sm" />
@@ -231,10 +232,10 @@ export default function Approvals() {
         ),
         exportValue: (row) => row.employee_name,
       },
-      { key: 'kind', header: 'Type', render: (row) => <Pill tone={statusTone(row.kind)}>{KIND_LABEL[row.kind] || row.kind}</Pill>, exportValue: (row) => KIND_LABEL[row.kind] || row.kind },
+      { key: 'kind', header: t("Type"), render: (row) => <Pill tone={statusTone(row.kind)}>{KIND_LABEL[row.kind] || row.kind}</Pill>, exportValue: (row) => KIND_LABEL[row.kind] || row.kind },
       {
         key: 'title',
-        header: 'Request',
+        header: t("Request"),
         render: (row) => (
           <div className="truncate" style={{ maxWidth: 260 }}>
             <div className="truncate">{row.title}</div>
@@ -245,24 +246,24 @@ export default function Approvals() {
         ),
         exportValue: (row) => [row.title, row.days ? fmtDays(row.days) : row.subtitle].filter(Boolean).join(' — '),
       },
-      { key: 'from_date', header: 'Dates', render: (row) => (row.from_date ? fmtRange(row.from_date, row.to_date) : '—'), sortValue: (row) => row.from_date },
+      { key: 'from_date', header: t("Dates"), render: (row) => (row.from_date ? fmtRange(row.from_date, row.to_date) : '—'), sortValue: (row) => row.from_date },
       {
         key: 'value',
-        header: 'Value',
+        header: t("Value"),
         align: 'right',
         render: (row) =>
           row.amount ? fmtMoney(row.amount, currency) : row.days ? fmtDays(row.days) : '—',
         sortValue: (row) => Number(row.amount || row.days || 0),
         exportValue: (row) => row.amount ?? row.days ?? '',
       },
-      { key: 'created_at', header: 'Waiting', render: (row) => <span className="subtle">{fmtRelative(row.created_at)}</span>, sortValue: (row) => row.created_at },
+      { key: 'created_at', header: t("Waiting"), render: (row) => <span className="subtle">{fmtRelative(row.created_at)}</span>, sortValue: (row) => row.created_at },
       {
         key: 'actions',
         header: '',
         sortable: false,
         width: 90,
         render: (row) => (
-          <Button size="sm" onClick={(e) => { e.stopPropagation(); setOpen(row); }}>Review</Button>
+          <Button size="sm" onClick={(e) => { e.stopPropagation(); setOpen(row); }}>{t("Review")}</Button>
         ),
         exportValue: () => '',
       },
@@ -272,7 +273,7 @@ export default function Approvals() {
 
   const counts = data?.counts || {};
   const tabs = [
-    { id: 'all', label: 'All', count: counts.all ?? allRows.length },
+    { id: 'all', label: t("All"), count: counts.all ?? allRows.length },
     ...Object.keys(KIND_LABEL)
       .filter((k) => counts[k])
       .map((k) => ({ id: k, label: KIND_LABEL[k], count: counts[k] })),
@@ -289,8 +290,8 @@ export default function Approvals() {
     <div className="stack">
       <div className="row row--between page-head">
         <div>
-          <h1 className="page-head__title">Approval inbox</h1>
-          <p className="page-head__sub">Everything waiting on your decision, across every request type</p>
+          <h1 className="page-head__title">{t("Approval inbox")}</h1>
+          <p className="page-head__sub">{t("Everything waiting on your decision, across every request type")}</p>
         </div>
         {rows.length > 0 && (
           <Button onClick={() => exportCsv('approvals', columns, rows)}>
@@ -305,8 +306,8 @@ export default function Approvals() {
             {allRows.length === 0 ? (
               <Card>
                 <EmptyState
-                  title="Inbox zero"
-                  body="Nothing is waiting on your decision right now."
+                  title={t("Inbox zero")}
+                  body={t("Nothing is waiting on your decision right now.")}
                   icon={<Icon name="check" size={22} />}
                 />
               </Card>

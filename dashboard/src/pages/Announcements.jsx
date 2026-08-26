@@ -4,6 +4,7 @@ import { useAsync } from '../hooks/useAsync';
 import { Async, Avatar, Button, Card, EmptyState, Pill } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDateShort, isoDate, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 /* Read state is per-person and the API carries none, so it lives in this
    browser. A server-side `read` flag, if one ever lands on the payload, wins
@@ -98,8 +99,8 @@ export default function Announcements() {
             <>
               <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                 <div>
-                  <h1 className="page-head__title">Announcements</h1>
-                  <p className="page-head__sub">Published notices aimed at you</p>
+                  <h1 className="page-head__title">{t("Announcements")}</h1>
+                  <p className="page-head__sub">{t("Published notices aimed at you")}</p>
                 </div>
                 <div className="row" style={{ gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                   {unread > 0 && <Pill tone="danger">{unread} unread</Pill>}
@@ -107,7 +108,7 @@ export default function Announcements() {
                     <input
                       autoFocus
                       className="ann-search"
-                      placeholder="Search announcements…"
+                      placeholder={t("Search announcements…")}
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       onBlur={() => !query && setSearching(false)}
@@ -129,8 +130,8 @@ export default function Announcements() {
               {items.length === 0 ? (
                 <Card>
                   <EmptyState
-                    title="No announcements"
-                    body="Notices published for your company or department will appear here."
+                    title={t("No announcements")}
+                    body={t("Notices published for your company or department will appear here.")}
                     icon={<Icon name="megaphone" size={22} />}
                   />
                 </Card>
@@ -161,8 +162,8 @@ export default function Announcements() {
 
                     <Card
                       flush
-                      title="Earlier"
-                      action={<span className="small subtle">Last 90 days</span>}
+                      title={t("Earlier")}
+                      action={<span className="small subtle">{t("Last 90 days")}</span>}
                     >
                       {earlier.length === 0 ? (
                         <p className="small subtle" style={{ padding: '0 var(--space-5) var(--space-5)' }}>
@@ -274,7 +275,7 @@ function Rail({ data }) {
   return (
     <div className="split__rail">
       {upcoming.length > 0 && (
-        <Card title="Next holidays">
+        <Card title={t("Next holidays")}>
           <div className="stack">
             {upcoming.map((row) => (
               <div className="row row--between" key={String(row.holiday_date)}>
@@ -287,7 +288,7 @@ function Rail({ data }) {
       )}
 
       {joiners.length > 0 && (
-        <Card title="New joiners">
+        <Card title={t("New joiners")}>
           <div className="stack">
             {joiners.slice(0, 5).map((row) => (
               <div className="row" key={row.name} style={{ gap: 'var(--space-3)' }}>
@@ -306,7 +307,7 @@ function Rail({ data }) {
       )}
 
       {anniversaries.length > 0 && (
-        <Card title="Work anniversaries">
+        <Card title={t("Work anniversaries")}>
           <div className="stack">
             {anniversaries.slice(0, 5).map((row) => {
               const joined = toDate(row.joined_on);

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { initials, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /* ---------------- Card ---------------- */
 export function Card({ title, subtitle, action, children, flush = false, className = '', ...rest }) {
@@ -114,7 +115,7 @@ export function ErrorState({ error, onRetry, title = 'Could not load this' }) {
       <p className="state__body">{error?.message || 'An unexpected error occurred.'}</p>
       {onRetry && (
         <div style={{ marginTop: 'var(--space-4)' }}>
-          <Button variant="ghost" onClick={onRetry}>Try again</Button>
+          <Button variant="ghost" onClick={onRetry}>{t("Try again")}</Button>
         </div>
       )}
     </div>
@@ -123,7 +124,7 @@ export function ErrorState({ error, onRetry, title = 'Could not load this' }) {
 
 export function Skeleton({ rows = 4 }) {
   return (
-    <div aria-busy="true" aria-label="Loading">
+    <div aria-busy="true" aria-label={t("Loading")}>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="skeleton skeleton--row" style={{ width: `${100 - i * 6}%` }} />
       ))}
@@ -182,7 +183,7 @@ export function Drawer({ open, onClose, title, subtitle, footer, children }) {
             <h2 className="card__title">{title}</h2>
             {subtitle && <p className="card__sub">{subtitle}</p>}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">✕</Button>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("Close")}>✕</Button>
         </header>
         <div className="drawer__body">{children}</div>
         {footer && <footer className="drawer__foot">{footer}</footer>}
@@ -209,7 +210,7 @@ export function Modal({ open, onClose, title, subtitle, footer, children }) {
             <h2 className="card__title">{title}</h2>
             {subtitle && <p className="card__sub">{subtitle}</p>}
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">✕</Button>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("Close")}>✕</Button>
         </header>
         <div className="drawer__body">{children}</div>
         {footer && <footer className="drawer__foot">{footer}</footer>}

@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import { Button } from './ui';
 import { Icon } from './Icon';
 import { fmtDuration, fmtDurationShort, fmtTime, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 const HERO_DATE = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -96,19 +97,19 @@ export default function PunchHero({ today, defaultShift, onDone }) {
         </div>
         {breakSeconds > 0 && (
           <div className="punch__fact">
-            <div className="punch__fact-label">Break</div>
+            <div className="punch__fact-label">{t("Break")}</div>
             <div className="punch__fact-value">{fmtDurationShort(breakSeconds)}</div>
             <div className="punch__fact-meta">{' '}</div>
           </div>
         )}
         <div className="punch__fact">
-          <div className="punch__fact-label">Shift</div>
+          <div className="punch__fact-label">{t("Shift")}</div>
           <div className="punch__fact-value">{shiftName || '—'}</div>
           <div className="punch__fact-meta">{shiftWindow || ' '}</div>
         </div>
         {flags.length > 0 && (
           <div className="punch__fact">
-            <div className="punch__fact-label">Flags</div>
+            <div className="punch__fact-label">{t("Flags")}</div>
             <div className="punch__fact-value punch__fact-value--warn">{flags.join(' · ')}</div>
           </div>
         )}

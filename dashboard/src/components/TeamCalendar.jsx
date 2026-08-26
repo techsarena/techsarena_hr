@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Avatar } from './ui';
 import { isoDate, toDate, truthy } from '../api/format';
+import { t } from '../api/i18n';
 
 /** Leave types map onto four swatches; anything unrecognised takes `other`
  *  rather than inventing a colour per type. */
@@ -81,10 +82,10 @@ function buildIndex(rows, days) {
 }
 
 const LEGEND = [
-  { tone: 'privilege', label: 'Privilege' },
-  { tone: 'sick', label: 'Sick' },
-  { tone: 'casual', label: 'Casual' },
-  { tone: 'other', label: 'Other' },
+  { tone: 'privilege', label: t("Privilege") },
+  { tone: 'sick', label: t("Sick") },
+  { tone: 'casual', label: t("Casual") },
+  { tone: 'other', label: t("Other") },
 ];
 
 export function TeamCalendarGrid({ from, to, rows = [], holidays = [], currentEmployee, approverEmployee }) {
@@ -137,9 +138,9 @@ export function TeamCalendarGrid({ from, to, rows = [], holidays = [], currentEm
                 <div className="truncate">
                   <div className="cal__person-name truncate">{person.name}</div>
                   {person.key === currentEmployee ? (
-                    <div className="cal__person-meta cal__person-meta--you">You</div>
+                    <div className="cal__person-meta cal__person-meta--you">{t("You")}</div>
                   ) : person.key === approverEmployee ? (
-                    <div className="cal__person-meta cal__person-meta--approver">Your approver</div>
+                    <div className="cal__person-meta cal__person-meta--approver">{t("Your approver")}</div>
                   ) : person.department ? (
                     <div className="cal__person-meta truncate">{person.department}</div>
                   ) : null}

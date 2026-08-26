@@ -4,6 +4,7 @@ import { useAsync } from '../hooks/useAsync';
 import { Async, Avatar, Card, Drawer, EmptyState, FieldRow, Meter, Pill, Stat } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /**
  * Read-only, by design: progress, blocked and at-risk state are all derived
@@ -33,7 +34,7 @@ function OnboardingDrawer({ record, onClose }) {
     <Drawer open onClose={onClose} title={record.employee_name || record.job_applicant || record.name} subtitle={record.name}>
       <div className="stack">
         <Card className="card--muted">
-          <Stat label="Progress" value={`${stats.percent}%`} meta={`${stats.done} of ${stats.total} activities complete`} />
+          <Stat label={t("Progress")} value={`${stats.percent}%`} meta={`${stats.done} of ${stats.total} activities complete`} />
           <div style={{ marginTop: 'var(--space-4)' }}>
             <Meter
               value={stats.done}
@@ -43,34 +44,34 @@ function OnboardingDrawer({ record, onClose }) {
           </div>
         </Card>
 
-        <Card title="Details">
-          <FieldRow label="Status" value={record.status ? <Pill tone={statusTone(record.status)}>{record.status}</Pill> : null} />
-          <FieldRow label="Employee" value={record.employee} />
-          <FieldRow label="Designation" value={record.designation} />
-          <FieldRow label="Department" value={record.department} />
-          <FieldRow label="Company" value={record.company} />
-          <FieldRow label="Joining date" value={record.date_of_joining ? fmtDate(record.date_of_joining) : null} />
-          <FieldRow label="Boarding begins" value={record.boarding_begins_on ? fmtDate(record.boarding_begins_on) : null} />
-          <FieldRow label="Template" value={record.template} />
-          <FieldRow label="Job applicant" value={record.job_applicant} />
-          <FieldRow label="Job offer" value={record.job_offer} />
+        <Card title={t("Details")}>
+          <FieldRow label={t("Status")} value={record.status ? <Pill tone={statusTone(record.status)}>{record.status}</Pill> : null} />
+          <FieldRow label={t("Employee")} value={record.employee} />
+          <FieldRow label={t("Designation")} value={record.designation} />
+          <FieldRow label={t("Department")} value={record.department} />
+          <FieldRow label={t("Company")} value={record.company} />
+          <FieldRow label={t("Joining date")} value={record.date_of_joining ? fmtDate(record.date_of_joining) : null} />
+          <FieldRow label={t("Boarding begins")} value={record.boarding_begins_on ? fmtDate(record.boarding_begins_on) : null} />
+          <FieldRow label={t("Template")} value={record.template} />
+          <FieldRow label={t("Job applicant")} value={record.job_applicant} />
+          <FieldRow label={t("Job offer")} value={record.job_offer} />
         </Card>
 
         <Card title={`Activities (${stats.total})`} flush>
           {stats.total === 0 ? (
-            <EmptyState title="No activities" body="This onboarding has no linked tasks." icon="◷" />
+            <EmptyState title={t("No activities")} body={t("This onboarding has no linked tasks.")} icon="◷" />
           ) : (
             <div className="table-wrap">
               <table className="table">
                 <thead>
-                  <tr><th>Activity</th><th>Owner</th><th>Due</th><th>Status</th></tr>
+                  <tr><th>{t("Activity")}</th><th>{t("Owner")}</th><th>{t("Due")}</th><th>{t("Status")}</th></tr>
                 </thead>
                 <tbody>
                   {stats.activities.map((activity) => (
                     <tr key={activity.name}>
                       <td>
                         <div className="cell-strong">{activity.activity_name}</div>
-                        {activity.required && <span className="small subtle">Required for employee creation</span>}
+                        {activity.required && <span className="small subtle">{t("Required for employee creation")}</span>}
                       </td>
                       <td className="subtle">{activity.owner_name || activity.user || activity.role || '—'}</td>
                       <td className={activity.overdue ? '' : 'subtle'} style={activity.overdue ? { color: 'var(--danger)', fontWeight: 600 } : undefined}>
@@ -112,8 +113,8 @@ export default function Onboarding() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">Onboarding</h1>
-        <p className="page-head__sub">Active joiners and the real tasks attached to their onboarding</p>
+        <h1 className="page-head__title">{t("Onboarding")}</h1>
+        <p className="page-head__sub">{t("Active joiners and the real tasks attached to their onboarding")}</p>
       </div>
 
       <Async state={state} rows={4}>
@@ -122,8 +123,8 @@ export default function Onboarding() {
             return (
               <Card>
                 <EmptyState
-                  title="No active onboardings"
-                  body="Employee Onboarding records created in HRMS will appear here with their task progress."
+                  title={t("No active onboardings")}
+                  body={t("Employee Onboarding records created in HRMS will appear here with their task progress.")}
                   icon={<Icon name="checklist" size={22} />}
                 />
               </Card>
@@ -133,9 +134,9 @@ export default function Onboarding() {
           return (
             <>
               <div className="grid grid--3">
-                <div className="card"><Stat label="Active onboardings" value={records.length} /></div>
-                <div className="card"><Stat label="With overdue tasks" value={totals.overdue} tone={totals.overdue ? 'danger' : undefined} /></div>
-                <div className="card"><Stat label="Fully complete" value={totals.complete} tone="success" /></div>
+                <div className="card"><Stat label={t("Active onboardings")} value={records.length} /></div>
+                <div className="card"><Stat label={t("With overdue tasks")} value={totals.overdue} tone={totals.overdue ? 'danger' : undefined} /></div>
+                <div className="card"><Stat label={t("Fully complete")} value={totals.complete} tone="success" /></div>
               </div>
 
               <div className="grid grid--2">

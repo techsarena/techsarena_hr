@@ -7,6 +7,7 @@ import { Async, Button, Card, Drawer, EmptyState, Field, FieldRow, Meter, Modal,
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtMoney, fmtNumber, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /* Reschedule and skip run lending's formal Loan Restructure flow server-side —
    a real restructure that regenerates the schedule and posts the GL
@@ -36,11 +37,11 @@ function RescheduleModal({ loan, onClose, onDone }) {
     <Modal
       open
       onClose={onClose}
-      title="Reschedule this loan"
+      title={t("Reschedule this loan")}
       subtitle={loan.name}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={submit} disabled={busy || !Number(periods)}>
             {busy ? 'Restructuring…' : 'Apply restructure'}
           </Button>
@@ -52,10 +53,10 @@ function RescheduleModal({ loan, onClose, onDone }) {
           This submits a formal Loan Restructure: the repayment schedule is regenerated and the accounting
           adjustments are posted. Current tenure is {loan.repayment_periods} months.
         </p>
-        <Field label="New tenure (months)">
+        <Field label={t("New tenure (months)")}>
           <input type="number" min="1" value={periods} onChange={(e) => setPeriods(e.target.value)} />
         </Field>
-        <Field label="Reason" hint="Recorded on the loan as an audit comment.">
+        <Field label={t("Reason")} hint="Recorded on the loan as an audit comment.">
           <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </div>
@@ -87,11 +88,11 @@ function SkipModal({ loan, onClose, onDone }) {
     <Modal
       open
       onClose={onClose}
-      title="Skip one instalment"
+      title={t("Skip one instalment")}
       subtitle={loan.name}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={submit} disabled={busy}>
             {busy ? 'Working…' : 'Defer instalment'}
           </Button>
@@ -103,7 +104,7 @@ function SkipModal({ loan, onClose, onDone }) {
           Defers one instalment and extends the tenure to {loan.repayment_periods + 1} months, through the same
           formal restructure flow.
         </p>
-        <Field label="Reason">
+        <Field label={t("Reason")}>
           <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
       </div>
@@ -123,11 +124,11 @@ function LoanDetail({ loan, currency, canAdminister, onClose, onChanged }) {
   const columns = useMemo(
     () => [
       { key: 'idx', header: '#', align: 'right', width: 50, sortValue: (row) => Number(row.idx) },
-      { key: 'payment_date', header: 'Due', render: (row) => <span className="cell-strong">{fmtDate(row.payment_date)}</span>, sortValue: (row) => row.payment_date },
-      { key: 'principal_amount', header: 'Principal', align: 'right', render: (row) => fmtMoney(row.principal_amount, currency), sortValue: (row) => Number(row.principal_amount) },
-      { key: 'interest_amount', header: 'Interest', align: 'right', render: (row) => fmtMoney(row.interest_amount, currency), sortValue: (row) => Number(row.interest_amount) },
-      { key: 'total_payment', header: 'Instalment', align: 'right', render: (row) => <span className="cell-strong">{fmtMoney(row.total_payment, currency)}</span>, sortValue: (row) => Number(row.total_payment) },
-      { key: 'balance_loan_amount', header: 'Balance', align: 'right', render: (row) => fmtMoney(row.balance_loan_amount, currency), sortValue: (row) => Number(row.balance_loan_amount) },
+      { key: 'payment_date', header: t("Due"), render: (row) => <span className="cell-strong">{fmtDate(row.payment_date)}</span>, sortValue: (row) => row.payment_date },
+      { key: 'principal_amount', header: t("Principal"), align: 'right', render: (row) => fmtMoney(row.principal_amount, currency), sortValue: (row) => Number(row.principal_amount) },
+      { key: 'interest_amount', header: t("Interest"), align: 'right', render: (row) => fmtMoney(row.interest_amount, currency), sortValue: (row) => Number(row.interest_amount) },
+      { key: 'total_payment', header: t("Instalment"), align: 'right', render: (row) => <span className="cell-strong">{fmtMoney(row.total_payment, currency)}</span>, sortValue: (row) => Number(row.total_payment) },
+      { key: 'balance_loan_amount', header: t("Balance"), align: 'right', render: (row) => fmtMoney(row.balance_loan_amount, currency), sortValue: (row) => Number(row.balance_loan_amount) },
     ],
     [currency],
   );
@@ -148,8 +149,8 @@ function LoanDetail({ loan, currency, canAdminister, onClose, onChanged }) {
         footer={
           canAdminister ? (
             <>
-              <Button onClick={() => setSkip(loan)}>Skip an instalment</Button>
-              <Button variant="indigo" onClick={() => setReschedule(loan)}>Reschedule</Button>
+              <Button onClick={() => setSkip(loan)}>{t("Skip an instalment")}</Button>
+              <Button variant="indigo" onClick={() => setReschedule(loan)}>{t("Reschedule")}</Button>
             </>
           ) : null
         }
@@ -161,20 +162,20 @@ function LoanDetail({ loan, currency, canAdminister, onClose, onChanged }) {
             return (
               <div className="stack">
                 <Card className="card--muted">
-                  <Stat label="Outstanding" value={fmtMoney(summary.outstanding, currency)} meta={`of ${fmtMoney(summary.total_payable, currency)} payable`} />
+                  <Stat label={t("Outstanding")} value={fmtMoney(summary.outstanding, currency)} meta={`of ${fmtMoney(summary.total_payable, currency)} payable`} />
                   <div style={{ margin: 'var(--space-4) 0' }}>
                     <Meter value={summary.total_paid} total={summary.total_payable} tone="success" />
                   </div>
-                  <FieldRow label="Status" value={<Pill tone={statusTone(summary.status)}>{summary.status}</Pill>} />
-                  <FieldRow label="Principal" value={fmtMoney(summary.loan_amount, currency)} />
-                  <FieldRow label="Interest rate" value={summary.rate_of_interest ? `${fmtNumber(summary.rate_of_interest, 2)}%` : null} />
-                  <FieldRow label="Tenure" value={summary.repayment_periods ? `${summary.repayment_periods} months` : null} />
-                  <FieldRow label="Monthly instalment" value={summary.monthly_repayment_amount ? fmtMoney(summary.monthly_repayment_amount, currency) : null} />
-                  <FieldRow label="Paid to date" value={fmtMoney(summary.total_paid, currency)} />
+                  <FieldRow label={t("Status")} value={<Pill tone={statusTone(summary.status)}>{summary.status}</Pill>} />
+                  <FieldRow label={t("Principal")} value={fmtMoney(summary.loan_amount, currency)} />
+                  <FieldRow label={t("Interest rate")} value={summary.rate_of_interest ? `${fmtNumber(summary.rate_of_interest, 2)}%` : null} />
+                  <FieldRow label={t("Tenure")} value={summary.repayment_periods ? `${summary.repayment_periods} months` : null} />
+                  <FieldRow label={t("Monthly instalment")} value={summary.monthly_repayment_amount ? fmtMoney(summary.monthly_repayment_amount, currency) : null} />
+                  <FieldRow label={t("Paid to date")} value={fmtMoney(summary.total_paid, currency)} />
                 </Card>
 
                 <Card
-                  title="Repayment schedule"
+                  title={t("Repayment schedule")}
                   subtitle={`${schedule.length} instalments`}
                   flush
                   action={
@@ -231,8 +232,8 @@ export default function Loans() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">My loans</h1>
-        <p className="page-head__sub">Staff loans, their schedules, and restructure options</p>
+        <h1 className="page-head__title">{t("My loans")}</h1>
+        <p className="page-head__sub">{t("Staff loans, their schedules, and restructure options")}</p>
       </div>
 
       <Async state={state} rows={4}>
@@ -255,9 +256,9 @@ export default function Loans() {
           return (
             <>
               <div className="grid grid--3">
-                <div className="card"><Stat label="Total outstanding" value={fmtMoney(totals.outstanding, currency)} /></div>
-                <div className="card"><Stat label="Monthly repayment" value={fmtMoney(totals.monthly, currency)} /></div>
-                <div className="card"><Stat label="Active loans" value={loans.length} /></div>
+                <div className="card"><Stat label={t("Total outstanding")} value={fmtMoney(totals.outstanding, currency)} /></div>
+                <div className="card"><Stat label={t("Monthly repayment")} value={fmtMoney(totals.monthly, currency)} /></div>
+                <div className="card"><Stat label={t("Active loans")} value={loans.length} /></div>
               </div>
 
               <div className="grid grid--2">
@@ -268,7 +269,7 @@ export default function Loans() {
                     subtitle={loan.name}
                     action={<Pill tone={statusTone(loan.status)}>{loan.status}</Pill>}
                   >
-                    <Stat label="Outstanding" value={fmtMoney(loan.outstanding, currency)} meta={`of ${fmtMoney(loan.total_payable, currency)} payable`} />
+                    <Stat label={t("Outstanding")} value={fmtMoney(loan.outstanding, currency)} meta={`of ${fmtMoney(loan.total_payable, currency)} payable`} />
                     <div style={{ margin: 'var(--space-4) 0' }}>
                       <Meter value={loan.total_paid} total={loan.total_payable} tone="success" />
                     </div>
@@ -277,7 +278,7 @@ export default function Loans() {
                       <span>{loan.repayment_periods} months</span>
                     </div>
                     <div style={{ marginTop: 'var(--space-4)' }}>
-                      <Button variant="primary" size="sm" onClick={() => setOpen(loan)}>View schedule</Button>
+                      <Button variant="primary" size="sm" onClick={() => setOpen(loan)}>{t("View schedule")}</Button>
                     </div>
                   </Card>
                 ))}

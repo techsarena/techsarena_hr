@@ -4,6 +4,7 @@ import { useToast } from '../hooks/useToast';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { Button, Drawer, Field, FieldRow } from './ui';
 import { fmtDate, fmtDays, isoDate } from '../api/format';
+import { t } from '../api/i18n';
 
 /* ---------- Apply drawer ---------- */
 export function ApplyDrawer({ open, onClose, onDone }) {
@@ -65,11 +66,11 @@ export function ApplyDrawer({ open, onClose, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="Apply for leave"
-      subtitle="Day count comes from your leave type's own working-day rules"
+      title={t("Apply for leave")}
+      subtitle={t("Day count comes from your leave type's own working-day rules")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           {/* Blocked dates are refused server-side at submit, so the button is
               disabled rather than letting the request fail after the fact. */}
           <Button
@@ -83,9 +84,9 @@ export function ApplyDrawer({ open, onClose, onDone }) {
       }
     >
       <div className="fields">
-        <Field label="Leave type">
+        <Field label={t("Leave type")}>
           <select value={form.leave_type} onChange={(e) => setForm({ ...form, leave_type: e.target.value })}>
-            <option value="">Select a leave type…</option>
+            <option value="">{t("Select a leave type…")}</option>
             {leaveBalances.map((row) => (
               <option key={row.leave_type} value={row.leave_type}>
                 {row.leave_type} — {Number(row.remaining).toFixed(1)} left
@@ -95,7 +96,7 @@ export function ApplyDrawer({ open, onClose, onDone }) {
         </Field>
 
         <div className="grid grid--2">
-          <Field label="From">
+          <Field label={t("From")}>
             <input type="date" value={form.from_date} onChange={(e) => setForm({ ...form, from_date: e.target.value })} />
           </Field>
           <Field label="To">
@@ -110,10 +111,10 @@ export function ApplyDrawer({ open, onClose, onDone }) {
             checked={form.half_day}
             onChange={(e) => setForm({ ...form, half_day: e.target.checked })}
           />
-          <span style={{ fontWeight: 500, color: 'var(--ink)' }}>Half day</span>
+          <span style={{ fontWeight: 500, color: 'var(--ink)' }}>{t("Half day")}</span>
         </label>
 
-        <Field label="Reason">
+        <Field label={t("Reason")}>
           <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </Field>
 
@@ -125,7 +126,7 @@ export function ApplyDrawer({ open, onClose, onDone }) {
             before the day-count card rather than buried inside it. */}
         {hasBlocked && (
           <div className="login__error" style={{ margin: 0 }}>
-            <strong>Leave is blocked on these dates.</strong>
+            <strong>{t("Leave is blocked on these dates.")}</strong>
             <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
               {blockedDates.slice(0, 5).map((row) => (
                 <li key={row.block_date}>
@@ -144,24 +145,24 @@ export function ApplyDrawer({ open, onClose, onDone }) {
 
         {preview && (
           <div className="card card--muted">
-            <div className="section-heading__label" style={{ marginBottom: 8 }}>Before you submit</div>
-            <FieldRow label="Working days deducted" value={fmtDays(preview.working_days)} />
+            <div className="section-heading__label" style={{ marginBottom: 8 }}>{t("Before you submit")}</div>
+            <FieldRow label={t("Working days deducted")} value={fmtDays(preview.working_days)} />
             {/* Null balance means this type is not allocated (e.g. LWP) — shown
                 as "not allocated", never as a balance of 0. */}
             <FieldRow
-              label="Balance now"
+              label={t("Balance now")}
               value={preview.balance_before === null || preview.balance_before === undefined ? 'Not allocated' : fmtDays(preview.balance_before)}
             />
             <FieldRow
-              label="Balance after"
+              label={t("Balance after")}
               value={preview.balance_after === null || preview.balance_after === undefined ? null : fmtDays(preview.balance_after)}
             />
             {(preview.holidays || []).length > 0 && (
-              <FieldRow label="Holidays in range" value={`${preview.holidays.length} excluded`} />
+              <FieldRow label={t("Holidays in range")} value={`${preview.holidays.length} excluded`} />
             )}
             {preview.team_size > 0 && (
               <FieldRow
-                label="Team cover"
+                label={t("Team cover")}
                 value={`${preview.team_leave.length} of ${preview.team_size} already away`}
               />
             )}

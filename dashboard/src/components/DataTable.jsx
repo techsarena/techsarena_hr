@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { EmptyState } from './ui';
+import { t } from '../api/i18n';
 
 /**
  * Dense data grid on real <table> markup.
@@ -74,7 +75,7 @@ export function DataTable({
                   className="checkbox"
                   checked={allSelected}
                   onChange={() => onToggleAll?.(!allSelected, sorted)}
-                  aria-label="Select all rows"
+                  aria-label={t("Select all rows")}
                 />
               </th>
             )}
@@ -110,7 +111,7 @@ export function DataTable({
                       className="checkbox"
                       checked={Boolean(isSelected)}
                       onChange={() => onToggleRow(key, row)}
-                      aria-label="Select row"
+                      aria-label={t("Select row")}
                     />
                   </td>
                 )}

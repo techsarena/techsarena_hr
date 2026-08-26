@@ -7,11 +7,12 @@ import { Async, Button, Modal, Pill, SearchInput } from '../components/ui';
 import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDateShort, fmtMoney, fmtRange, initials, monthLabel, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 const TABS = [
-  { id: 'run', label: 'Run' },
-  { id: 'register', label: 'Register' },
-  { id: 'statutory', label: 'Statutory' },
+  { id: 'run', label: t("Run") },
+  { id: 'register', label: t("Register") },
+  { id: 'statutory', label: t("Statutory") },
 ];
 
 function moneySymbol(currency) {
@@ -90,11 +91,11 @@ function SubmitModal({ open, run, onClose, onDone }) {
     <Modal
       open
       onClose={onClose}
-      title="Submit this payroll run"
+      title={t("Submit this payroll run")}
       subtitle={fmtRange(run.start_date, run.end_date)}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={submit} disabled={busy}>
             {busy ? 'Submitting…' : 'Submit run'}
           </Button>
@@ -109,7 +110,7 @@ function SubmitModal({ open, run, onClose, onDone }) {
         {run.held > 0 && (
           <div className="payroll-alert payroll-alert--warning">
             <strong>{run.held} blocking exception{run.held === 1 ? '' : 's'}</strong>
-            <p>Clear held rows before submitting this run.</p>
+            <p>{t("Clear held rows before submitting this run.")}</p>
           </div>
         )}
       </div>
@@ -146,11 +147,11 @@ function CreatePayrollModal({ open, onClose, onCreated }) {
     <Modal
       open
       onClose={onClose}
-      title="Create payroll"
-      subtitle="Draft only"
+      title={t("Create payroll")}
+      subtitle={t("Draft only")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={create} disabled={busy || !form.start_date || !form.end_date}>
             {busy ? 'Generating…' : 'Generate draft slips'}
           </Button>
@@ -168,14 +169,14 @@ function CreatePayrollModal({ open, onClose, onCreated }) {
         </label>
         <div className="payroll-create-summary">
           <div>
-            <span>Employees</span>
-            <strong>All active staff</strong>
+            <span>{t("Employees")}</span>
+            <strong>{t("All active staff")}</strong>
           </div>
           <div>
-            <span>Pay day</span>
+            <span>{t("Pay day")}</span>
             <strong>{fmtDateShort(form.end_date)}</strong>
           </div>
-          <p>Nothing is paid or visible to employees until you submit the run.</p>
+          <p>{t("Nothing is paid or visible to employees until you submit the run.")}</p>
         </div>
       </div>
     </Modal>
@@ -257,7 +258,7 @@ function StructureStep({ onDone }) {
   const rowsFor = (list, setList, options, label) => (
     <div className="stack">
       <strong className="small">{label}</strong>
-      {list.length === 0 && <p className="small subtle">None added.</p>}
+      {list.length === 0 && <p className="small subtle">{t("None added.")}</p>}
       {list.map((row, index) => (
         // eslint-disable-next-line react/no-array-index-key
         <div className="payroll-comp-row" key={index}>
@@ -265,7 +266,7 @@ function StructureStep({ onDone }) {
             value={row.salary_component}
             onChange={(event) => setRow(list, setList, index, 'salary_component', event.target.value)}
           >
-            <option value="">Select component…</option>
+            <option value="">{t("Select component…")}</option>
             {options.map((option) => (
               <option key={option.name} value={option.name}>{option.name}</option>
             ))}
@@ -273,11 +274,11 @@ function StructureStep({ onDone }) {
           <input
             type="number"
             min="0"
-            placeholder="Amount"
+            placeholder={t("Amount")}
             value={row.amount}
             onChange={(event) => setRow(list, setList, index, 'amount', event.target.value)}
           />
-          <Button size="icon" onClick={() => dropRow(list, setList, index)} aria-label="Remove">
+          <Button size="icon" onClick={() => dropRow(list, setList, index)} aria-label={t("Remove")}>
             <Icon name="close" size={14} />
           </Button>
         </div>
@@ -292,7 +293,7 @@ function StructureStep({ onDone }) {
     <div className="stack">
       {draftRows.length > 0 && (
         <div className="payroll-alert payroll-alert--warning">
-          <strong>You already have a draft structure</strong>
+          <strong>{t("You already have a draft structure")}</strong>
           <p>Submitting it is faster than building a new one — a draft cannot be assigned.</p>
           <div className="payroll-actions payroll-actions--wrap" style={{ marginTop: 8 }}>
             {draftRows.map((row) => (
@@ -306,14 +307,14 @@ function StructureStep({ onDone }) {
 
       <label className="payroll-field">
         New structure name
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Standard Monthly" />
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t("e.g. Standard Monthly")} />
       </label>
 
       {rowsFor(earnings, setEarnings, earningOptions, 'Earnings')}
       {rowsFor(deductions, setDeductions, deductionOptions, 'Deductions')}
 
       <div className="row row--between">
-        <p className="small subtle">Creating submits the structure so it is immediately assignable.</p>
+        <p className="small subtle">{t("Creating submits the structure so it is immediately assignable.")}</p>
         <Button
           variant="indigo"
           disabled={busy || !name.trim() || !earnings.some((row) => row.salary_component)}
@@ -376,7 +377,7 @@ function AssignStep({ onDone }) {
     <div className="stack">
         {options.length === 0 ? (
           <div className="payroll-alert payroll-alert--warning">
-            <strong>No submitted salary structure</strong>
+            <strong>{t("No submitted salary structure")}</strong>
             <p>
               A salary structure must be created and submitted before it can be assigned.
               Create one in Payroll settings, then come back here.
@@ -387,7 +388,7 @@ function AssignStep({ onDone }) {
             <label className="payroll-field">
               Salary structure
               <select value={structure} onChange={(event) => setStructure(event.target.value)}>
-                <option value="">Select a structure…</option>
+                <option value="">{t("Select a structure…")}</option>
                 {options.map((row) => (
                   <option key={row.name} value={row.name}>
                     {row.name}{row.currency ? ` (${row.currency})` : ''}
@@ -403,12 +404,12 @@ function AssignStep({ onDone }) {
                 min="0"
                 value={base}
                 onChange={(event) => setBase(event.target.value)}
-                placeholder="Leave blank to use the structure's own base"
+                placeholder={t("Leave blank to use the structure's own base")}
               />
             </label>
 
             {rows.length === 0 ? (
-              <p className="small subtle">Every active employee already has an assignment.</p>
+              <p className="small subtle">{t("Every active employee already has an assignment.")}</p>
             ) : (
               <>
                 <div className="row row--between">
@@ -492,10 +493,10 @@ function ComponentStep({ onDone }) {
         {existing.map((row) => row.name).join(', ') || 'none yet'}
       </p>
       <div className="payroll-comp-row">
-        <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Component name" />
+        <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t("Component name")} />
         <select value={type} onChange={(event) => setType(event.target.value)}>
-          <option>Earning</option>
-          <option>Deduction</option>
+          <option>{t("Earning")}</option>
+          <option>{t("Deduction")}</option>
         </select>
         <Button variant="indigo" disabled={busy || !name.trim()} onClick={create}>
           {busy ? 'Adding…' : 'Add'}
@@ -526,9 +527,9 @@ function SetupWizard({ open, onClose, checks, onChanged }) {
     <Modal
       open
       onClose={onClose}
-      title="Set up payroll"
-      subtitle="Complete each step here — nothing needs the Desk UI"
-      footer={<Button onClick={onClose}>Close</Button>}
+      title={t("Set up payroll")}
+      subtitle={t("Complete each step here — nothing needs the Desk UI")}
+      footer={<Button onClick={onClose}>{t("Close")}</Button>}
     >
       <div className="payroll-wizard">
         <div className="payroll-wizard__steps">
@@ -583,11 +584,11 @@ function EmptyPayroll({ onCreate }) {
     <div className="payroll-page payroll-page--empty">
       <div className="payroll-head">
         <div className="row">
-          <h1>Payroll</h1>
-          <Pill>No runs yet</Pill>
+          <h1>{t("Payroll")}</h1>
+          <Pill>{t("No runs yet")}</Pill>
         </div>
         <div className="payroll-actions">
-          <Button onClick={() => { window.location.href = '/app/payroll-settings'; }}>Payroll settings</Button>
+          <Button onClick={() => { window.location.href = '/app/payroll-settings'; }}>{t("Payroll settings")}</Button>
           <Button variant="indigo" onClick={onCreate}>
             <Icon name="plus" size={15} /> Create payroll
           </Button>
@@ -599,7 +600,7 @@ function EmptyPayroll({ onCreate }) {
           <section className="payroll-empty-hero">
             <div className="payroll-icon payroll-icon--large"><Icon name="payroll" size={38} /></div>
             <div className="payroll-empty-copy">
-              <h2>No payroll has been run yet</h2>
+              <h2>{t("No payroll has been run yet")}</h2>
               <p>
                 {ready
                   ? 'Everything the first run needs is in place. Creating a payroll entry generates a draft salary slip for every employee, which you can review before submitting.'
@@ -610,7 +611,7 @@ function EmptyPayroll({ onCreate }) {
                   <Icon name="plus" size={15} /> Create payroll for this month
                 </Button>
                 {!ready && (
-                  <Button onClick={() => setSetupOpen(true)}>Set up payroll</Button>
+                  <Button onClick={() => setSetupOpen(true)}>{t("Set up payroll")}</Button>
                 )}
               </div>
             </div>
@@ -618,7 +619,7 @@ function EmptyPayroll({ onCreate }) {
 
           <section className="payroll-panel payroll-checklist">
             <header>
-              <h3>Before the first run</h3>
+              <h3>{t("Before the first run")}</h3>
               <Pill tone={ready ? 'success' : 'warning'}>
                 {readiness.loading ? 'Checking…' : `${data?.ready_count ?? 0} of ${checks.length || 4} ready`}
               </Pill>
@@ -632,7 +633,7 @@ function EmptyPayroll({ onCreate }) {
                     <p>{check.body}</p>
                   </div>
                   {check.done ? (
-                    <em>Done</em>
+                    <em>{t("Done")}</em>
                   ) : (
                     <Button size="sm" onClick={runAction}>
                       {check.action_label}
@@ -646,22 +647,22 @@ function EmptyPayroll({ onCreate }) {
 
         <aside className="payroll-rail">
           <section className="payroll-panel">
-            <h3>What the run will cover</h3>
+            <h3>{t("What the run will cover")}</h3>
             <div className="payroll-facts">
-              <span>Period</span><strong>This month</strong>
-              <span>Employees</span>
+              <span>{t("Period")}</span><strong>{t("This month")}</strong>
+              <span>{t("Employees")}</span>
               <strong>
                 {data
                   ? `${data.assigned_employees} of ${data.active_employees} assigned`
                   : 'All active'}
               </strong>
-              <span>Estimated gross</span><strong>Calculated on create</strong>
-              <span>Pay day</span><strong>Period end</strong>
+              <span>{t("Estimated gross")}</span><strong>{t("Calculated on create")}</strong>
+              <span>{t("Pay day")}</span><strong>{t("Period end")}</strong>
             </div>
             <p className="small subtle">Estimate from current structures; draft slips will carry the real figures.</p>
           </section>
           <section className="payroll-panel">
-            <h3>What happens next</h3>
+            <h3>{t("What happens next")}</h3>
             {['Payroll Entry is created for the period.', 'Draft Salary Slips are generated.', 'You review the register and clear exceptions.', 'Submitting posts the slips and releases payslips.'].map((step, index) => (
               <div className="payroll-next-step" key={step}>
                 <span>{index + 1}</span>
@@ -670,7 +671,7 @@ function EmptyPayroll({ onCreate }) {
             ))}
           </section>
           <section className="payroll-panel">
-            <h3>Past runs</h3>
+            <h3>{t("Past runs")}</h3>
             <p className="small subtle">No payroll history in this company yet. Runs imported as closed periods stay searchable.</p>
           </section>
         </aside>
@@ -700,12 +701,12 @@ function PayrollHero({ run, currency }) {
         <strong>{compactMoney(run.net, currency)}</strong>
         <em>net payable · {run.employees} employees</em>
         <div className="payroll-run-meter"><span style={{ width: `${progress}%` }} /></div>
-        <p>Step 3 of 5 · validation</p>
+        <p>{t("Step 3 of 5 · validation")}</p>
       </div>
       <div className="payroll-run-hero__stats">
-        <div><span>Gross</span><strong>{compactMoney(run.gross, currency)}</strong><em>{delta === null ? 'Current run' : `${delta >= 0 ? '+' : ''}${compactMoney(delta, currency)} vs last run`}</em></div>
-        <div><span>Deductions</span><strong>{compactMoney(run.deductions, currency)}</strong><em>PF, tax, loans</em></div>
-        <div><span>Slips generated</span><strong>{run.slips_generated} / {run.employees}</strong><em>{run.held ? `${run.held} held` : 'Ready'}</em></div>
+        <div><span>{t("Gross")}</span><strong>{compactMoney(run.gross, currency)}</strong><em>{delta === null ? 'Current run' : `${delta >= 0 ? '+' : ''}${compactMoney(delta, currency)} vs last run`}</em></div>
+        <div><span>{t("Deductions")}</span><strong>{compactMoney(run.deductions, currency)}</strong><em>{t("PF, tax, loans")}</em></div>
+        <div><span>{t("Slips generated")}</span><strong>{run.slips_generated} / {run.employees}</strong><em>{run.held ? `${run.held} held` : 'Ready'}</em></div>
       </div>
     </section>
   );
@@ -713,11 +714,11 @@ function PayrollHero({ run, currency }) {
 
 function Workflow({ run, exceptions }) {
   const steps = [
-    { title: 'Attendance locked', meta: fmtDateShort(run.start_date), done: true },
-    { title: 'Slips generated', meta: fmtDateShort(run.posting_date || run.end_date), done: run.slips_generated > 0 },
-    { title: 'Validation', meta: exceptions.length ? `${exceptions.length} exceptions` : 'Clear', active: true },
-    { title: 'Approval', meta: `Due ${fmtDateShort(run.end_date)}` },
-    { title: 'Bank file', meta: fmtDateShort(run.posting_date || run.end_date) },
+    { title: t("Attendance locked"), meta: fmtDateShort(run.start_date), done: true },
+    { title: t("Slips generated"), meta: fmtDateShort(run.posting_date || run.end_date), done: run.slips_generated > 0 },
+    { title: t("Validation"), meta: exceptions.length ? `${exceptions.length} exceptions` : 'Clear', active: true },
+    { title: t("Approval"), meta: `Due ${fmtDateShort(run.end_date)}` },
+    { title: t("Bank file"), meta: fmtDateShort(run.posting_date || run.end_date) },
   ];
 
   return (
@@ -737,7 +738,7 @@ function Workflow({ run, exceptions }) {
 
 function RegisterTable({ rows, currency }) {
   if (!rows.length) {
-    return <div className="payroll-table-empty">No employees match that filter.</div>;
+    return <div className="payroll-table-empty">{t("No employees match that filter.")}</div>;
   }
 
   return (
@@ -745,12 +746,12 @@ function RegisterTable({ rows, currency }) {
       <table className="payroll-table">
         <thead>
           <tr>
-            <th>Employee</th>
-            <th>Structure</th>
-            <th className="num">Gross</th>
-            <th className="num">Deductions</th>
-            <th className="num">Net</th>
-            <th>Status</th>
+            <th>{t("Employee")}</th>
+            <th>{t("Structure")}</th>
+            <th className="num">{t("Gross")}</th>
+            <th className="num">{t("Deductions")}</th>
+            <th className="num">{t("Net")}</th>
+            <th>{t("Status")}</th>
           </tr>
         </thead>
         <tbody>
@@ -765,12 +766,12 @@ function RegisterTable({ rows, currency }) {
                   </div>
                 </div>
               </td>
-              <td>{row.salary_structure || <em>Missing</em>}</td>
+              <td>{row.salary_structure || <em>{t("Missing")}</em>}</td>
               <td className="num">{fmtMoney(row.gross_pay, currency)}</td>
               <td className="num">{fmtMoney(row.total_deduction, currency)}</td>
               <td className="num"><strong>{fmtMoney(row.net_pay, currency)}</strong></td>
               <td>
-                {row.held ? <Pill tone="danger">Held</Pill> : row.changed ? <Pill tone="warning">Changed</Pill> : <Pill tone="success">Ready</Pill>}
+                {row.held ? <Pill tone="danger">{t("Held")}</Pill> : row.changed ? <Pill tone="warning">{t("Changed")}</Pill> : <Pill tone="success">{t("Ready")}</Pill>}
               </td>
             </tr>
           ))}
@@ -798,7 +799,7 @@ function ExceptionRail({ exceptions }) {
           </div>
         ))
       ) : (
-        <p className="small subtle">No payroll exceptions are blocking this run.</p>
+        <p className="small subtle">{t("No payroll exceptions are blocking this run.")}</p>
       )}
     </section>
   );
@@ -808,7 +809,7 @@ function CostSplit({ rows, currency }) {
   const total = rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
   return (
     <section className="payroll-panel">
-      <h3>Cost split</h3>
+      <h3>{t("Cost split")}</h3>
       {rows.length ? rows.slice(0, 5).map((row) => {
         const pct = total ? (Number(row.amount || 0) / total) * 100 : 0;
         return (
@@ -817,7 +818,7 @@ function CostSplit({ rows, currency }) {
             <div className="meter"><div className="meter__fill" style={{ width: `${pct}%` }} /></div>
           </div>
         );
-      }) : <p className="small subtle">No split available yet.</p>}
+      }) : <p className="small subtle">{t("No split available yet.")}</p>}
     </section>
   );
 }
@@ -825,13 +826,13 @@ function CostSplit({ rows, currency }) {
 function Statutory({ rows, currency }) {
   return (
     <section className="payroll-panel">
-      <h3>Statutory</h3>
+      <h3>{t("Statutory")}</h3>
       {rows.length ? rows.slice(0, 5).map((row) => (
         <div className="payroll-line" key={row.component || row.label}>
           <span>{row.component || row.label}</span>
           <strong>{compactMoney(row.amount, currency)}</strong>
         </div>
-      )) : <p className="small subtle">No statutory components in this run.</p>}
+      )) : <p className="small subtle">{t("No statutory components in this run.")}</p>}
     </section>
   );
 }
@@ -862,12 +863,12 @@ export default function Payroll() {
 
   const columns = useMemo(
     () => [
-      { key: 'employee_name', header: 'Employee', exportValue: (row) => row.employee_name || row.employee },
-      { key: 'salary_structure', header: 'Structure', exportValue: (row) => row.salary_structure || '' },
-      { key: 'gross_pay', header: 'Gross', exportValue: (row) => row.gross_pay || '' },
-      { key: 'total_deduction', header: 'Deductions', exportValue: (row) => row.total_deduction || '' },
-      { key: 'net_pay', header: 'Net', exportValue: (row) => row.net_pay || '' },
-      { key: 'status', header: 'Status', exportValue: (row) => (row.held ? 'Held' : row.changed ? 'Changed' : 'Ready') },
+      { key: 'employee_name', header: t("Employee"), exportValue: (row) => row.employee_name || row.employee },
+      { key: 'salary_structure', header: t("Structure"), exportValue: (row) => row.salary_structure || '' },
+      { key: 'gross_pay', header: t("Gross"), exportValue: (row) => row.gross_pay || '' },
+      { key: 'total_deduction', header: t("Deductions"), exportValue: (row) => row.total_deduction || '' },
+      { key: 'net_pay', header: t("Net"), exportValue: (row) => row.net_pay || '' },
+      { key: 'status', header: t("Status"), exportValue: (row) => (row.held ? 'Held' : row.changed ? 'Changed' : 'Ready') },
     ],
     [],
   );
@@ -892,7 +893,7 @@ export default function Payroll() {
               <div className="payroll-head">
                 <div>
                   <h1>
-                    <span className="payroll-title-desktop">Payroll</span>
+                    <span className="payroll-title-desktop">{t("Payroll")}</span>
                     <span className="payroll-title-mobile">{monthRunLabel(payload.run.start_date)}</span>
                   </h1>
                   <p>{periodLabel(payload.run.start_date, payload.run.end_date)}</p>
@@ -902,7 +903,7 @@ export default function Payroll() {
                     <select
                       value={payload.run.name || ''}
                       onChange={(event) => setRunName(event.target.value)}
-                      aria-label="Payroll period"
+                      aria-label={t("Payroll period")}
                     >
                       {payload.runs.map((entry) => (
                         <option key={entry.name} value={entry.name}>
@@ -911,7 +912,7 @@ export default function Payroll() {
                       ))}
                     </select>
                   )}
-                  <Button onClick={() => setTab('register')}>Preview register</Button>
+                  <Button onClick={() => setTab('register')}>{t("Preview register")}</Button>
                   <Button onClick={() => setCreateOpen(true)}><Icon name="plus" size={15} /> Create payroll</Button>
                   <Button
                     variant="indigo"
@@ -933,11 +934,11 @@ export default function Payroll() {
                   {(tab === 'run' || tab === 'register') && (
                     <section className="payroll-panel payroll-register">
                       <header>
-                        <h3>Salary register</h3>
+                        <h3>{t("Salary register")}</h3>
                         <div className="payroll-register-tools">
                           <Pill tone="danger">Held {payload.run.held}</Pill>
                           <Pill>All {payload.register?.length || 0}</Pill>
-                          <SearchInput value={query} onChange={setQuery} placeholder="Filter employees…" />
+                          <SearchInput value={query} onChange={setQuery} placeholder={t("Filter employees…")} />
                           <Button size="sm" onClick={() => exportCsv(`payroll-${payload.run.name}`, columns, register)}>
                             <Icon name="download" size={14} /> CSV
                           </Button>

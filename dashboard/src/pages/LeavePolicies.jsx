@@ -5,13 +5,14 @@ import { useWorkspace } from '../hooks/WorkspaceContext';
 import { Async, Card, EmptyState, Stat } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDays, truthy } from '../api/format';
+import { t } from '../api/i18n';
 
 /** A leave type's headline numbers. Only tiles the record actually carries
  *  are rendered — an unset allocation is omitted, never shown as 0. */
 function policyStats(type) {
   const tiles = [];
   if (type.max_leaves_allowed) {
-    tiles.push({ label: 'Annual allocation', value: type.max_leaves_allowed, meta: 'days' });
+    tiles.push({ label: t("Annual allocation"), value: type.max_leaves_allowed, meta: 'days' });
   }
   if (truthy(type.is_earned_leave) && type.earned_leave_frequency) {
     const ACCRUAL = {
@@ -25,19 +26,19 @@ function policyStats(type) {
       : null;
     tiles.push(
       rate
-        ? { label: 'Accrual', value: rate, meta: ACCRUAL.unit }
-        : { label: 'Accrual', value: type.earned_leave_frequency, meta: 'earned' },
+        ? { label: t("Accrual"), value: rate, meta: ACCRUAL.unit }
+        : { label: t("Accrual"), value: type.earned_leave_frequency, meta: 'earned' },
     );
   }
   if (truthy(type.is_carry_forward)) {
     tiles.push({
-      label: 'Carry forward',
+      label: t("Carry forward"),
       value: type.maximum_carry_forwarded_leaves || 'Yes',
       meta: type.maximum_carry_forwarded_leaves ? 'days max' : undefined,
     });
   }
   if (type.techsarena_notice_days) {
-    tiles.push({ label: 'Notice required', value: type.techsarena_notice_days, meta: 'days' });
+    tiles.push({ label: t("Notice required"), value: type.techsarena_notice_days, meta: 'days' });
   }
   return tiles;
 }
@@ -102,8 +103,8 @@ export default function LeavePolicies() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">Leave policies</h1>
-        <p className="page-head__sub">What each leave type allows, and who signs it off</p>
+        <h1 className="page-head__title">{t("Leave policies")}</h1>
+        <p className="page-head__sub">{t("What each leave type allows, and who signs it off")}</p>
       </div>
 
       <Async state={state} rows={6}>
@@ -111,8 +112,8 @@ export default function LeavePolicies() {
           if (!types.length) {
             return (
               <EmptyState
-                title="No leave types configured"
-                body="Leave types set up in HRMS will appear here with their rules."
+                title={t("No leave types configured")}
+                body={t("Leave types set up in HRMS will appear here with their rules.")}
                 icon="◷"
               />
             );
@@ -198,7 +199,7 @@ export default function LeavePolicies() {
                 </Card>
 
                 <div className="grid grid--2">
-                  <Card title="Rules">
+                  <Card title={t("Rules")}>
                     {rules.map((rule, i) => (
                       <div className="rule" key={i}>
                         <span className={`rule__icon rule__icon--${rule.tone}`}>
@@ -210,7 +211,7 @@ export default function LeavePolicies() {
                   </Card>
 
                   <div className="stack" style={{ marginTop: 0 }}>
-                    <Card title="Approval chain">
+                    <Card title={t("Approval chain")}>
                       {chain.length === 0 ? (
                         <p className="small subtle">
                           Your employee record has no approval chain configured.
@@ -238,7 +239,7 @@ export default function LeavePolicies() {
                     </Card>
 
                     {holidays.length > 0 && (
-                      <Card title="Holidays left" subtitle={data.holiday_list || undefined}>
+                      <Card title={t("Holidays left")} subtitle={data.holiday_list || undefined}>
                         {holidays.map((h, i) => (
                           <div className="field-row" key={`${h.holiday_date}-${i}`}>
                             <span className="field-row__label truncate">{h.description}</span>
@@ -249,7 +250,7 @@ export default function LeavePolicies() {
                     )}
 
                     {documents.length > 0 && (
-                      <Card title="Documents">
+                      <Card title={t("Documents")}>
                         {documents.map((doc) => (
                           <a
                             key={doc.file_url || doc.name}

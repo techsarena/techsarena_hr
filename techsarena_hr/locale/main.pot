@@ -1,0 +1,2324 @@
+# Techs Arena HCM — dashboard message catalogue.
+#
+# Generated from t("...") calls in the React dashboard. Frappe's own catalogues
+# already cover common HR vocabulary; this file carries the strings specific to
+# this app. Translate by copying to <lang>.po and filling msgstr.
+msgid ""
+msgstr ""
+"Project-Id-Version: techsarena_hr\n"
+"POT-Creation-Date: 2026-08-26\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: components/ApplyLeaveDrawer.jsx:69
+msgid "Apply for leave"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:70
+msgid "Day count comes from your leave type's own working-day rules"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:73
+msgid "Cancel"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:87
+msgid "Leave type"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:89
+msgid "Select a leave type…"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:99
+msgid "From"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:114
+msgid "Half day"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:117
+msgid "Reason"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:129
+msgid "Leave is blocked on these dates."
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:148
+msgid "Before you submit"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:149
+msgid "Working days deducted"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:153
+msgid "Balance now"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:157
+msgid "Balance after"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:161
+msgid "Holidays in range"
+msgstr ""
+
+#: components/ApplyLeaveDrawer.jsx:165
+msgid "Team cover"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:25
+msgid "Present"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:26
+msgid "Work from home"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:27
+msgid "Leave"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:28
+msgid "Missing punch"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:103
+msgid "Today"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:108
+msgid "No check-out"
+msgstr ""
+
+#: components/AttendanceMonth.jsx:126
+msgid "Weekend"
+msgstr ""
+
+#: components/DataTable.jsx:78
+msgid "Select all rows"
+msgstr ""
+
+#: components/DataTable.jsx:114
+msgid "Select row"
+msgstr ""
+
+#: components/LeaveDetailDrawer.jsx:31
+msgid "Balance deducted"
+msgstr ""
+
+#: components/LeaveDetailDrawer.jsx:61
+msgid "Days"
+msgstr ""
+
+#: components/LeaveDetailDrawer.jsx:74
+msgid "Approval"
+msgstr ""
+
+#: components/PunchHero.jsx:100
+msgid "Break"
+msgstr ""
+
+#: components/PunchHero.jsx:106
+msgid "Shift"
+msgstr ""
+
+#: components/PunchHero.jsx:112
+msgid "Flags"
+msgstr ""
+
+#: components/TeamCalendar.jsx:85
+msgid "Privilege"
+msgstr ""
+
+#: components/TeamCalendar.jsx:86
+msgid "Sick"
+msgstr ""
+
+#: components/TeamCalendar.jsx:87
+msgid "Casual"
+msgstr ""
+
+#: components/TeamCalendar.jsx:88
+msgid "Other"
+msgstr ""
+
+#: components/TeamCalendar.jsx:141
+msgid "You"
+msgstr ""
+
+#: components/TeamCalendar.jsx:143
+msgid "Your approver"
+msgstr ""
+
+#: components/ui.jsx:118
+msgid "Try again"
+msgstr ""
+
+#: components/ui.jsx:127
+msgid "Loading"
+msgstr ""
+
+#: components/ui.jsx:186
+msgid "Close"
+msgstr ""
+
+#: pages/Announcements.jsx:102
+msgid "Announcements"
+msgstr ""
+
+#: pages/Announcements.jsx:103
+msgid "Published notices aimed at you"
+msgstr ""
+
+#: pages/Announcements.jsx:111
+msgid "Search announcements…"
+msgstr ""
+
+#: pages/Announcements.jsx:133
+msgid "No announcements"
+msgstr ""
+
+#: pages/Announcements.jsx:134
+msgid "Notices published for your company or department will appear here."
+msgstr ""
+
+#: pages/Announcements.jsx:165
+msgid "Earlier"
+msgstr ""
+
+#: pages/Announcements.jsx:166
+msgid "Last 90 days"
+msgstr ""
+
+#: pages/Announcements.jsx:278
+msgid "Next holidays"
+msgstr ""
+
+#: pages/Announcements.jsx:291
+msgid "New joiners"
+msgstr ""
+
+#: pages/Announcements.jsx:310
+msgid "Work anniversaries"
+msgstr ""
+
+#: pages/Approvals.jsx:55
+msgid "Reject"
+msgstr ""
+
+#: pages/Approvals.jsx:75
+msgid "Request"
+msgstr ""
+
+#: pages/Approvals.jsx:76
+msgid "Dates"
+msgstr ""
+
+#: pages/Approvals.jsx:78
+msgid "Amount"
+msgstr ""
+
+#: pages/Approvals.jsx:80
+msgid "Leave balance"
+msgstr ""
+
+#: pages/Approvals.jsx:81
+msgid "Submitted"
+msgstr ""
+
+#: pages/Approvals.jsx:82
+msgid "Designation"
+msgstr ""
+
+#: pages/Approvals.jsx:90
+msgid "Requested changes"
+msgstr ""
+
+#: pages/Approvals.jsx:97
+msgid "changes to"
+msgstr ""
+
+#: pages/Approvals.jsx:125
+msgid "Requester history"
+msgstr ""
+
+#: pages/Approvals.jsx:126
+msgid "Days taken"
+msgstr ""
+
+#: pages/Approvals.jsx:127
+msgid "Requests"
+msgstr ""
+
+#: pages/Approvals.jsx:128
+msgid "Previously rejected"
+msgstr ""
+
+#: pages/Approvals.jsx:133
+msgid "Attachments"
+msgstr ""
+
+#: pages/Approvals.jsx:145
+msgid "Comment"
+msgstr ""
+
+#: pages/Approvals.jsx:199
+msgid "Clear"
+msgstr ""
+
+#: pages/Approvals.jsx:200
+msgid "Reject all"
+msgstr ""
+
+#: pages/Approvals.jsx:223
+msgid "Employee"
+msgstr ""
+
+#: pages/Approvals.jsx:235
+msgid "Type"
+msgstr ""
+
+#: pages/Approvals.jsx:252
+msgid "Value"
+msgstr ""
+
+#: pages/Approvals.jsx:259
+msgid "Waiting"
+msgstr ""
+
+#: pages/Approvals.jsx:266
+msgid "Review"
+msgstr ""
+
+#: pages/Approvals.jsx:276
+msgid "All"
+msgstr ""
+
+#: pages/Approvals.jsx:293
+msgid "Approval inbox"
+msgstr ""
+
+#: pages/Approvals.jsx:294
+msgid "Everything waiting on your decision, across every request type"
+msgstr ""
+
+#: pages/Approvals.jsx:309
+msgid "Inbox zero"
+msgstr ""
+
+#: pages/Approvals.jsx:310
+msgid "Nothing is waiting on your decision right now."
+msgstr ""
+
+#: pages/Attendance.jsx:53
+msgid "Request regularisation"
+msgstr ""
+
+#: pages/Attendance.jsx:54
+msgid "Goes to your approver as an Attendance Request"
+msgstr ""
+
+#: pages/Attendance.jsx:75
+msgid "Work From Home"
+msgstr ""
+
+#: pages/Attendance.jsx:76
+msgid "On Duty"
+msgstr ""
+
+#: pages/Attendance.jsx:79
+msgid "Explanation"
+msgstr ""
+
+#: pages/Attendance.jsx:118
+msgid "Request a shift change"
+msgstr ""
+
+#: pages/Attendance.jsx:131
+msgid "Select a shift…"
+msgstr ""
+
+#: pages/Attendance.jsx:190
+msgid "Status"
+msgstr ""
+
+#: pages/Attendance.jsx:194
+msgid "Out"
+msgstr ""
+
+#: pages/Attendance.jsx:197
+msgid "Hours"
+msgstr ""
+
+#: pages/Attendance.jsx:209
+msgid "Late"
+msgstr ""
+
+#: pages/Attendance.jsx:210
+msgid "Early"
+msgstr ""
+
+#: pages/Attendance.jsx:223
+msgid "Attendance & shifts"
+msgstr ""
+
+#: pages/Attendance.jsx:224
+msgid "Your punches, your shifts, and anything needing a correction"
+msgstr ""
+
+#: pages/Attendance.jsx:228
+msgid "Previous month"
+msgstr ""
+
+#: pages/Attendance.jsx:232
+msgid "Next month"
+msgstr ""
+
+#: pages/Attendance.jsx:236
+msgid "Regularise"
+msgstr ""
+
+#: pages/Attendance.jsx:263
+msgid "Ledger"
+msgstr ""
+
+#: pages/Attendance.jsx:313
+msgid "WFH"
+msgstr ""
+
+#: pages/Attendance.jsx:319
+msgid "On leave"
+msgstr ""
+
+#: pages/Attendance.jsx:326
+msgid "Needs your action"
+msgstr ""
+
+#: pages/Attendance.jsx:350
+msgid "Your shifts"
+msgstr ""
+
+#: pages/Attendance.jsx:350
+msgid "Next 7 days"
+msgstr ""
+
+#: pages/Attendance.jsx:352
+msgid "No scheduled shifts in the next week."
+msgstr ""
+
+#: pages/Attendance.jsx:384
+msgid "No regularisation or shift requests open."
+msgstr ""
+
+#: pages/Claims.jsx:171
+msgid "Claim"
+msgstr ""
+
+#: pages/Claims.jsx:174
+msgid "Claimed"
+msgstr ""
+
+#: pages/Claims.jsx:175
+msgid "Sanctioned"
+msgstr ""
+
+#: pages/Claims.jsx:176
+msgid "Reimbursed"
+msgstr ""
+
+#: pages/Claims.jsx:183
+msgid "Expense claims"
+msgstr ""
+
+#: pages/Claims.jsx:188
+msgid "Financial year"
+msgstr ""
+
+#: pages/Claims.jsx:189
+msgid "All years"
+msgstr ""
+
+#: pages/Claims.jsx:204
+msgid "Reimbursed this FY"
+msgstr ""
+
+#: pages/Claims.jsx:206
+msgid "Awaiting approval"
+msgstr ""
+
+#: pages/Claims.jsx:213
+msgid "Settled against advance"
+msgstr ""
+
+#: pages/Claims.jsx:214
+msgid "Claims on record"
+msgstr ""
+
+#: pages/Claims.jsx:220
+msgid "No claims yet"
+msgstr ""
+
+#: pages/Claims.jsx:221
+msgid "Submit a claim and it will show here with its approval trail."
+msgstr ""
+
+#: pages/Claims.jsx:223
+msgid "New claim"
+msgstr ""
+
+#: pages/Claims.jsx:231
+msgid "Filter by status"
+msgstr ""
+
+#: pages/Claims.jsx:248
+msgid "Filter by category"
+msgstr ""
+
+#: pages/Claims.jsx:249
+msgid "All categories"
+msgstr ""
+
+#: pages/Claims.jsx:311
+msgid "Nothing matches these filters"
+msgstr ""
+
+#: pages/Claims.jsx:312
+msgid "Clear a filter to see the rest of your claims."
+msgstr ""
+
+#: pages/Claims.jsx:314
+msgid "Clear filters"
+msgstr ""
+
+#: pages/Claims.jsx:327
+msgid "Category"
+msgstr ""
+
+#: pages/Claims.jsx:463
+msgid "Reimbursement"
+msgstr ""
+
+#: pages/Claims.jsx:508
+msgid "Receipts"
+msgstr ""
+
+#: pages/Claims.jsx:544
+msgid "Where it is"
+msgstr ""
+
+#: pages/Claims.jsx:633
+msgid "New expense claim"
+msgstr ""
+
+#: pages/Claims.jsx:634
+msgid "Composed against this site's own claim types"
+msgstr ""
+
+#: pages/Claims.jsx:669
+msgid "Select…"
+msgstr ""
+
+#: pages/Claims.jsx:673
+msgid "Description"
+msgstr ""
+
+#: pages/Claims.jsx:684
+msgid "Remark"
+msgstr ""
+
+#: pages/Funds.jsx:31
+msgid "Fund"
+msgstr ""
+
+#: pages/Funds.jsx:34
+msgid "Entry"
+msgstr ""
+
+#: pages/Funds.jsx:39
+msgid "Period"
+msgstr ""
+
+#: pages/Funds.jsx:54
+msgid "Remarks"
+msgstr ""
+
+#: pages/Funds.jsx:64
+msgid "My funds"
+msgstr ""
+
+#: pages/Funds.jsx:65
+msgid "Your EOBI and provident fund ledger"
+msgstr ""
+
+#: pages/Funds.jsx:88
+msgid "No fund transactions"
+msgstr ""
+
+#: pages/Goals.jsx:69
+msgid "Progress"
+msgstr ""
+
+#: pages/Goals.jsx:100
+msgid "Marks the goal complete."
+msgstr ""
+
+#: pages/Goals.jsx:156
+msgid "Self-assessment"
+msgstr ""
+
+#: pages/Goals.jsx:186
+msgid "Appraisal submitted"
+msgstr ""
+
+#: pages/Goals.jsx:187
+msgid "This appraisal has been submitted and can no longer be edited."
+msgstr ""
+
+#: pages/Goals.jsx:197
+msgid "Self score"
+msgstr ""
+
+#: pages/Goals.jsx:204
+msgid "Rate yourself"
+msgstr ""
+
+#: pages/Goals.jsx:228
+msgid "No rating criteria"
+msgstr ""
+
+#: pages/Goals.jsx:229
+msgid "This appraisal cycle defines no self-rating criteria. You can still write reflections."
+msgstr ""
+
+#: pages/Goals.jsx:234
+msgid "Reflections"
+msgstr ""
+
+#: pages/Goals.jsx:273
+msgid "Goals & appraisal"
+msgstr ""
+
+#: pages/Goals.jsx:274
+msgid "Track your goals and complete your self-assessment"
+msgstr ""
+
+#: pages/Goals.jsx:286
+msgid "No goals or appraisals"
+msgstr ""
+
+#: pages/Goals.jsx:312
+msgid "Final score"
+msgstr ""
+
+#: pages/Goals.jsx:317
+msgid "Total score"
+msgstr ""
+
+#: pages/Goals.jsx:319
+msgid "Feedback average"
+msgstr ""
+
+#: pages/Goals.jsx:320
+msgid "Goal score"
+msgstr ""
+
+#: pages/Goals.jsx:321
+msgid "State"
+msgstr ""
+
+#: pages/Goals.jsx:328
+msgid "Goals"
+msgstr ""
+
+#: pages/Goals.jsx:330
+msgid "No goals set"
+msgstr ""
+
+#: pages/Goals.jsx:330
+msgid "Goals assigned to you will appear here."
+msgstr ""
+
+#: pages/Hiring.jsx:38
+msgid "Applicants"
+msgstr ""
+
+#: pages/Hiring.jsx:39
+msgid "In process"
+msgstr ""
+
+#: pages/Hiring.jsx:40
+msgid "Offers"
+msgstr ""
+
+#: pages/Hiring.jsx:43
+msgid "Requisition"
+msgstr ""
+
+#: pages/Hiring.jsx:46
+msgid "Department"
+msgstr ""
+
+#: pages/Hiring.jsx:47
+msgid "Location"
+msgstr ""
+
+#: pages/Hiring.jsx:48
+msgid "Company"
+msgstr ""
+
+#: pages/Hiring.jsx:49
+msgid "Posts"
+msgstr ""
+
+#: pages/Hiring.jsx:50
+msgid "Posted on"
+msgstr ""
+
+#: pages/Hiring.jsx:51
+msgid "Closes on"
+msgstr ""
+
+#: pages/Hiring.jsx:52
+msgid "Open for"
+msgstr ""
+
+#: pages/Hiring.jsx:53
+msgid "Salary band"
+msgstr ""
+
+#: pages/Hiring.jsx:57
+msgid "Pipeline"
+msgstr ""
+
+#: pages/Hiring.jsx:71
+msgid "No candidates"
+msgstr ""
+
+#: pages/Hiring.jsx:71
+msgid "Applicants in this pipeline will be listed here."
+msgstr ""
+
+#: pages/Hiring.jsx:125
+msgid "Opening"
+msgstr ""
+
+#: pages/Hiring.jsx:159
+msgid "Hiring manager"
+msgstr ""
+
+#: pages/Hiring.jsx:160
+msgid "Band"
+msgstr ""
+
+#: pages/Hiring.jsx:179
+msgid "Job openings"
+msgstr ""
+
+#: pages/Hiring.jsx:180
+msgid "Requisitions you're hiring against, with their live pipelines"
+msgstr ""
+
+#: pages/Hiring.jsx:195
+msgid "No job openings"
+msgstr ""
+
+#: pages/Hiring.jsx:206
+msgid "Open requisitions"
+msgstr ""
+
+#: pages/Hiring.jsx:208
+msgid "Offers out"
+msgstr ""
+
+#: pages/Hiring.jsx:209
+msgid "Open over 60 days"
+msgstr ""
+
+#: pages/Hiring.jsx:214
+msgid "Search openings…"
+msgstr ""
+
+#: pages/Home.jsx:78
+msgid "Late in"
+msgstr ""
+
+#: pages/Home.jsx:79
+msgid "Avg day"
+msgstr ""
+
+#: pages/Home.jsx:115
+msgid "No leave allocation"
+msgstr ""
+
+#: pages/Home.jsx:115
+msgid "Your leave balances will appear here once HR allocates them."
+msgstr ""
+
+#: pages/Home.jsx:118
+msgid "Next off"
+msgstr ""
+
+#: pages/Home.jsx:140
+msgid "Action · Leave"
+msgstr ""
+
+#: pages/Home.jsx:157
+msgid "Needs you"
+msgstr ""
+
+#: pages/Home.jsx:169
+msgid "Approve"
+msgstr ""
+
+#: pages/Home.jsx:177
+msgid "Nothing pending"
+msgstr ""
+
+#: pages/Home.jsx:177
+msgid "Approvals, acknowledgements and reminders will appear here."
+msgstr ""
+
+#: pages/Home.jsx:180
+msgid "Announcement"
+msgstr ""
+
+#: pages/Home.jsx:194
+msgid "Upcoming holidays"
+msgstr ""
+
+#: pages/Home.jsx:195
+msgid "Calendar"
+msgstr ""
+
+#: pages/Home.jsx:211
+msgid "No holidays listed"
+msgstr ""
+
+#: pages/Home.jsx:235
+msgid "Your team this week"
+msgstr ""
+
+#: pages/Home.jsx:261
+msgid "No team calendar"
+msgstr ""
+
+#: pages/Home.jsx:261
+msgid "Team leave will appear once you have access to other employee records."
+msgstr ""
+
+#: pages/Insights.jsx:44
+msgid "Insights"
+msgstr ""
+
+#: pages/Insights.jsx:45
+msgid "Workforce shape, drawn from the records this site keeps"
+msgstr ""
+
+#: pages/Insights.jsx:52
+msgid "Reporting window"
+msgstr ""
+
+#: pages/Insights.jsx:54
+msgid "Last 6 months"
+msgstr ""
+
+#: pages/Insights.jsx:55
+msgid "Last 12 months"
+msgstr ""
+
+#: pages/Insights.jsx:56
+msgid "Last 24 months"
+msgstr ""
+
+#: pages/Insights.jsx:117
+msgid "Headcount"
+msgstr ""
+
+#: pages/Insights.jsx:128
+msgid "Joined this month"
+msgstr ""
+
+#: pages/Insights.jsx:131
+msgid "Open leave requests"
+msgstr ""
+
+#: pages/Insights.jsx:141
+msgid "Headcount & attrition"
+msgstr ""
+
+#: pages/Insights.jsx:146
+msgid "No movement recorded"
+msgstr ""
+
+#: pages/Insights.jsx:146
+msgid "Joining and relieving dates drive this chart."
+msgstr ""
+
+#: pages/Insights.jsx:175
+msgid "Headcount by department"
+msgstr ""
+
+#: pages/Insights.jsx:183
+msgid "Employees"
+msgstr ""
+
+#: pages/Insights.jsx:192
+msgid "No departments"
+msgstr ""
+
+#: pages/Insights.jsx:192
+msgid "Employees are not assigned to a department."
+msgstr ""
+
+#: pages/Insights.jsx:210
+msgid "Hiring pipeline"
+msgstr ""
+
+#: pages/Insights.jsx:210
+msgid "Candidates by stage"
+msgstr ""
+
+#: pages/Insights.jsx:214
+msgid "This site has no applicant records to chart."
+msgstr ""
+
+#: pages/Insights.jsx:273
+msgid "Payroll this month"
+msgstr ""
+
+#: pages/Insights.jsx:280
+msgid "Slips submitted"
+msgstr ""
+
+#: pages/Insights.jsx:284
+msgid "Active headcount"
+msgstr ""
+
+#: pages/Insights.jsx:290
+msgid "Net payable"
+msgstr ""
+
+#: pages/Insights.jsx:341
+msgid "Needs attention"
+msgstr ""
+
+#: pages/Insights.jsx:345
+msgid "Nothing outstanding"
+msgstr ""
+
+#: pages/Insights.jsx:345
+msgid "No open approvals, exits or missing payslips."
+msgstr ""
+
+#: pages/Leave.jsx:129
+msgid "Approver"
+msgstr ""
+
+#: pages/Leave.jsx:138
+msgid "Your balance and every request you have made"
+msgstr ""
+
+#: pages/Leave.jsx:142
+msgid "View"
+msgstr ""
+
+#: pages/Leave.jsx:179
+msgid "Taken this FY"
+msgstr ""
+
+#: pages/Leave.jsx:210
+msgid "Search reason"
+msgstr ""
+
+#: pages/Leave.jsx:211
+msgid "Filter by leave type"
+msgstr ""
+
+#: pages/Leave.jsx:212
+msgid "All types"
+msgstr ""
+
+#: pages/Leave.jsx:216
+msgid "Filter by year"
+msgstr ""
+
+#: pages/Leave.jsx:232
+msgid "Request time off"
+msgstr ""
+
+#: pages/Leave.jsx:244
+msgid "Applied"
+msgstr ""
+
+#: pages/Leave.jsx:245
+msgid "Open"
+msgstr ""
+
+#: pages/Leave.jsx:349
+msgid "No leave this month"
+msgstr ""
+
+#: pages/Leave.jsx:349
+msgid "Approved and pending leave appears on this grid."
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:40
+msgid "Adjust a leave balance"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:41
+msgid "Posts a Leave Ledger Entry and an audit comment"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:54
+msgid "Select an employee…"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:93
+msgid "Inspect an employee's balances"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:113
+msgid "Balances"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:123
+msgid "Allocated"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:123
+msgid "Taken"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:123
+msgid "Remaining"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:139
+msgid "Adjustment trail"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:141
+msgid "No adjustments yet"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:141
+msgid "Manual grants and deductions are recorded here."
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:196
+msgid "LWP days"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:216
+msgid "Filter employees…"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:224
+msgid "Total LWP days"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:225
+msgid "Employees affected"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:226
+msgid "LWP leave types"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:231
+msgid "Unpaid leave"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:262
+msgid "Leave admin"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:263
+msgid "Grant or deduct balances, and see what unpaid leave costs payroll"
+msgstr ""
+
+#: pages/LeaveAdmin.jsx:270
+msgid "Adjustments"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:15
+msgid "Annual allocation"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:29
+msgid "Accrual"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:35
+msgid "Carry forward"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:41
+msgid "Notice required"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:106
+msgid "Leave policies"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:107
+msgid "What each leave type allows, and who signs it off"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:115
+msgid "No leave types configured"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:116
+msgid "Leave types set up in HRMS will appear here with their rules."
+msgstr ""
+
+#: pages/LeavePolicies.jsx:202
+msgid "Rules"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:214
+msgid "Approval chain"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:242
+msgid "Holidays left"
+msgstr ""
+
+#: pages/LeavePolicies.jsx:253
+msgid "Documents"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:89
+msgid "Team calendar"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:90
+msgid "Who is away this month, and where cover runs thin"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:99
+msgid "Filter by department"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:101
+msgid "All departments"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:158
+msgid "Away today"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:162
+msgid "Everyone is in today."
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:181
+msgid "Your request"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:185
+msgid "You have no leave booked this month."
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:199
+msgid "Thin cover"
+msgstr ""
+
+#: pages/LeaveTeamCalendar.jsx:203
+msgid "No day this month has more than one person away."
+msgstr ""
+
+#: pages/Lifecycle.jsx:42
+msgid "What changes"
+msgstr ""
+
+#: pages/Lifecycle.jsx:54
+msgid "Remove"
+msgstr ""
+
+#: pages/Lifecycle.jsx:61
+msgid "Field"
+msgstr ""
+
+#: pages/Lifecycle.jsx:71
+msgid "New value"
+msgstr ""
+
+#: pages/Lifecycle.jsx:75
+msgid "Add change"
+msgstr ""
+
+#: pages/Lifecycle.jsx:114
+msgid "Promote an employee"
+msgstr ""
+
+#: pages/Lifecycle.jsx:115
+msgid "Submitting applies the change and writes work history"
+msgstr ""
+
+#: pages/Lifecycle.jsx:119
+msgid "Save draft"
+msgstr ""
+
+#: pages/Lifecycle.jsx:136
+msgid "Effective date"
+msgstr ""
+
+#: pages/Lifecycle.jsx:143
+msgid "Revised CTC"
+msgstr ""
+
+#: pages/Lifecycle.jsx:207
+msgid "Transfer an employee"
+msgstr ""
+
+#: pages/Lifecycle.jsx:235
+msgid "New company"
+msgstr ""
+
+#: pages/Lifecycle.jsx:250
+msgid "Reallocate leave balances"
+msgstr ""
+
+#: pages/Lifecycle.jsx:260
+msgid "Issue a new employee ID"
+msgstr ""
+
+#: pages/Lifecycle.jsx:321
+msgid "Cause"
+msgstr ""
+
+#: pages/Lifecycle.jsx:324
+msgid "Resolution"
+msgstr ""
+
+#: pages/Lifecycle.jsx:355
+msgid "Promotions"
+msgstr ""
+
+#: pages/Lifecycle.jsx:356
+msgid "Transfers"
+msgstr ""
+
+#: pages/Lifecycle.jsx:357
+msgid "Grievances"
+msgstr ""
+
+#: pages/Lifecycle.jsx:366
+msgid "Lifecycle"
+msgstr ""
+
+#: pages/Lifecycle.jsx:367
+msgid "Promotions, transfers and grievances"
+msgstr ""
+
+#: pages/Lifecycle.jsx:370
+msgid "Search people…"
+msgstr ""
+
+#: pages/Lifecycle.jsx:393
+msgid "Unavailable"
+msgstr ""
+
+#: pages/Lifecycle.jsx:393
+msgid "Employee Promotion is not installed."
+msgstr ""
+
+#: pages/Lifecycle.jsx:396
+msgid "No promotions"
+msgstr ""
+
+#: pages/Lifecycle.jsx:396
+msgid "Promotions will appear here."
+msgstr ""
+
+#: pages/Lifecycle.jsx:403
+msgid "Date"
+msgstr ""
+
+#: pages/Lifecycle.jsx:403
+msgid "Changes"
+msgstr ""
+
+#: pages/Lifecycle.jsx:434
+msgid "Employee Transfer is not installed."
+msgstr ""
+
+#: pages/Lifecycle.jsx:437
+msgid "No transfers"
+msgstr ""
+
+#: pages/Lifecycle.jsx:437
+msgid "Transfers will appear here."
+msgstr ""
+
+#: pages/Lifecycle.jsx:475
+msgid "Employee Grievance is not installed."
+msgstr ""
+
+#: pages/Lifecycle.jsx:478
+msgid "No grievances"
+msgstr ""
+
+#: pages/Lifecycle.jsx:478
+msgid "Nothing has been raised."
+msgstr ""
+
+#: pages/Lifecycle.jsx:485
+msgid "Subject"
+msgstr ""
+
+#: pages/Lifecycle.jsx:485
+msgid "Raised by"
+msgstr ""
+
+#: pages/Loans.jsx:40
+msgid "Reschedule this loan"
+msgstr ""
+
+#: pages/Loans.jsx:56
+msgid "New tenure (months)"
+msgstr ""
+
+#: pages/Loans.jsx:91
+msgid "Skip one instalment"
+msgstr ""
+
+#: pages/Loans.jsx:127
+msgid "Due"
+msgstr ""
+
+#: pages/Loans.jsx:128
+msgid "Principal"
+msgstr ""
+
+#: pages/Loans.jsx:129
+msgid "Interest"
+msgstr ""
+
+#: pages/Loans.jsx:130
+msgid "Instalment"
+msgstr ""
+
+#: pages/Loans.jsx:131
+msgid "Balance"
+msgstr ""
+
+#: pages/Loans.jsx:152
+msgid "Skip an instalment"
+msgstr ""
+
+#: pages/Loans.jsx:153
+msgid "Reschedule"
+msgstr ""
+
+#: pages/Loans.jsx:165
+msgid "Outstanding"
+msgstr ""
+
+#: pages/Loans.jsx:171
+msgid "Interest rate"
+msgstr ""
+
+#: pages/Loans.jsx:172
+msgid "Tenure"
+msgstr ""
+
+#: pages/Loans.jsx:173
+msgid "Monthly instalment"
+msgstr ""
+
+#: pages/Loans.jsx:174
+msgid "Paid to date"
+msgstr ""
+
+#: pages/Loans.jsx:178
+msgid "Repayment schedule"
+msgstr ""
+
+#: pages/Loans.jsx:235
+msgid "My loans"
+msgstr ""
+
+#: pages/Loans.jsx:236
+msgid "Staff loans, their schedules, and restructure options"
+msgstr ""
+
+#: pages/Loans.jsx:259
+msgid "Total outstanding"
+msgstr ""
+
+#: pages/Loans.jsx:260
+msgid "Monthly repayment"
+msgstr ""
+
+#: pages/Loans.jsx:261
+msgid "Active loans"
+msgstr ""
+
+#: pages/Loans.jsx:281
+msgid "View schedule"
+msgstr ""
+
+#: pages/Login.jsx:47
+msgid "HR & administration"
+msgstr ""
+
+#: pages/Login.jsx:55
+msgid "Email"
+msgstr ""
+
+#: pages/Login.jsx:67
+msgid "Password"
+msgstr ""
+
+#: pages/Offboarding.jsx:57
+msgid "Start a separation"
+msgstr ""
+
+#: pages/Offboarding.jsx:58
+msgid "Creates the clearance checklist as real project tasks"
+msgstr ""
+
+#: pages/Offboarding.jsx:83
+msgid "Checklist template"
+msgstr ""
+
+#: pages/Offboarding.jsx:88
+msgid "No template"
+msgstr ""
+
+#: pages/Offboarding.jsx:96
+msgid "Resignation date"
+msgstr ""
+
+#: pages/Offboarding.jsx:103
+msgid "Clearance begins"
+msgstr ""
+
+#: pages/Offboarding.jsx:112
+msgid "Last working day"
+msgstr ""
+
+#: pages/Offboarding.jsx:120
+msgid "Reason for leaving"
+msgstr ""
+
+#: pages/Offboarding.jsx:138
+msgid "Final settlement"
+msgstr ""
+
+#: pages/Offboarding.jsx:146
+msgid "Leave encashment"
+msgstr ""
+
+#: pages/Offboarding.jsx:149
+msgid "Fund balances"
+msgstr ""
+
+#: pages/Offboarding.jsx:151
+msgid "Gratuity"
+msgstr ""
+
+#: pages/Offboarding.jsx:161
+msgid "Loans outstanding"
+msgstr ""
+
+#: pages/Offboarding.jsx:167
+msgid "Net settlement"
+msgstr ""
+
+#: pages/Offboarding.jsx:181
+msgid "Raise gratuity payment (draft)"
+msgstr ""
+
+#: pages/Offboarding.jsx:251
+msgid "Clearance"
+msgstr ""
+
+#: pages/Offboarding.jsx:264
+msgid "Details"
+msgstr ""
+
+#: pages/Offboarding.jsx:266
+msgid "Employee status"
+msgstr ""
+
+#: pages/Offboarding.jsx:274
+msgid "Project"
+msgstr ""
+
+#: pages/Offboarding.jsx:279
+msgid "No activities"
+msgstr ""
+
+#: pages/Offboarding.jsx:279
+msgid "This separation has no checklist tasks."
+msgstr ""
+
+#: pages/Offboarding.jsx:284
+msgid "Activity"
+msgstr ""
+
+#: pages/Offboarding.jsx:284
+msgid "Owner"
+msgstr ""
+
+#: pages/Offboarding.jsx:308
+msgid "Complete separation"
+msgstr ""
+
+#: pages/Offboarding.jsx:371
+msgid "Offboarding"
+msgstr ""
+
+#: pages/Offboarding.jsx:372
+msgid "Separations, clearance and final settlement"
+msgstr ""
+
+#: pages/Offboarding.jsx:388
+msgid "Separation is unavailable"
+msgstr ""
+
+#: pages/Offboarding.jsx:389
+msgid "Employee Separation is not installed on this site."
+msgstr ""
+
+#: pages/Offboarding.jsx:406
+msgid "In progress"
+msgstr ""
+
+#: pages/Offboarding.jsx:407
+msgid "Total separations"
+msgstr ""
+
+#: pages/Offboarding.jsx:410
+msgid "Clearance complete"
+msgstr ""
+
+#: pages/Offboarding.jsx:421
+msgid "Last day"
+msgstr ""
+
+#: pages/Onboarding.jsx:53
+msgid "Joining date"
+msgstr ""
+
+#: pages/Onboarding.jsx:54
+msgid "Boarding begins"
+msgstr ""
+
+#: pages/Onboarding.jsx:55
+msgid "Template"
+msgstr ""
+
+#: pages/Onboarding.jsx:56
+msgid "Job applicant"
+msgstr ""
+
+#: pages/Onboarding.jsx:57
+msgid "Job offer"
+msgstr ""
+
+#: pages/Onboarding.jsx:62
+msgid "This onboarding has no linked tasks."
+msgstr ""
+
+#: pages/Onboarding.jsx:74
+msgid "Required for employee creation"
+msgstr ""
+
+#: pages/Onboarding.jsx:116
+msgid "Onboarding"
+msgstr ""
+
+#: pages/Onboarding.jsx:117
+msgid "Active joiners and the real tasks attached to their onboarding"
+msgstr ""
+
+#: pages/Onboarding.jsx:126
+msgid "No active onboardings"
+msgstr ""
+
+#: pages/Onboarding.jsx:127
+msgid "Employee Onboarding records created in HRMS will appear here with their task progress."
+msgstr ""
+
+#: pages/Onboarding.jsx:137
+msgid "Active onboardings"
+msgstr ""
+
+#: pages/Onboarding.jsx:138
+msgid "With overdue tasks"
+msgstr ""
+
+#: pages/Onboarding.jsx:139
+msgid "Fully complete"
+msgstr ""
+
+#: pages/OrgChart.jsx:93
+msgid "Org chart"
+msgstr ""
+
+#: pages/OrgChart.jsx:94
+msgid "Who reports to whom"
+msgstr ""
+
+#: pages/OrgChart.jsx:97
+msgid "Find someone…"
+msgstr ""
+
+#: pages/OrgChart.jsx:112
+msgid "Nobody to show"
+msgstr ""
+
+#: pages/OrgChart.jsx:113
+msgid "You do not have anyone reporting to you yet."
+msgstr ""
+
+#: pages/OrgChart.jsx:129
+msgid "No reporting lines are set yet"
+msgstr ""
+
+#: pages/OrgChart.jsx:141
+msgid "No matches"
+msgstr ""
+
+#: pages/OrgChart.jsx:222
+msgid "Focus"
+msgstr ""
+
+#: pages/Payroll.jsx:13
+msgid "Run"
+msgstr ""
+
+#: pages/Payroll.jsx:14
+msgid "Register"
+msgstr ""
+
+#: pages/Payroll.jsx:15
+msgid "Statutory"
+msgstr ""
+
+#: pages/Payroll.jsx:94
+msgid "Submit this payroll run"
+msgstr ""
+
+#: pages/Payroll.jsx:113
+msgid "Clear held rows before submitting this run."
+msgstr ""
+
+#: pages/Payroll.jsx:150
+msgid "Create payroll"
+msgstr ""
+
+#: pages/Payroll.jsx:151
+msgid "Draft only"
+msgstr ""
+
+#: pages/Payroll.jsx:173
+msgid "All active staff"
+msgstr ""
+
+#: pages/Payroll.jsx:176
+msgid "Pay day"
+msgstr ""
+
+#: pages/Payroll.jsx:179
+msgid "Nothing is paid or visible to employees until you submit the run."
+msgstr ""
+
+#: pages/Payroll.jsx:261
+msgid "None added."
+msgstr ""
+
+#: pages/Payroll.jsx:269
+msgid "Select component…"
+msgstr ""
+
+#: pages/Payroll.jsx:296
+msgid "You already have a draft structure"
+msgstr ""
+
+#: pages/Payroll.jsx:310
+msgid "e.g. Standard Monthly"
+msgstr ""
+
+#: pages/Payroll.jsx:317
+msgid "Creating submits the structure so it is immediately assignable."
+msgstr ""
+
+#: pages/Payroll.jsx:380
+msgid "No submitted salary structure"
+msgstr ""
+
+#: pages/Payroll.jsx:391
+msgid "Select a structure…"
+msgstr ""
+
+#: pages/Payroll.jsx:407
+msgid "Leave blank to use the structure's own base"
+msgstr ""
+
+#: pages/Payroll.jsx:412
+msgid "Every active employee already has an assignment."
+msgstr ""
+
+#: pages/Payroll.jsx:496
+msgid "Component name"
+msgstr ""
+
+#: pages/Payroll.jsx:498
+msgid "Earning"
+msgstr ""
+
+#: pages/Payroll.jsx:499
+msgid "Deduction"
+msgstr ""
+
+#: pages/Payroll.jsx:530
+msgid "Set up payroll"
+msgstr ""
+
+#: pages/Payroll.jsx:531
+msgid "Complete each step here — nothing needs the Desk UI"
+msgstr ""
+
+#: pages/Payroll.jsx:587
+msgid "Payroll"
+msgstr ""
+
+#: pages/Payroll.jsx:588
+msgid "No runs yet"
+msgstr ""
+
+#: pages/Payroll.jsx:591
+msgid "Payroll settings"
+msgstr ""
+
+#: pages/Payroll.jsx:603
+msgid "No payroll has been run yet"
+msgstr ""
+
+#: pages/Payroll.jsx:622
+msgid "Before the first run"
+msgstr ""
+
+#: pages/Payroll.jsx:636
+msgid "Done"
+msgstr ""
+
+#: pages/Payroll.jsx:650
+msgid "What the run will cover"
+msgstr ""
+
+#: pages/Payroll.jsx:652
+msgid "This month"
+msgstr ""
+
+#: pages/Payroll.jsx:659
+msgid "Estimated gross"
+msgstr ""
+
+#: pages/Payroll.jsx:659
+msgid "Calculated on create"
+msgstr ""
+
+#: pages/Payroll.jsx:660
+msgid "Period end"
+msgstr ""
+
+#: pages/Payroll.jsx:665
+msgid "What happens next"
+msgstr ""
+
+#: pages/Payroll.jsx:674
+msgid "Past runs"
+msgstr ""
+
+#: pages/Payroll.jsx:704
+msgid "Step 3 of 5 · validation"
+msgstr ""
+
+#: pages/Payroll.jsx:707
+msgid "Gross"
+msgstr ""
+
+#: pages/Payroll.jsx:708
+msgid "Deductions"
+msgstr ""
+
+#: pages/Payroll.jsx:708
+msgid "PF, tax, loans"
+msgstr ""
+
+#: pages/Payroll.jsx:709
+msgid "Slips generated"
+msgstr ""
+
+#: pages/Payroll.jsx:717
+msgid "Attendance locked"
+msgstr ""
+
+#: pages/Payroll.jsx:719
+msgid "Validation"
+msgstr ""
+
+#: pages/Payroll.jsx:721
+msgid "Bank file"
+msgstr ""
+
+#: pages/Payroll.jsx:741
+msgid "No employees match that filter."
+msgstr ""
+
+#: pages/Payroll.jsx:750
+msgid "Structure"
+msgstr ""
+
+#: pages/Payroll.jsx:753
+msgid "Net"
+msgstr ""
+
+#: pages/Payroll.jsx:769
+msgid "Missing"
+msgstr ""
+
+#: pages/Payroll.jsx:774
+msgid "Held"
+msgstr ""
+
+#: pages/Payroll.jsx:774
+msgid "Changed"
+msgstr ""
+
+#: pages/Payroll.jsx:774
+msgid "Ready"
+msgstr ""
+
+#: pages/Payroll.jsx:802
+msgid "No payroll exceptions are blocking this run."
+msgstr ""
+
+#: pages/Payroll.jsx:812
+msgid "Cost split"
+msgstr ""
+
+#: pages/Payroll.jsx:821
+msgid "No split available yet."
+msgstr ""
+
+#: pages/Payroll.jsx:835
+msgid "No statutory components in this run."
+msgstr ""
+
+#: pages/Payroll.jsx:906
+msgid "Payroll period"
+msgstr ""
+
+#: pages/Payroll.jsx:915
+msgid "Preview register"
+msgstr ""
+
+#: pages/Payroll.jsx:937
+msgid "Salary register"
+msgstr ""
+
+#: pages/People.jsx:43
+msgid "Employee profile"
+msgstr ""
+
+#: pages/People.jsx:48
+msgid "Profile"
+msgstr ""
+
+#: pages/People.jsx:49
+msgid "Team"
+msgstr ""
+
+#: pages/People.jsx:50
+msgid "Pay & leave"
+msgstr ""
+
+#: pages/People.jsx:51
+msgid "Records"
+msgstr ""
+
+#: pages/People.jsx:71
+msgid "Identity"
+msgstr ""
+
+#: pages/People.jsx:72
+msgid "Job"
+msgstr ""
+
+#: pages/People.jsx:73
+msgid "Personal"
+msgstr ""
+
+#: pages/People.jsx:86
+msgid "Reports to"
+msgstr ""
+
+#: pages/People.jsx:98
+msgid "No direct reports"
+msgstr ""
+
+#: pages/People.jsx:118
+msgid "Leave balances"
+msgstr ""
+
+#: pages/People.jsx:120
+msgid "No allocations"
+msgstr ""
+
+#: pages/People.jsx:124
+msgid "Left"
+msgstr ""
+
+#: pages/People.jsx:140
+msgid "Recent payslips"
+msgstr ""
+
+#: pages/People.jsx:142
+msgid "No payslips"
+msgstr ""
+
+#: pages/People.jsx:167
+msgid "No documents"
+msgstr ""
+
+#: pages/People.jsx:179
+msgid "Assets"
+msgstr ""
+
+#: pages/People.jsx:181
+msgid "No assets assigned"
+msgstr ""
+
+#: pages/People.jsx:230
+msgid "Name"
+msgstr ""
+
+#: pages/People.jsx:244
+msgid "Branch"
+msgstr ""
+
+#: pages/People.jsx:252
+msgid "Phone"
+msgstr ""
+
+#: pages/People.jsx:255
+msgid "Roles"
+msgstr ""
+
+#: pages/People.jsx:277
+msgid "People"
+msgstr ""
+
+#: pages/People.jsx:291
+msgid "Search name, ID, email…"
+msgstr ""
+
+#: pages/People.jsx:301
+msgid "Table"
+msgstr ""
+
+#: pages/People.jsx:301
+msgid "Cards"
+msgstr ""
+
+#: pages/Profile.jsx:29
+msgid "Change requests"
+msgstr ""
+
+#: pages/Profile.jsx:64
+msgid "My profile"
+msgstr ""
+
+#: pages/Profile.jsx:65
+msgid "Your record, documents, and any corrections you have asked for"
+msgstr ""
+
+#: pages/Profile.jsx:112
+msgid "Date of birth"
+msgstr ""
+
+#: pages/Profile.jsx:113
+msgid "Gender"
+msgstr ""
+
+#: pages/Profile.jsx:114
+msgid "Marital status"
+msgstr ""
+
+#: pages/Profile.jsx:115
+msgid "Blood group"
+msgstr ""
+
+#: pages/Profile.jsx:116
+msgid "Mobile"
+msgstr ""
+
+#: pages/Profile.jsx:117
+msgid "Personal email"
+msgstr ""
+
+#: pages/Profile.jsx:118
+msgid "Company email"
+msgstr ""
+
+#: pages/Profile.jsx:119
+msgid "Current address"
+msgstr ""
+
+#: pages/Profile.jsx:120
+msgid "Permanent address"
+msgstr ""
+
+#: pages/Profile.jsx:125
+msgid "Emergency contact"
+msgstr ""
+
+#: pages/Profile.jsx:132
+msgid "Contact"
+msgstr ""
+
+#: pages/Profile.jsx:133
+msgid "Relation"
+msgstr ""
+
+#: pages/Profile.jsx:143
+msgid "Employment"
+msgstr ""
+
+#: pages/Profile.jsx:144
+msgid "Employee ID"
+msgstr ""
+
+#: pages/Profile.jsx:147
+msgid "Joined"
+msgstr ""
+
+#: pages/Profile.jsx:148
+msgid "Employment type"
+msgstr ""
+
+#: pages/Profile.jsx:149
+msgid "Grade"
+msgstr ""
+
+#: pages/Profile.jsx:150
+msgid "Manager"
+msgstr ""
+
+#: pages/Profile.jsx:156
+msgid "Bank & statutory"
+msgstr ""
+
+#: pages/Profile.jsx:165
+msgid "Bank"
+msgstr ""
+
+#: pages/Profile.jsx:166
+msgid "Account number"
+msgstr ""
+
+#: pages/Profile.jsx:167
+msgid "IFSC"
+msgstr ""
+
+#: pages/Profile.jsx:168
+msgid "Tax number"
+msgstr ""
+
+#: pages/Profile.jsx:169
+msgid "Provident fund"
+msgstr ""
+
+#: pages/Profile.jsx:229
+msgid "Request a profile change"
+msgstr ""
+
+#: pages/Profile.jsx:230
+msgid "HR reviews these before they take effect"
+msgstr ""
+
+#: pages/Profile.jsx:265
+msgid "Reason (optional)"
+msgstr ""
+
+#: pages/Profile.jsx:344
+msgid "No documents yet"
+msgstr ""
+
+#: pages/Profile.jsx:345
+msgid "Add your ID, passport, or certificates so HR has them on file."
+msgstr ""
+
+#: pages/Profile.jsx:358
+msgid "Verified"
+msgstr ""
+
+#: pages/Profile.jsx:359
+msgid "Awaiting check"
+msgstr ""
+
+#: pages/Profile.jsx:461
+msgid "Add a document"
+msgstr ""
+
+#: pages/Profile.jsx:462
+msgid "Stored privately against your employee record"
+msgstr ""
+
+#: pages/Profile.jsx:492
+msgid "Document type"
+msgstr ""
+
+#: pages/Profile.jsx:494
+msgid "Choose…"
+msgstr ""
+
+#: pages/Profile.jsx:499
+msgid "Title"
+msgstr ""
+
+#: pages/Profile.jsx:503
+msgid "Document number"
+msgstr ""
+
+#: pages/Profile.jsx:508
+msgid "Issued on"
+msgstr ""
+
+#: pages/Profile.jsx:511
+msgid "Expires on"
+msgstr ""
+
+#: pages/Profile.jsx:540
+msgid "No change requests"
+msgstr ""
+
+#: pages/Profile.jsx:541
+msgid "Corrections you ask for will show here with their approval status."
+msgstr ""
+
+#: pages/Profile.jsx:611
+msgid "Language"
+msgstr ""
+
+#: pages/Profile.jsx:611
+msgid "Applies across the app, the desk, and your documents"
+msgstr ""
+
+#: pages/Profile.jsx:614
+msgid "Display language"
+msgstr ""
+
+#: pages/Salary.jsx:74
+msgid "Posted"
+msgstr ""
+
+#: pages/Salary.jsx:77
+msgid "Net pay"
+msgstr ""
+
+#: pages/Salary.jsx:84
+msgid "Salary"
+msgstr ""
+
+#: pages/Salary.jsx:85
+msgid "Your payslips and their component breakdown"
+msgstr ""
+
+#: pages/Salary.jsx:89
+msgid "No payslips yet"
+msgstr ""
+
+#: pages/Salary.jsx:90
+msgid "Submitted salary slips will appear here once payroll has run for you."
+msgstr ""
+
+#: pages/Salary.jsx:121
+msgid "Payslips"
+msgstr ""
+
+#: pages/Salary.jsx:192
+msgid "Earnings"
+msgstr ""
+
+#: pages/Salary.jsx:196
+msgid "No earning lines"
+msgstr ""
+
+#: pages/Salary.jsx:196
+msgid "This payslip records no component rows."
+msgstr ""
+
+#: pages/Salary.jsx:209
+msgid "Share of gross by component"
+msgstr ""
+
+#: pages/Salary.jsx:231
+msgid "No deductions"
+msgstr ""
+
+#: pages/Salary.jsx:231
+msgid "Nothing was withheld from this payslip."
+msgstr ""
+
+#: pages/Settings.jsx:37
+msgid "Assign a leave policy"
+msgstr ""
+
+#: pages/Settings.jsx:38
+msgid "Submits a standard HRMS Leave Policy Assignment"
+msgstr ""
+
+#: pages/Settings.jsx:62
+msgid "Leave policy"
+msgstr ""
+
+#: pages/Settings.jsx:64
+msgid "Select a policy…"
+msgstr ""
+
+#: pages/Settings.jsx:97
+msgid "Demo & testing"
+msgstr ""
+
+#: pages/Settings.jsx:97
+msgid "Provisions a demo workforce for evaluating the app"
+msgstr ""
+
+#: pages/Settings.jsx:104
+msgid "Seed demo data"
+msgstr ""
+
+#: pages/Settings.jsx:111
+msgid "Seed demo data?"
+msgstr ""
+
+#: pages/Settings.jsx:136
+msgid "No detail returned"
+msgstr ""
+
+#: pages/Settings.jsx:136
+msgid "This card has no further breakdown on this site."
+msgstr ""
+
+#: pages/Settings.jsx:156
+msgid "Settings"
+msgstr ""
+
+#: pages/Settings.jsx:157
+msgid "The HRMS configuration behind this workspace"
+msgstr ""
+
+#: pages/Settings.jsx:168
+msgid "Organisation"
+msgstr ""
+
+#: pages/Settings.jsx:169
+msgid "Active staff"
+msgstr ""
+
+#: pages/Settings.jsx:172
+msgid "Your access"
+msgstr ""
+
+#: pages/Settings.jsx:181
+msgid "Employees without a leave policy"
+msgstr ""
+
+#: pages/Settings.jsx:183
+msgid "Assign"
+msgstr ""
+
+#: pages/Settings.jsx:197
+msgid "Configuration coverage"
+msgstr ""
+
+#: pages/Settings.jsx:197
+msgid "How much of the workforce each setup step covers"
+msgstr ""
+
+#: pages/Settings.jsx:244
+msgid "Recent changes"
+msgstr ""
+
+#: pages/Settings.jsx:246
+msgid "No recent changes"
+msgstr ""
+
+#: pages/Settings.jsx:262
+msgid "Who can edit setup"
+msgstr ""
+
+#: pages/Settings.jsx:264
+msgid "No editors listed"
+msgstr ""
+
+#: pages/Settings.jsx:278
+msgid "Manage in the desk"
+msgstr ""
+
+#: pages/Settings.jsx:278
+msgid "Record-level editing keeps Frappe's own validation and audit trail"
+msgstr ""
+
+#: pages/Users.jsx:36
+msgid "User"
+msgstr ""
+
+#: pages/Users.jsx:55
+msgid "None"
+msgstr ""
+
+#: pages/Users.jsx:67
+msgid "Last active"
+msgstr ""
+
+#: pages/Users.jsx:68
+msgid "Never"
+msgstr ""
+
+#: pages/Users.jsx:81
+msgid "Users & roles"
+msgstr ""
+
+#: pages/Users.jsx:82
+msgid "Enabled accounts on this site and the roles they hold"
+msgstr ""
+
+#: pages/Users.jsx:90
+msgid "Enabled users"
+msgstr ""
+
+#: pages/Users.jsx:91
+msgid "System users"
+msgstr ""
+
+#: pages/Users.jsx:92
+msgid "Distinct roles"
+msgstr ""
+
+#: pages/Users.jsx:97
+msgid "Search users…"
+msgstr ""
+
+#: pages/Users.jsx:99
+msgid "All roles"
+msgstr ""
+
+#: pages/Users.jsx:145
+msgid "No roles beyond the defaults."
+msgstr ""

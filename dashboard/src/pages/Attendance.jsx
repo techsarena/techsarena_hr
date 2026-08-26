@@ -7,6 +7,7 @@ import { DataTable, exportCsv } from '../components/DataTable';
 import { AttendanceMonth, AttendanceMonthLegend } from '../components/AttendanceMonth';
 import PunchHero from '../components/PunchHero';
 import { Icon } from '../components/Icon';
+import { t } from '../api/i18n';
 import {
   fmtDate, fmtDateShort, fmtNumber, fmtRange, fmtTime,
   isoDate, monthKey, monthLabel, shiftMonth, statusTone, toDate,
@@ -49,11 +50,11 @@ function RegulariseDrawer({ open, onClose, prefill, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="Request regularisation"
-      subtitle="Goes to your approver as an Attendance Request"
+      title={t("Request regularisation")}
+      subtitle={t("Goes to your approver as an Attendance Request")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="primary" onClick={submit} disabled={busy || !form.from_date || !form.to_date}>
             {busy ? 'Sending…' : 'Send request'}
           </Button>
@@ -62,20 +63,20 @@ function RegulariseDrawer({ open, onClose, prefill, onDone }) {
     >
       <div className="fields">
         <div className="grid grid--2">
-          <Field label="From">
+          <Field label={t("From")}>
             <input type="date" value={form.from_date} onChange={(e) => setForm({ ...form, from_date: e.target.value })} />
           </Field>
           <Field label="To">
             <input type="date" value={form.to_date} onChange={(e) => setForm({ ...form, to_date: e.target.value })} />
           </Field>
         </div>
-        <Field label="Reason">
+        <Field label={t("Reason")}>
           <select value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}>
-            <option>Work From Home</option>
-            <option>On Duty</option>
+            <option>{t("Work From Home")}</option>
+            <option>{t("On Duty")}</option>
           </select>
         </Field>
-        <Field label="Explanation" hint="What happened on these days?">
+        <Field label={t("Explanation")} hint="What happened on these days?">
           <textarea
             rows={4}
             value={form.explanation}
@@ -114,10 +115,10 @@ function ShiftDrawer({ open, onClose, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="Request a shift change"
+      title={t("Request a shift change")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="primary" onClick={submit} disabled={busy || !form.shift_type}>
             {busy ? 'Sending…' : 'Send request'}
           </Button>
@@ -125,9 +126,9 @@ function ShiftDrawer({ open, onClose, onDone }) {
       }
     >
       <div className="fields">
-        <Field label="Shift">
+        <Field label={t("Shift")}>
           <select value={form.shift_type} onChange={(e) => setForm({ ...form, shift_type: e.target.value })}>
-            <option value="">Select a shift…</option>
+            <option value="">{t("Select a shift…")}</option>
             {options.map((shift) => (
               <option key={shift.name} value={shift.name}>
                 {shift.name}
@@ -137,7 +138,7 @@ function ShiftDrawer({ open, onClose, onDone }) {
           </select>
         </Field>
         <div className="grid grid--2">
-          <Field label="From">
+          <Field label={t("From")}>
             <input type="date" value={form.from_date} onChange={(e) => setForm({ ...form, from_date: e.target.value })} />
           </Field>
           <Field label="To">
@@ -186,27 +187,27 @@ export default function Attendance() {
       },
       {
         key: 'status',
-        header: 'Status',
+        header: t("Status"),
         render: (row) => (row.status ? <Pill tone={statusTone(row.status)}>{row.status}</Pill> : '—'),
       },
       { key: 'in_time', header: 'In', render: (row) => (row.in_time ? fmtTime(row.in_time) : '—') },
-      { key: 'out_time', header: 'Out', render: (row) => (row.out_time ? fmtTime(row.out_time) : '—') },
+      { key: 'out_time', header: t("Out"), render: (row) => (row.out_time ? fmtTime(row.out_time) : '—') },
       {
         key: 'working_hours',
-        header: 'Hours',
+        header: t("Hours"),
         align: 'right',
         render: (row) => (row.working_hours ? fmtNumber(row.working_hours) : '—'),
         sortValue: (row) => Number(row.working_hours) || 0,
       },
-      { key: 'shift', header: 'Shift', render: (row) => row.shift || '—' },
+      { key: 'shift', header: t("Shift"), render: (row) => row.shift || '—' },
       {
         key: 'flags',
-        header: 'Flags',
+        header: t("Flags"),
         sortable: false,
         render: (row) => (
           <div className="row" style={{ gap: 4 }}>
-            {row.late_entry ? <Pill tone="warning">Late</Pill> : null}
-            {row.early_exit ? <Pill tone="warning">Early</Pill> : null}
+            {row.late_entry ? <Pill tone="warning">{t("Late")}</Pill> : null}
+            {row.early_exit ? <Pill tone="warning">{t("Early")}</Pill> : null}
           </div>
         ),
         exportValue: (row) => [row.late_entry ? 'Late' : '', row.early_exit ? 'Early' : ''].filter(Boolean).join(' '),
@@ -219,20 +220,20 @@ export default function Attendance() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Attendance &amp; shifts</h1>
-          <p className="page-head__sub">Your punches, your shifts, and anything needing a correction</p>
+          <h1 className="page-head__title">{t("Attendance & shifts")}</h1>
+          <p className="page-head__sub">{t("Your punches, your shifts, and anything needing a correction")}</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-3)', flexWrap: 'wrap' }}>
           <div className="row" style={{ gap: 4 }}>
-            <Button size="icon" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Previous month">
+            <Button size="icon" onClick={() => setMonth(shiftMonth(month, -1))} aria-label={t("Previous month")}>
               <Icon name="chevronLeft" size={15} />
             </Button>
             <span style={{ fontWeight: 600, minWidth: 116, textAlign: 'center' }}>{monthLabel(month)}</span>
-            <Button size="icon" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
+            <Button size="icon" onClick={() => setMonth(shiftMonth(month, 1))} aria-label={t("Next month")}>
               <Icon name="chevronRight" size={15} />
             </Button>
           </div>
-          <Button onClick={() => setRegularise({ date: isoDate(new Date()) })}>Regularise</Button>
+          <Button onClick={() => setRegularise({ date: isoDate(new Date()) })}>{t("Regularise")}</Button>
           <Button variant="primary" onClick={() => setShiftOpen(true)}>
             <Icon name="plus" size={15} /> Request shift change
           </Button>
@@ -259,7 +260,7 @@ export default function Attendance() {
                       onChange={setView}
                       items={[
                         { id: 'calendar', label: monthLabel(month) },
-                        { id: 'ledger', label: 'Ledger', count: days.length },
+                        { id: 'ledger', label: t("Ledger"), count: days.length },
                       ]}
                     />
                     {view === 'ledger' ? (
@@ -305,24 +306,24 @@ export default function Attendance() {
                     <div className="rail-stats">
                       <div className="rail-stats__item">
                         <div className="rail-stats__value">{summary.days_present ?? 0}</div>
-                        <div className="rail-stats__label">Present</div>
+                        <div className="rail-stats__label">{t("Present")}</div>
                       </div>
                       <div className="rail-stats__item">
                         <div className="rail-stats__value">{summary.work_from_home ?? 0}</div>
-                        <div className="rail-stats__label">WFH</div>
+                        <div className="rail-stats__label">{t("WFH")}</div>
                       </div>
                       <div className="rail-stats__item">
                         <div className={`rail-stats__value${summary.on_leave ? ' rail-stats__value--warn' : ''}`}>
                           {summary.on_leave ?? 0}
                         </div>
-                        <div className="rail-stats__label">On leave</div>
+                        <div className="rail-stats__label">{t("On leave")}</div>
                       </div>
                     </div>
                   </Card>
 
                   {needsAction.length > 0 && (
                     <Card
-                      title="Needs your action"
+                      title={t("Needs your action")}
                       action={<Pill tone="danger">{needsAction.length}</Pill>}
                     >
                       <div className="stack">
@@ -346,9 +347,9 @@ export default function Attendance() {
                     </Card>
                   )}
 
-                  <Card title="Your shifts" action={<span className="small subtle">Next 7 days</span>}>
+                  <Card title={t("Your shifts")} action={<span className="small subtle">{t("Next 7 days")}</span>}>
                     {upcoming.length === 0 ? (
-                      <p className="small subtle">No scheduled shifts in the next week.</p>
+                      <p className="small subtle">{t("No scheduled shifts in the next week.")}</p>
                     ) : (
                       <div className="stack">
                         {upcoming.map((row) => (
@@ -378,9 +379,9 @@ export default function Attendance() {
                     )}
                   </Card>
 
-                  <Card title="Requests">
+                  <Card title={t("Requests")}>
                     {requests.length === 0 ? (
-                      <p className="small subtle">No regularisation or shift requests open.</p>
+                      <p className="small subtle">{t("No regularisation or shift requests open.")}</p>
                     ) : (
                       <div className="stack">
                         {requests.map((row) => (

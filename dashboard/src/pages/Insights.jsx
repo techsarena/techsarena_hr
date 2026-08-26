@@ -9,6 +9,7 @@ import { Async, Card, EmptyState, Pill } from '../components/ui';
 import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtMoney, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 const JOINERS = '#0E7490';
 const EXITS = '#7771FA';
@@ -40,19 +41,19 @@ export default function Insights() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Insights</h1>
-          <p className="page-head__sub">Workforce shape, drawn from the records this site keeps</p>
+          <h1 className="page-head__title">{t("Insights")}</h1>
+          <p className="page-head__sub">{t("Workforce shape, drawn from the records this site keeps")}</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-2)' }}>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
             style={{ width: 'auto' }}
-            aria-label="Reporting window"
+            aria-label={t("Reporting window")}
           >
-            <option value={6}>Last 6 months</option>
-            <option value={12}>Last 12 months</option>
-            <option value={24}>Last 24 months</option>
+            <option value={6}>{t("Last 6 months")}</option>
+            <option value={12}>{t("Last 12 months")}</option>
+            <option value={24}>{t("Last 24 months")}</option>
           </select>
         </div>
       </div>
@@ -113,7 +114,7 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
     <>
       {/* ---- Headline figures ---- */}
       <div className="grid grid--4">
-        <Metric label="Headcount" value={data.headcount ?? '—'}
+        <Metric label={t("Headcount")} value={data.headcount ?? '—'}
           badge={netChange ? `${netChange > 0 ? '+' : ''}${netChange} net` : null}
           tone={netChange > 0 ? 'success' : netChange < 0 ? 'danger' : undefined} />
 
@@ -124,10 +125,10 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
           badge={data.attrition?.exits ? `${data.attrition.exits} exits` : null}
         />
 
-        <Metric label="Joined this month" value={summary.new_this_month ?? '—'} />
+        <Metric label={t("Joined this month")} value={summary.new_this_month ?? '—'} />
 
         <Metric
-          label="Open leave requests"
+          label={t("Open leave requests")}
           value={summary.open_leave_requests ?? '—'}
           badge={approvals?.length ? `${approvals.length} to approve` : null}
           tone={summary.open_leave_requests ? 'warning' : undefined}
@@ -137,12 +138,12 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
       {/* ---- Movement chart + payroll ---- */}
       <div className="insight-row">
         <Card
-          title="Headcount & attrition"
+          title={t("Headcount & attrition")}
           subtitle={`Joiners and exits over the last ${months} months`}
           action={<ChartLegend />}
         >
           {chartRows.length === 0 ? (
-            <EmptyState title="No movement recorded" body="Joining and relieving dates drive this chart." icon="▤" />
+            <EmptyState title={t("No movement recorded")} body={t("Joining and relieving dates drive this chart.")} icon="▤" />
           ) : (
             <div style={{ height: 300 }}>
               <ResponsiveContainer width="100%" height="100%">
@@ -171,7 +172,7 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
       {/* ---- Departments, funnel, attention ---- */}
       <div className="insight-row insight-row--thirds">
         <Card
-          title="Headcount by department"
+          title={t("Headcount by department")}
           subtitle={`${departments.length} department${departments.length === 1 ? '' : 's'}`}
           action={
             departments.length > 0 && (
@@ -179,7 +180,7 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
                 type="button"
                 className="btn btn--ghost btn--sm"
                 onClick={() => exportCsv('headcount-by-department',
-                  [{ key: 'name', header: 'Department' }, { key: 'count', header: 'Employees' }],
+                  [{ key: 'name', header: t("Department") }, { key: 'count', header: t("Employees") }],
                   departments)}
               >
                 <Icon name="download" size={14} /> CSV
@@ -188,7 +189,7 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
           }
         >
           {departments.length === 0 ? (
-            <EmptyState title="No departments" body="Employees are not assigned to a department." icon="▤" />
+            <EmptyState title={t("No departments")} body={t("Employees are not assigned to a department.")} icon="▤" />
           ) : (
             <ul className="bar-list">
               {departments.slice(0, 6).map((row) => (
@@ -206,11 +207,11 @@ function InsightsBody({ data, hrSummary, approvals, currency, months }) {
           )}
         </Card>
 
-        <Card title="Hiring pipeline" subtitle="Candidates by stage">
+        <Card title={t("Hiring pipeline")} subtitle={t("Candidates by stage")}>
           {funnel.length === 0 ? (
             <EmptyState
-              title="No candidates"
-              body="This site has no applicant records to chart."
+              title={t("No candidates")}
+              body={t("This site has no applicant records to chart.")}
               icon="▤"
             />
           ) : (
@@ -269,24 +270,24 @@ function PayrollCard({ summary, currency }) {
   const pct = head > 0 ? Math.min(100, (slips / head) * 100) : 0;
 
   return (
-    <Card title="Payroll this month" subtitle={slips ? `${slips} of ${head} slips submitted` : 'No slips submitted yet'}>
+    <Card title={t("Payroll this month")} subtitle={slips ? `${slips} of ${head} slips submitted` : 'No slips submitted yet'}>
       <div className="payroll-progress">
         <div className="payroll-progress__ring" style={{ '--pct': `${pct}%` }}>
           <span>{Math.round(pct)}%</span>
         </div>
         <div className="payroll-progress__detail">
           <div className="field-row">
-            <span className="field-row__label">Slips submitted</span>
+            <span className="field-row__label">{t("Slips submitted")}</span>
             <span className="field-row__value">{slips}</span>
           </div>
           <div className="field-row">
-            <span className="field-row__label">Active headcount</span>
+            <span className="field-row__label">{t("Active headcount")}</span>
             <span className="field-row__value">{head || '—'}</span>
           </div>
           {/* Only shown when the site reports a figure — never a computed guess. */}
           {summary.payroll_net_payable !== undefined && summary.payroll_net_payable !== null && (
             <div className="field-row">
-              <span className="field-row__label">Net payable</span>
+              <span className="field-row__label">{t("Net payable")}</span>
               <span className="field-row__value">{fmtMoney(summary.payroll_net_payable, currency)}</span>
             </div>
           )}
@@ -337,11 +338,11 @@ function AttentionCard({ summary, approvals, attrition }) {
 
   return (
     <Card
-      title="Needs attention"
+      title={t("Needs attention")}
       subtitle={items.length ? `${items.length} item${items.length === 1 ? '' : 's'}` : 'Everything is clear'}
     >
       {items.length === 0 ? (
-        <EmptyState title="Nothing outstanding" body="No open approvals, exits or missing payslips." icon="✓" />
+        <EmptyState title={t("Nothing outstanding")} body={t("No open approvals, exits or missing payslips.")} icon="✓" />
       ) : (
         <ul className="attention">
           {items.map((item) => (

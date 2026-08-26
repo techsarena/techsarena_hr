@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { Button } from '../components/ui';
 import hr from '../api/hr';
+import { t } from '../api/i18n';
 
 export default function Login() {
   const { signIn } = useWorkspace();
@@ -43,7 +44,7 @@ export default function Login() {
           <span className="login__logo">{logo ? <img src={logo} alt="" /> : name.slice(0, 2).toUpperCase()}</span>
           <div>
             <h1 style={{ fontSize: 17 }}>{name}</h1>
-            <p className="small subtle">HR &amp; administration</p>
+            <p className="small subtle">{t("HR & administration")}</p>
           </div>
         </div>
 
@@ -51,7 +52,7 @@ export default function Login() {
 
         <div className="login__fields">
           <div>
-            <label htmlFor="usr">Email</label>
+            <label htmlFor="usr">{t("Email")}</label>
             <input
               id="usr"
               type="email"
@@ -63,7 +64,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label htmlFor="pwd">Password</label>
+            <label htmlFor="pwd">{t("Password")}</label>
             <input
               id="pwd"
               type="password"

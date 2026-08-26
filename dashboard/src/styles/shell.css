@@ -7,7 +7,7 @@
   width: var(--sidebar-w); flex: none;
   background: var(--ink); color: #fff;
   display: flex; flex-direction: column;
-  border-right: 1px solid rgba(255, 255, 255, .06);
+  border-inline-end: 1px solid rgba(255, 255, 255, .06);
 }
 .sidebar__brand {
   display: flex; align-items: center; gap: 10px;
@@ -42,7 +42,7 @@
 .nav-link.is-active { background: var(--accent-700); color: #fff; font-weight: 600; }
 .nav-link svg { flex: none; opacity: .9; }
 .nav-link__badge {
-  margin-left: auto; min-width: 19px; height: 19px; padding: 0 5px;
+  margin-inline-start: auto; min-width: 19px; height: 19px; padding: 0 5px;
   border-radius: var(--radius-pill); background: var(--danger); color: #fff;
   font-size: 10.5px; font-weight: 700; display: grid; place-items: center;
 }
@@ -79,7 +79,7 @@
   color: var(--text-subtle);
 }
 /* Now a button that opens the palette rather than an input of its own. */
-.topbar__search { cursor: pointer; text-align: left; font: inherit; }
+.topbar__search { cursor: pointer; text-align: start; font: inherit; }
 .topbar__search:hover { border-color: var(--divider-strong); background: var(--surface-muted); }
 .topbar__search-text {
   flex: 1; min-width: 0; font-size: 13px; font-weight: 500;
@@ -98,7 +98,7 @@
 }
 .topbar__btn:hover { background: var(--surface-muted); color: var(--ink); }
 .topbar__dot {
-  position: absolute; top: 5px; right: 5px; min-width: 15px; height: 15px;
+  position: absolute; top: 5px; inset-inline-end: 5px; min-width: 15px; height: 15px;
   padding: 0 4px; border-radius: var(--radius-pill); background: var(--danger);
   color: #fff; font-size: 9.5px; font-weight: 700; display: grid; place-items: center;
 }
@@ -112,7 +112,7 @@
 
 /* ---------- Notification panel ---------- */
 .notif-panel {
-  position: absolute; top: calc(var(--topbar-h) - 6px); right: var(--space-6);
+  position: absolute; top: calc(var(--topbar-h) - 6px); inset-inline-end: var(--space-6);
   width: min(380px, calc(100vw - 32px)); max-height: 420px;
   display: flex; flex-direction: column; overflow: hidden;
   background: var(--surface); border: 1px solid var(--divider);
@@ -122,7 +122,7 @@
 }
 .notif-item { padding: 11px var(--space-4); border-bottom: 1px solid var(--divider-soft); cursor: pointer; }
 .notif-item:hover { background: var(--surface-muted); }
-.notif-item.is-unread { border-left: 2px solid var(--primary); }
+.notif-item.is-unread { border-inline-start: 2px solid var(--primary); }
 .notif-item__subject { font-size: 13px; font-weight: 500; }
 .notif-item__meta { font-size: 11.5px; color: var(--text-subtle); margin-top: 2px; }
 
@@ -170,7 +170,7 @@
   .content { padding: var(--space-4); }
   .topbar { padding: 0 var(--space-4); }
   .topbar__search { display: none; }
-  .notif-panel { right: var(--space-4); }
+  .notif-panel { inset-inline-end: var(--space-4); }
 }
 
 /* ---------------- Notification panel ----------------
@@ -259,10 +259,10 @@
 .palette__row {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 8px var(--space-4); border: 0; background: none;
-  cursor: pointer; text-align: left; font: inherit;
-  border-left: 2px solid transparent;
+  cursor: pointer; text-align: start; font: inherit;
+  border-inline-start: 2px solid transparent;
 }
-.palette__row.is-active { background: var(--surface-muted); border-left-color: var(--primary); }
+.palette__row.is-active { background: var(--surface-muted); border-inline-start-color: var(--primary); }
 
 .palette__icon {
   width: 26px; height: 26px; flex: none; border-radius: var(--radius-sm);
@@ -285,7 +285,7 @@
 }
 .palette__foot kbd {
   border: 1px solid var(--divider-soft); border-radius: 4px;
-  background: var(--surface-muted); padding: 0 4px; margin-right: 3px;
+  background: var(--surface-muted); padding: 0 4px; margin-inline-end: 3px;
   font: inherit; font-size: 10px; font-weight: 700;
 }
 

@@ -7,6 +7,7 @@ import { TeamCalendarGrid, TeamCalendarLegend } from '../components/TeamCalendar
 import { ApplyDrawer } from '../components/ApplyLeaveDrawer';
 import { Icon } from '../components/Icon';
 import { fmtDateShort, fmtRange, isoDate, monthLabel, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 function monthRange(date) {
   const d = toDate(date) || new Date();
@@ -85,8 +86,8 @@ export default function LeaveTeamCalendar() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Team calendar</h1>
-          <p className="page-head__sub">Who is away this month, and where cover runs thin</p>
+          <h1 className="page-head__title">{t("Team calendar")}</h1>
+          <p className="page-head__sub">{t("Who is away this month, and where cover runs thin")}</p>
         </div>
 
         <div className="row" style={{ gap: 'var(--space-3)', flexWrap: 'wrap' }}>
@@ -95,21 +96,21 @@ export default function LeaveTeamCalendar() {
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
               style={{ width: 'auto', minWidth: 150 }}
-              aria-label="Filter by department"
+              aria-label={t("Filter by department")}
             >
-              <option value="all">All departments</option>
+              <option value="all">{t("All departments")}</option>
               {departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
 
           <div className="row" style={{ gap: 4 }}>
-            <Button size="icon" onClick={() => setRange(shiftRange(range.from, -1))} aria-label="Previous month">
+            <Button size="icon" onClick={() => setRange(shiftRange(range.from, -1))} aria-label={t("Previous month")}>
               <Icon name="chevronLeft" size={15} />
             </Button>
             <span style={{ fontWeight: 600, minWidth: 116, textAlign: 'center' }}>
               {monthLabel(range.from)}
             </span>
-            <Button size="icon" onClick={() => setRange(shiftRange(range.from, 1))} aria-label="Next month">
+            <Button size="icon" onClick={() => setRange(shiftRange(range.from, 1))} aria-label={t("Next month")}>
               <Icon name="chevronRight" size={15} />
             </Button>
           </div>
@@ -137,7 +138,7 @@ export default function LeaveTeamCalendar() {
                 {rows.length === 0 ? (
                   <EmptyState
                     title={department === 'all' ? 'Nobody is away this month' : `Nobody in ${department} is away`}
-                    body="Approved and pending leave appears on this grid."
+                    body={t("Approved and pending leave appears on this grid.")}
                     icon="◷"
                   />
                 ) : (
@@ -154,11 +155,11 @@ export default function LeaveTeamCalendar() {
 
               <div className="grid grid--3">
                 <Card
-                  title="Away today"
+                  title={t("Away today")}
                   action={<span className="pill">{away.length} of {headcount || 0} out</span>}
                 >
                   {away.length === 0 ? (
-                    <p className="small subtle">Everyone is in today.</p>
+                    <p className="small subtle">{t("Everyone is in today.")}</p>
                   ) : (
                     <div className="stack">
                       {away.map((row, i) => (
@@ -177,11 +178,11 @@ export default function LeaveTeamCalendar() {
                 </Card>
 
                 <Card
-                  title="Your request"
+                  title={t("Your request")}
                   action={own.length > 0 ? <Pill tone={own[0].status === 'Open' ? 'warning' : 'success'}>{own[0].status}</Pill> : null}
                 >
                   {own.length === 0 ? (
-                    <p className="small subtle">You have no leave booked this month.</p>
+                    <p className="small subtle">{t("You have no leave booked this month.")}</p>
                   ) : (
                     <div className="stack">
                       {own.map((row) => (
@@ -195,11 +196,11 @@ export default function LeaveTeamCalendar() {
                 </Card>
 
                 <Card
-                  title="Thin cover"
+                  title={t("Thin cover")}
                   action={peak && peak.count > 1 ? <Pill tone="warning">{fmtDateShort(peak.day)}</Pill> : null}
                 >
                   {!peak || peak.count < 2 ? (
-                    <p className="small subtle">No day this month has more than one person away.</p>
+                    <p className="small subtle">{t("No day this month has more than one person away.")}</p>
                   ) : (
                     <p className="small">
                       <strong>{peak.count} people</strong> are away on {fmtDateShort(peak.day)}

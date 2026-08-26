@@ -6,6 +6,7 @@ import { Async, Button, Card, EmptyState, Field, Modal, SearchInput, Stat, Tabs 
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDays, fmtNumber, fmtRelative, isoDate } from '../api/format';
+import { t } from '../api/i18n';
 
 /* Adjustments post a real Leave Ledger Entry plus an audit comment server-side —
    the balance moves through HRMS's own ledger, not a side table. */
@@ -36,11 +37,11 @@ function AdjustModal({ open, onClose, employees, leaveTypes, employee, onDone })
     <Modal
       open
       onClose={onClose}
-      title="Adjust a leave balance"
-      subtitle="Posts a Leave Ledger Entry and an audit comment"
+      title={t("Adjust a leave balance")}
+      subtitle={t("Posts a Leave Ledger Entry and an audit comment")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={submit} disabled={busy || !form.employee || !form.leave_type || !days}>
             {busy ? 'Posting…' : days > 0 ? 'Grant days' : 'Deduct days'}
           </Button>
@@ -48,9 +49,9 @@ function AdjustModal({ open, onClose, employees, leaveTypes, employee, onDone })
       }
     >
       <div className="fields">
-        <Field label="Employee">
+        <Field label={t("Employee")}>
           <select value={form.employee} onChange={(e) => setForm({ ...form, employee: e.target.value })}>
-            <option value="">Select an employee…</option>
+            <option value="">{t("Select an employee…")}</option>
             {employees.map((row) => (
               <option key={row.name} value={row.name}>
                 {row.employee_name}{row.department ? ` — ${row.department}` : ''}
@@ -58,16 +59,16 @@ function AdjustModal({ open, onClose, employees, leaveTypes, employee, onDone })
             ))}
           </select>
         </Field>
-        <Field label="Leave type">
+        <Field label={t("Leave type")}>
           <select value={form.leave_type} onChange={(e) => setForm({ ...form, leave_type: e.target.value })}>
-            <option value="">Select a leave type…</option>
+            <option value="">{t("Select a leave type…")}</option>
             {leaveTypes.map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
         </Field>
-        <Field label="Days" hint="Positive grants days; negative deducts them.">
+        <Field label={t("Days")} hint="Positive grants days; negative deducts them.">
           <input type="number" step="0.5" value={form.days} onChange={(e) => setForm({ ...form, days: e.target.value })} />
         </Field>
-        <Field label="Reason">
+        <Field label={t("Reason")}>
           <textarea rows={3} value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
         </Field>
       </div>
@@ -89,9 +90,9 @@ function Adjustments() {
       <Card>
         <div className="toolbar" style={{ margin: 0 }}>
           <div style={{ minWidth: 260 }}>
-            <label htmlFor="adj-emp">Inspect an employee's balances</label>
+            <label htmlFor="adj-emp">{t("Inspect an employee's balances")}</label>
             <select id="adj-emp" value={employee} onChange={(e) => setEmployee(e.target.value)}>
-              <option value="">Select an employee…</option>
+              <option value="">{t("Select an employee…")}</option>
               {employees.map((row) => (
                 <option key={row.name} value={row.name}>
                   {row.employee_name}{row.department ? ` — ${row.department}` : ''}
@@ -109,7 +110,7 @@ function Adjustments() {
       <Async state={state} rows={4}>
         {() => (
           <div className="grid grid--2">
-            <Card title="Balances" subtitle={employee || 'Select an employee above'} flush>
+            <Card title={t("Balances")} subtitle={employee || 'Select an employee above'} flush>
               {(data.balances || []).length === 0 ? (
                 <EmptyState
                   title={employee ? 'No allocations' : 'No employee selected'}
@@ -119,7 +120,7 @@ function Adjustments() {
               ) : (
                 <div className="table-wrap">
                   <table className="table">
-                    <thead><tr><th>Leave type</th><th className="num">Allocated</th><th className="num">Taken</th><th className="num">Remaining</th></tr></thead>
+                    <thead><tr><th>{t("Leave type")}</th><th className="num">{t("Allocated")}</th><th className="num">{t("Taken")}</th><th className="num">{t("Remaining")}</th></tr></thead>
                     <tbody>
                       {data.balances.map((row) => (
                         <tr key={row.leave_type}>
@@ -135,9 +136,9 @@ function Adjustments() {
               )}
             </Card>
 
-            <Card title="Adjustment trail" subtitle={`${history.length} recent adjustments`}>
+            <Card title={t("Adjustment trail")} subtitle={`${history.length} recent adjustments`}>
               {history.length === 0 ? (
-                <EmptyState title="No adjustments yet" body="Manual grants and deductions are recorded here." icon="◷" />
+                <EmptyState title={t("No adjustments yet")} body={t("Manual grants and deductions are recorded here.")} icon="◷" />
               ) : (
                 <div className="stack">
                   {history.map((row, index) => (
@@ -188,11 +189,11 @@ function Deductions() {
 
   const columns = useMemo(
     () => [
-      { key: 'employee_name', header: 'Employee', render: (row) => <span className="cell-strong">{row.employee_name}</span> },
+      { key: 'employee_name', header: t("Employee"), render: (row) => <span className="cell-strong">{row.employee_name}</span> },
       { key: 'employee', header: 'ID', render: (row) => <span className="subtle tabular">{row.employee}</span> },
       {
         key: 'lwp_days',
-        header: 'LWP days',
+        header: t("LWP days"),
         align: 'right',
         render: (row) => <span className="cell-strong" style={{ color: 'var(--warning)' }}>{fmtNumber(row.lwp_days)}</span>,
         sortValue: (row) => Number(row.lwp_days),
@@ -205,14 +206,14 @@ function Deductions() {
     <div className="stack">
       <Card>
         <div className="toolbar" style={{ margin: 0 }}>
-          <Field label="From">
+          <Field label={t("From")}>
             <input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} />
           </Field>
           <Field label="To">
             <input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} />
           </Field>
           <div className="toolbar__spacer" />
-          <SearchInput value={query} onChange={setQuery} placeholder="Filter employees…" />
+          <SearchInput value={query} onChange={setQuery} placeholder={t("Filter employees…")} />
         </div>
       </Card>
 
@@ -220,14 +221,14 @@ function Deductions() {
         {(data) => (
           <>
             <div className="grid grid--3">
-              <div className="card"><Stat label="Total LWP days" value={fmtNumber(data.total_lwp_days)} tone={data.total_lwp_days ? 'warning' : undefined} /></div>
-              <div className="card"><Stat label="Employees affected" value={(data.deductions || []).length} /></div>
-              <div className="card"><Stat label="LWP leave types" value={(data.lwp_leave_types || []).length} meta={(data.lwp_leave_types || []).join(', ') || undefined} /></div>
+              <div className="card"><Stat label={t("Total LWP days")} value={fmtNumber(data.total_lwp_days)} tone={data.total_lwp_days ? 'warning' : undefined} /></div>
+              <div className="card"><Stat label={t("Employees affected")} value={(data.deductions || []).length} /></div>
+              <div className="card"><Stat label={t("LWP leave types")} value={(data.lwp_leave_types || []).length} meta={(data.lwp_leave_types || []).join(', ') || undefined} /></div>
             </div>
 
             <Card
               flush
-              title="Unpaid leave"
+              title={t("Unpaid leave")}
               subtitle={`${fmtDate(data.from_date)} – ${fmtDate(data.to_date)}`}
               action={
                 rows.length > 0 && (
@@ -258,16 +259,16 @@ export default function LeaveAdmin() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">Leave admin</h1>
-        <p className="page-head__sub">Grant or deduct balances, and see what unpaid leave costs payroll</p>
+        <h1 className="page-head__title">{t("Leave admin")}</h1>
+        <p className="page-head__sub">{t("Grant or deduct balances, and see what unpaid leave costs payroll")}</p>
       </div>
 
       <Tabs
         value={tab}
         onChange={setTab}
         items={[
-          { id: 'adjustments', label: 'Adjustments' },
-          { id: 'deductions', label: 'Unpaid leave' },
+          { id: 'adjustments', label: t("Adjustments") },
+          { id: 'deductions', label: t("Unpaid leave") },
         ]}
       />
 

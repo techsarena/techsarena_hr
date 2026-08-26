@@ -17,6 +17,7 @@ const EXIT = 'techsarena_hr.offboarding';
 const LIFE = 'techsarena_hr.lifecycle';
 const PERF = 'techsarena_hr.performance';
 const NOTIF = 'techsarena_hr.notifications';
+const I18N = 'techsarena_hr.i18n';
 
 export const hr = {
   /* ---- Bootstrap & profile ---- */
@@ -156,6 +157,13 @@ export const hr = {
   jobOpenings: (opts) => call(`${NS}.job_openings`, undefined, opts),
   jobOpeningDetail: (name, opts) => call(`${NS}.job_opening_detail`, { name }, opts),
   employeeOnboarding: (opts) => call(`${NS}.employee_onboarding`, undefined, opts),
+
+  /* ---- Localisation ----
+     Catalogues are Frappe's own, so every language ERPNext ships works here.
+     Guest-accessible: the login screen translates before there is a session. */
+  translations: (lang, opts) => call(`${I18N}.translations`, lang ? { lang } : undefined, opts),
+  languages: (opts) => call(`${I18N}.languages`, undefined, opts),
+  setLanguage: (language) => post(`${I18N}.set_language`, { language }),
 
   /* ---- Org chart ----
      Flat nodes with parent pointers; the client assembles the tree. `root`

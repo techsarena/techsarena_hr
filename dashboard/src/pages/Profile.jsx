@@ -12,6 +12,7 @@ import { hr } from '../api/hr';
 import { useWorkspace } from '../hooks/WorkspaceContext';
 import { useAsync, useMutation } from '../hooks/useAsync';
 import { useToast } from '../hooks/useToast';
+import { useTranslation } from '../hooks/useTranslation';
 import {
   Async, Avatar, Button, Card, Drawer, EmptyState, Field, FieldRow, Pill, Tabs,
 } from '../components/ui';
@@ -20,11 +21,12 @@ import {
 const hasAny = (...values) => values.some((v) => v !== null && v !== undefined && v !== '');
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDateShort } from '../api/format';
+import { t } from '../api/i18n';
 
 const TABS = [
-  { id: 'details', label: 'Details' },
-  { id: 'documents', label: 'Documents' },
-  { id: 'requests', label: 'Change requests' },
+  { id: 'details', label: t("Details") },
+  { id: 'documents', label: t("Documents") },
+  { id: 'requests', label: t("Change requests") },
 ];
 
 const EXPIRY_LABEL = (doc) => {
@@ -59,8 +61,8 @@ export default function Profile() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">My profile</h1>
-        <p className="page-head__sub">Your record, documents, and any corrections you have asked for</p>
+        <h1 className="page-head__title">{t("My profile")}</h1>
+        <p className="page-head__sub">{t("Your record, documents, and any corrections you have asked for")}</p>
       </div>
 
       <Card>
@@ -106,30 +108,30 @@ function DetailsTab({ state, onChanged }) {
           </div>
 
           <div className="grid grid--2">
-            <Card title="Personal">
-              <FieldRow label="Date of birth" value={fmtDate(data.personal?.date_of_birth)} />
-              <FieldRow label="Gender" value={data.personal?.gender} />
-              <FieldRow label="Marital status" value={data.personal?.marital_status} />
-              <FieldRow label="Blood group" value={data.personal?.blood_group} />
-              <FieldRow label="Mobile" value={data.personal?.cell_number} />
-              <FieldRow label="Personal email" value={data.personal?.personal_email} />
-              <FieldRow label="Company email" value={data.personal?.company_email} />
-              <FieldRow label="Current address" value={data.personal?.current_address} />
-              <FieldRow label="Permanent address" value={data.personal?.permanent_address} />
+            <Card title={t("Personal")}>
+              <FieldRow label={t("Date of birth")} value={fmtDate(data.personal?.date_of_birth)} />
+              <FieldRow label={t("Gender")} value={data.personal?.gender} />
+              <FieldRow label={t("Marital status")} value={data.personal?.marital_status} />
+              <FieldRow label={t("Blood group")} value={data.personal?.blood_group} />
+              <FieldRow label={t("Mobile")} value={data.personal?.cell_number} />
+              <FieldRow label={t("Personal email")} value={data.personal?.personal_email} />
+              <FieldRow label={t("Company email")} value={data.personal?.company_email} />
+              <FieldRow label={t("Current address")} value={data.personal?.current_address} />
+              <FieldRow label={t("Permanent address")} value={data.personal?.permanent_address} />
             </Card>
 
             {/* An all-empty card reads as a broken panel; when nothing is on
                 file, say so and point at the action that fixes it. */}
-            <Card title="Emergency contact">
+            <Card title={t("Emergency contact")}>
               {hasAny(
                 data.personal?.person_to_be_contacted,
                 data.personal?.relation,
                 data.personal?.emergency_phone_number,
               ) ? (
                 <>
-                  <FieldRow label="Contact" value={data.personal?.person_to_be_contacted} />
-                  <FieldRow label="Relation" value={data.personal?.relation} />
-                  <FieldRow label="Phone" value={data.personal?.emergency_phone_number} />
+                  <FieldRow label={t("Contact")} value={data.personal?.person_to_be_contacted} />
+                  <FieldRow label={t("Relation")} value={data.personal?.relation} />
+                  <FieldRow label={t("Phone")} value={data.personal?.emergency_phone_number} />
                 </>
               ) : (
                 <p className="small subtle" style={{ margin: 0 }}>
@@ -138,18 +140,20 @@ function DetailsTab({ state, onChanged }) {
               )}
             </Card>
 
-            <Card title="Employment">
-              <FieldRow label="Employee ID" value={data.identity?.name} />
-              <FieldRow label="Designation" value={data.identity?.designation} />
-              <FieldRow label="Department" value={data.identity?.department} />
-              <FieldRow label="Joined" value={fmtDate(data.job?.date_of_joining)} />
-              <FieldRow label="Employment type" value={data.job?.employment_type} />
-              <FieldRow label="Grade" value={data.job?.grade} />
-              <FieldRow label="Manager" value={data.manager?.employee_name} />
+            <Card title={t("Employment")}>
+              <FieldRow label={t("Employee ID")} value={data.identity?.name} />
+              <FieldRow label={t("Designation")} value={data.identity?.designation} />
+              <FieldRow label={t("Department")} value={data.identity?.department} />
+              <FieldRow label={t("Joined")} value={fmtDate(data.job?.date_of_joining)} />
+              <FieldRow label={t("Employment type")} value={data.job?.employment_type} />
+              <FieldRow label={t("Grade")} value={data.job?.grade} />
+              <FieldRow label={t("Manager")} value={data.manager?.employee_name} />
             </Card>
 
+            <LanguageCard />
+
             {data.can_view_statutory && (
-              <Card title="Bank & statutory">
+              <Card title={t("Bank & statutory")}>
                 {hasAny(
                   data.statutory?.bank_name,
                   data.statutory?.bank_ac_no,
@@ -158,11 +162,11 @@ function DetailsTab({ state, onChanged }) {
                   data.statutory?.provident_fund_account,
                 ) ? (
                   <>
-                    <FieldRow label="Bank" value={data.statutory?.bank_name} />
-                    <FieldRow label="Account number" value={data.statutory?.bank_ac_no} />
-                    <FieldRow label="IFSC" value={data.statutory?.ifsc_code} />
-                    <FieldRow label="Tax number" value={data.statutory?.pan_number} />
-                    <FieldRow label="Provident fund" value={data.statutory?.provident_fund_account} />
+                    <FieldRow label={t("Bank")} value={data.statutory?.bank_name} />
+                    <FieldRow label={t("Account number")} value={data.statutory?.bank_ac_no} />
+                    <FieldRow label={t("IFSC")} value={data.statutory?.ifsc_code} />
+                    <FieldRow label={t("Tax number")} value={data.statutory?.pan_number} />
+                    <FieldRow label={t("Provident fund")} value={data.statutory?.provident_fund_account} />
                   </>
                 ) : (
                   <p className="small subtle" style={{ margin: 0 }}>
@@ -222,15 +226,15 @@ function ChangeRequestDrawer({ open, onClose, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="Request a profile change"
-      subtitle="HR reviews these before they take effect"
+      title={t("Request a profile change")}
+      subtitle={t("HR reviews these before they take effect")}
       footer={
         <div className="row row--between" style={{ width: '100%' }}>
           <span className="small subtle">
             {dirtyCount ? `${dirtyCount} field${dirtyCount === 1 ? '' : 's'} changed` : 'Nothing changed yet'}
           </span>
           <div className="row" style={{ gap: 'var(--space-2)' }}>
-            <Button onClick={onClose}>Cancel</Button>
+            <Button onClick={onClose}>{t("Cancel")}</Button>
             <Button variant="indigo" onClick={submit.mutate} disabled={submit.pending || !dirtyCount}>
               {submit.pending ? 'Sending…' : 'Send request'}
             </Button>
@@ -258,7 +262,7 @@ function ChangeRequestDrawer({ open, onClose, onDone }) {
               </div>
             ))}
 
-            <Field label="Reason (optional)" hint="Helps HR verify the change faster.">
+            <Field label={t("Reason (optional)")} hint="Helps HR verify the change faster.">
               <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
             </Field>
           </div>
@@ -337,8 +341,8 @@ function DocumentsTab({ state }) {
           {data.documents.length === 0 ? (
             <Card>
               <EmptyState
-                title="No documents yet"
-                body="Add your ID, passport, or certificates so HR has them on file."
+                title={t("No documents yet")}
+                body={t("Add your ID, passport, or certificates so HR has them on file.")}
                 icon={<Icon name="checklist" size={22} />}
               />
             </Card>
@@ -351,8 +355,8 @@ function DocumentsTab({ state }) {
                       <span className="row" style={{ gap: 'var(--space-2)', alignItems: 'center' }}>
                         <strong className="truncate">{doc.title || doc.document_type}</strong>
                         {doc.is_verified
-                          ? <Pill tone="success" dot>Verified</Pill>
-                          : <Pill dot>Awaiting check</Pill>}
+                          ? <Pill tone="success" dot>{t("Verified")}</Pill>
+                          : <Pill dot>{t("Awaiting check")}</Pill>}
                       </span>
                       <span className="small subtle truncate">
                         {doc.document_type}
@@ -454,11 +458,11 @@ function AddDocumentDrawer({ open, types, onClose, onDone }) {
     <Drawer
       open={open}
       onClose={close}
-      title="Add a document"
-      subtitle="Stored privately against your employee record"
+      title={t("Add a document")}
+      subtitle={t("Stored privately against your employee record")}
       footer={
         <div className="row row--end" style={{ width: '100%', gap: 'var(--space-2)' }}>
-          <Button onClick={close}>Cancel</Button>
+          <Button onClick={close}>{t("Cancel")}</Button>
           <Button variant="indigo" onClick={submit.mutate} disabled={submit.pending || !file}>
             {submit.pending ? (progress < 100 ? `Uploading ${progress}%` : 'Saving…') : 'Add document'}
           </Button>
@@ -485,26 +489,26 @@ function AddDocumentDrawer({ open, types, onClose, onDone }) {
           )}
         </Field>
 
-        <Field label="Document type">
+        <Field label={t("Document type")}>
           <select value={form.document_type} onChange={(e) => set('document_type', e.target.value)}>
-            <option value="">Choose…</option>
+            <option value="">{t("Choose…")}</option>
             {(types || []).map((type) => <option key={type} value={type}>{type}</option>)}
           </select>
         </Field>
 
-        <Field label="Title">
+        <Field label={t("Title")}>
           <input value={form.title} onChange={(e) => set('title', e.target.value)} />
         </Field>
 
-        <Field label="Document number">
+        <Field label={t("Document number")}>
           <input value={form.document_number} onChange={(e) => set('document_number', e.target.value)} />
         </Field>
 
         <div className="grid grid--2">
-          <Field label="Issued on">
+          <Field label={t("Issued on")}>
             <input type="date" value={form.issued_on} onChange={(e) => set('issued_on', e.target.value)} />
           </Field>
-          <Field label="Expires on" hint="Leave blank if it does not expire.">
+          <Field label={t("Expires on")} hint="Leave blank if it does not expire.">
             <input type="date" value={form.expires_on} onChange={(e) => set('expires_on', e.target.value)} />
           </Field>
         </div>
@@ -533,8 +537,8 @@ function RequestsTab({ state, onChanged }) {
       empty={
         <Card>
           <EmptyState
-            title="No change requests"
-            body="Corrections you ask for will show here with their approval status."
+            title={t("No change requests")}
+            body={t("Corrections you ask for will show here with their approval status.")}
             icon={<Icon name="inbox" size={22} />}
           />
         </Card>
@@ -576,5 +580,53 @@ function RequestsTab({ state, onChanged }) {
         </Card>
       ))}
     </Async>
+  );
+}
+
+
+/* ---------------------------------------------------------------- Language */
+
+/** Per-user language. Saved to the User record, so the desk, printed documents
+ *  and outgoing email follow the same choice — not the dashboard alone. */
+function LanguageCard() {
+  const toast = useToast();
+  const { language, setLanguage } = useTranslation();
+  const options = useAsync(({ signal }) => hr.languages({ signal }), []);
+  const [saving, setSaving] = useState(false);
+
+  const change = async (next) => {
+    if (!next || next === language) return;
+    setSaving(true);
+    try {
+      await setLanguage(next);
+      toast.success('Language updated.');
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card title={t("Language")} subtitle={t("Applies across the app, the desk, and your documents")}>
+      <Async state={options} rows={2}>
+        {(data) => (
+          <Field label={t("Display language")}>
+            <select
+              value={language}
+              disabled={saving}
+              onChange={(e) => change(e.target.value)}
+            >
+              {(data.languages || []).map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                  {item.direction === 'rtl' ? ' (RTL)' : ''}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+      </Async>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { Button, Card, EmptyState } from '../components/ui';
 import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDateShort, fmtMoney, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 /** April-start financial year, matching the HRMS default. */
 function fyOf(value) {
@@ -68,25 +69,25 @@ export default function Salary() {
   );
 
   const csvColumns = [
-    { key: 'start_date', header: 'From' },
+    { key: 'start_date', header: t("From") },
     { key: 'end_date', header: 'To' },
-    { key: 'posting_date', header: 'Posted' },
-    { key: 'gross_pay', header: 'Gross' },
-    { key: 'total_deduction', header: 'Deductions' },
-    { key: 'net_pay', header: 'Net pay' },
+    { key: 'posting_date', header: t("Posted") },
+    { key: 'gross_pay', header: t("Gross") },
+    { key: 'total_deduction', header: t("Deductions") },
+    { key: 'net_pay', header: t("Net pay") },
   ];
 
   if (salarySlips.length === 0) {
     return (
       <div className="stack">
         <div className="page-head">
-          <h1 className="page-head__title">Salary</h1>
-          <p className="page-head__sub">Your payslips and their component breakdown</p>
+          <h1 className="page-head__title">{t("Salary")}</h1>
+          <p className="page-head__sub">{t("Your payslips and their component breakdown")}</p>
         </div>
         <Card>
           <EmptyState
-            title="No payslips yet"
-            body="Submitted salary slips will appear here once payroll has run for you."
+            title={t("No payslips yet")}
+            body={t("Submitted salary slips will appear here once payroll has run for you.")}
             icon={<Icon name="wallet" size={22} />}
           />
         </Card>
@@ -98,13 +99,13 @@ export default function Salary() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Salary</h1>
-          <p className="page-head__sub">Your payslips and their component breakdown</p>
+          <h1 className="page-head__title">{t("Salary")}</h1>
+          <p className="page-head__sub">{t("Your payslips and their component breakdown")}</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-2)' }}>
           {years.length > 1 && (
-            <select value={fy} onChange={(e) => setFy(e.target.value)} style={{ width: 'auto' }} aria-label="Financial year">
-              <option value="all">All years</option>
+            <select value={fy} onChange={(e) => setFy(e.target.value)} style={{ width: 'auto' }} aria-label={t("Financial year")}>
+              <option value="all">{t("All years")}</option>
               {years.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           )}
@@ -117,7 +118,7 @@ export default function Salary() {
       <div className="pay-layout">
         {/* ---- Payslip rail ---- */}
         <aside className="pay-rail">
-          <div className="pay-rail__label">Payslips</div>
+          <div className="pay-rail__label">{t("Payslips")}</div>
           <div className="pay-rail__list">
             {slips.map((slip) => (
               <button
@@ -170,11 +171,11 @@ function PayslipDetail({ slip }) {
 
         <div className="pay-hero__figures">
           <div className="pay-hero__figure">
-            <span className="pay-hero__figure-label">Gross</span>
+            <span className="pay-hero__figure-label">{t("Gross")}</span>
             <span className="pay-hero__figure-value">{fmtMoney(slip.gross_pay, currency)}</span>
           </div>
           <div className="pay-hero__figure">
-            <span className="pay-hero__figure-label">Deductions</span>
+            <span className="pay-hero__figure-label">{t("Deductions")}</span>
             <span className="pay-hero__figure-value">{fmtMoney(slip.total_deduction, currency)}</span>
           </div>
         </div>
@@ -188,11 +189,11 @@ function PayslipDetail({ slip }) {
       <div className="grid grid--2 pay-breakdown">
         <Card className="pay-panel">
           <header className="pay-panel__head">
-            <h3 className="card__title">Earnings</h3>
+            <h3 className="card__title">{t("Earnings")}</h3>
             <span className="pay-panel__total">{fmtMoney(slip.gross_pay, currency)}</span>
           </header>
           {earnings.length === 0 ? (
-            <EmptyState title="No earning lines" body="This payslip records no component rows." icon="◷" />
+            <EmptyState title={t("No earning lines")} body={t("This payslip records no component rows.")} icon="◷" />
           ) : (
             <>
               <ul className="pay-lines">
@@ -205,7 +206,7 @@ function PayslipDetail({ slip }) {
               </ul>
               {/* Composition of gross at a glance — which components the pay
                   actually consists of, without a second set of numbers. */}
-              <div className="pay-bar" role="img" aria-label="Share of gross by component">
+              <div className="pay-bar" role="img" aria-label={t("Share of gross by component")}>
                 {earnings.map((row, i) => (
                   <span
                     key={`${row.salary_component}-${i}`}
@@ -221,13 +222,13 @@ function PayslipDetail({ slip }) {
 
         <Card className="pay-panel">
           <header className="pay-panel__head">
-            <h3 className="card__title">Deductions</h3>
+            <h3 className="card__title">{t("Deductions")}</h3>
             <span className="pay-panel__total pay-panel__total--minus">
               − {fmtMoney(slip.total_deduction, currency)}
             </span>
           </header>
           {deductions.length === 0 ? (
-            <EmptyState title="No deductions" body="Nothing was withheld from this payslip." icon="◷" />
+            <EmptyState title={t("No deductions")} body={t("Nothing was withheld from this payslip.")} icon="◷" />
           ) : (
             <ul className="pay-lines">
               {deductions.map((row, i) => (

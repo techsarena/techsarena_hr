@@ -7,6 +7,7 @@ import { Async, Button, Card, Drawer, EmptyState, Field, Pill } from '../compone
 import { exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDateShort, fmtMoney, isoDate, toDate } from '../api/format';
+import { t } from '../api/i18n';
 
 const MAX_RECEIPT_MB = 10;
 
@@ -167,25 +168,25 @@ export default function Claims() {
   }, [claims]);
 
   const csvColumns = [
-    { key: 'name', header: 'Claim' },
-    { key: 'posting_date', header: 'Submitted' },
-    { key: '_status', header: 'Status' },
-    { key: 'total_claimed_amount', header: 'Claimed' },
-    { key: 'total_sanctioned_amount', header: 'Sanctioned' },
-    { key: 'total_amount_reimbursed', header: 'Reimbursed' },
+    { key: 'name', header: t("Claim") },
+    { key: 'posting_date', header: t("Submitted") },
+    { key: '_status', header: t("Status") },
+    { key: 'total_claimed_amount', header: t("Claimed") },
+    { key: 'total_sanctioned_amount', header: t("Sanctioned") },
+    { key: 'total_amount_reimbursed', header: t("Reimbursed") },
   ];
 
   return (
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Expense claims</h1>
+          <h1 className="page-head__title">{t("Expense claims")}</h1>
           <p className="page-head__sub">What you&apos;ve claimed, what&apos;s sanctioned, and what&apos;s been paid back</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-2)' }}>
           {years.length > 1 && (
-            <select value={fy} onChange={(e) => setFy(e.target.value)} style={{ width: 'auto' }} aria-label="Financial year">
-              <option value="all">All years</option>
+            <select value={fy} onChange={(e) => setFy(e.target.value)} style={{ width: 'auto' }} aria-label={t("Financial year")}>
+              <option value="all">{t("All years")}</option>
               {years.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
           )}
@@ -200,26 +201,26 @@ export default function Claims() {
           <>
             {/* ---- Headline figures ---- */}
             <div className="grid grid--auto">
-              <SummaryTile label="Reimbursed this FY" value={fmtMoney(totals.reimbursed, currency)} />
+              <SummaryTile label={t("Reimbursed this FY")} value={fmtMoney(totals.reimbursed, currency)} />
               <SummaryTile
-                label="Awaiting approval"
+                label={t("Awaiting approval")}
                 value={fmtMoney(totals.awaiting, currency)}
                 meta={totals.pendingCount ? `${totals.pendingCount} claim${totals.pendingCount === 1 ? '' : 's'}` : null}
               />
               {/* Advances are read off the claims that were settled against one;
                   this site has no Employee Advance endpoint, so nothing here is
                   an outstanding-balance figure it cannot back up. */}
-              <SummaryTile label="Settled against advance" value={fmtMoney(totals.advance, currency)} />
-              <SummaryTile label="Claims on record" value={String(claims.length)} />
+              <SummaryTile label={t("Settled against advance")} value={fmtMoney(totals.advance, currency)} />
+              <SummaryTile label={t("Claims on record")} value={String(claims.length)} />
             </div>
 
             {claims.length === 0 ? (
               <Card>
                 <EmptyState
-                  title="No claims yet"
-                  body="Submit a claim and it will show here with its approval trail."
+                  title={t("No claims yet")}
+                  body={t("Submit a claim and it will show here with its approval trail.")}
                   icon={<Icon name="receipt" size={22} />}
-                  action={<Button variant="primary" onClick={() => setNewOpen(true)}>New claim</Button>}
+                  action={<Button variant="primary" onClick={() => setNewOpen(true)}>{t("New claim")}</Button>}
                 />
               </Card>
             ) : (
@@ -227,7 +228,7 @@ export default function Claims() {
                 {/* ---- Filter bar ---- */}
                 <Card flush>
                   <div className="leave-toolbar">
-                    <div className="chips" role="tablist" aria-label="Filter by status">
+                    <div className="chips" role="tablist" aria-label={t("Filter by status")}>
                       {FILTERS.filter((f) => f === 'All' || counts[f]).map((f) => (
                         <button
                           key={f}
@@ -244,8 +245,8 @@ export default function Claims() {
                     </div>
                     <div className="leave-toolbar__right">
                       {categories.length > 0 && (
-                        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filter by category">
-                          <option value="all">All categories</option>
+                        <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label={t("Filter by category")}>
+                          <option value="all">{t("All categories")}</option>
                           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
                         </select>
                       )}
@@ -307,10 +308,10 @@ function ClaimList({ claims, total, activeName, currency, onSelect, onClear, onE
     return (
       <Card>
         <EmptyState
-          title="Nothing matches these filters"
-          body="Clear a filter to see the rest of your claims."
+          title={t("Nothing matches these filters")}
+          body={t("Clear a filter to see the rest of your claims.")}
           icon="▦"
-          action={<Button onClick={onClear}>Clear filters</Button>}
+          action={<Button onClick={onClear}>{t("Clear filters")}</Button>}
         />
       </Card>
     );
@@ -322,11 +323,11 @@ function ClaimList({ claims, total, activeName, currency, onSelect, onClear, onE
         <table className="table claim-table">
           <thead>
             <tr>
-              <th>Claim</th>
-              <th>Category</th>
-              <th className="num">Amount</th>
-              <th>Status</th>
-              <th className="claim-table__submitted">Submitted</th>
+              <th>{t("Claim")}</th>
+              <th>{t("Category")}</th>
+              <th className="num">{t("Amount")}</th>
+              <th>{t("Status")}</th>
+              <th className="claim-table__submitted">{t("Submitted")}</th>
             </tr>
           </thead>
           <tbody>
@@ -459,7 +460,7 @@ function ClaimDetail({ claim, currency, onChanged }) {
     },
     {
       key: 'payout',
-      title: 'Reimbursement',
+      title: t("Reimbursement"),
       meta: Number(claim.total_amount_reimbursed) > 0
         ? `${fmtMoney(claim.total_amount_reimbursed, currency)} paid`
         : 'On approval',
@@ -488,7 +489,7 @@ function ClaimDetail({ claim, currency, onChanged }) {
           </li>
         ))}
         <li className="pay-line claim-detail__total">
-          <span className="pay-line__name">Claimed</span>
+          <span className="pay-line__name">{t("Claimed")}</span>
           <span className="pay-line__amount">{fmtMoney(claim.total_claimed_amount, currency)}</span>
         </li>
         {/* Sanctioned is only stated when it differs — repeating the claimed
@@ -496,7 +497,7 @@ function ClaimDetail({ claim, currency, onChanged }) {
         {Number(claim.total_sanctioned_amount) > 0
           && Number(claim.total_sanctioned_amount) !== Number(claim.total_claimed_amount) && (
           <li className="pay-line">
-            <span className="pay-line__name">Sanctioned</span>
+            <span className="pay-line__name">{t("Sanctioned")}</span>
             <span className="pay-line__amount">{fmtMoney(claim.total_sanctioned_amount, currency)}</span>
           </li>
         )}
@@ -504,7 +505,7 @@ function ClaimDetail({ claim, currency, onChanged }) {
 
       {receipts.length > 0 && (
         <section className="claim-receipts">
-          <div className="section-heading__label">Receipts</div>
+          <div className="section-heading__label">{t("Receipts")}</div>
           {receipts.map((file) => (
             <div className="claim-receipt-row" key={file.file_url}>
               <a
@@ -540,7 +541,7 @@ function ClaimDetail({ claim, currency, onChanged }) {
       )}
 
       <section className="claim-where">
-        <div className="section-heading__label" style={{ marginBottom: 'var(--space-3)' }}>Where it is</div>
+        <div className="section-heading__label" style={{ marginBottom: 'var(--space-3)' }}>{t("Where it is")}</div>
         <ol className="steps">
           {steps.map((step, i) => (
             <li key={step.key} className={`steps__item steps__item--${step.state}`}>
@@ -629,14 +630,14 @@ function ClaimDrawer({ open, onClose, claimTypes, currency, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="New expense claim"
-      subtitle="Composed against this site's own claim types"
+      title={t("New expense claim")}
+      subtitle={t("Composed against this site's own claim types")}
       footer={
         <>
           <span className="row" style={{ marginRight: 'auto', fontWeight: 600 }}>
             Total {fmtMoney(total, currency)}
           </span>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="primary" onClick={submit} disabled={busy || !valid}>
             {busy ? 'Submitting…' : 'Submit claim'}
           </Button>
@@ -659,17 +660,17 @@ function ClaimDrawer({ open, onClose, claimTypes, currency, onDone }) {
                 <Field label="Date">
                   <input type="date" value={line.expense_date} onChange={(e) => update(index, { expense_date: e.target.value })} />
                 </Field>
-                <Field label="Amount">
+                <Field label={t("Amount")}>
                   <input type="number" min="0" step="0.01" value={line.amount} onChange={(e) => update(index, { amount: e.target.value })} />
                 </Field>
               </div>
-              <Field label="Type">
+              <Field label={t("Type")}>
                 <select value={line.expense_type} onChange={(e) => update(index, { expense_type: e.target.value })}>
-                  <option value="">Select…</option>
+                  <option value="">{t("Select…")}</option>
                   {claimTypes.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
               </Field>
-              <Field label="Description">
+              <Field label={t("Description")}>
                 <input value={line.description} onChange={(e) => update(index, { description: e.target.value })} />
               </Field>
             </div>
@@ -680,7 +681,7 @@ function ClaimDrawer({ open, onClose, claimTypes, currency, onDone }) {
           <Icon name="plus" size={15} /> Add line
         </Button>
 
-        <Field label="Remark">
+        <Field label={t("Remark")}>
           <textarea rows={3} value={remark} onChange={(e) => setRemark(e.target.value)} />
         </Field>
       </div>

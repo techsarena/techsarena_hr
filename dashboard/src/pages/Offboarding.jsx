@@ -8,6 +8,7 @@ import {
 } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDays, fmtMoney, isoDate, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /* Clearance progress is derived from the real HRMS Task rows behind each
    separation activity — nothing here invents a status the backend can't back. */
@@ -53,11 +54,11 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
     <Drawer
       open={open}
       onClose={onClose}
-      title="Start a separation"
-      subtitle="Creates the clearance checklist as real project tasks"
+      title={t("Start a separation")}
+      subtitle={t("Creates the clearance checklist as real project tasks")}
       footer={
         <>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("Cancel")}</Button>
           <Button variant="primary" onClick={submit} disabled={busy || !form.employee}>
             {busy ? 'Starting…' : 'Start separation'}
           </Button>
@@ -65,12 +66,12 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
       }
     >
       <div className="fields">
-        <Field label="Employee">
+        <Field label={t("Employee")}>
           <select
             value={form.employee}
             onChange={(e) => setForm({ ...form, employee: e.target.value })}
           >
-            <option value="">Select an employee…</option>
+            <option value="">{t("Select an employee…")}</option>
             {directory.map((row) => (
               <option key={row.name} value={row.name}>
                 {row.employee_name} — {row.name}
@@ -79,12 +80,12 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
           </select>
         </Field>
 
-        <Field label="Checklist template" hint="Drives the clearance activities">
+        <Field label={t("Checklist template")} hint="Drives the clearance activities">
           <select
             value={form.employee_separation_template}
             onChange={(e) => setForm({ ...form, employee_separation_template: e.target.value })}
           >
-            <option value="">No template</option>
+            <option value="">{t("No template")}</option>
             {templates.map((row) => (
               <option key={row.name} value={row.name}>{row.name}</option>
             ))}
@@ -92,14 +93,14 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
         </Field>
 
         <div className="grid grid--2">
-          <Field label="Resignation date">
+          <Field label={t("Resignation date")}>
             <input
               type="date"
               value={form.resignation_letter_date}
               onChange={(e) => setForm({ ...form, resignation_letter_date: e.target.value })}
             />
           </Field>
-          <Field label="Clearance begins">
+          <Field label={t("Clearance begins")}>
             <input
               type="date"
               value={form.boarding_begins_on}
@@ -108,7 +109,7 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
           </Field>
         </div>
 
-        <Field label="Last working day" hint="Can be set later, before completing">
+        <Field label={t("Last working day")} hint="Can be set later, before completing">
           <input
             type="date"
             value={form.relieving_date}
@@ -116,7 +117,7 @@ function StartDrawer({ open, directory, templates, onClose, onDone }) {
           />
         </Field>
 
-        <Field label="Reason for leaving">
+        <Field label={t("Reason for leaving")}>
           <textarea
             rows={3}
             value={form.reason_for_leaving}
@@ -134,7 +135,7 @@ function Settlement({ settlement, currency, onRaiseGratuity }) {
   const { leave_encashment: leave, funds, gratuity, loans } = settlement;
 
   return (
-    <Card title="Final settlement">
+    <Card title={t("Final settlement")}>
       {/* Every figure here is computed, never posted — paying it out stays a
           deliberate payroll action. The banner keeps that contract visible. */}
       <p className="small subtle" style={{ marginTop: 0 }}>
@@ -142,12 +143,12 @@ function Settlement({ settlement, currency, onRaiseGratuity }) {
       </p>
 
       <FieldRow
-        label="Leave encashment"
+        label={t("Leave encashment")}
         value={leave?.total_days ? `${fmtDays(leave.total_days)} · ${fmtMoney(leave.estimated_amount, currency)}` : '—'}
       />
-      <FieldRow label="Fund balances" value={funds?.total ? fmtMoney(funds.total, currency) : '—'} />
+      <FieldRow label={t("Fund balances")} value={funds?.total ? fmtMoney(funds.total, currency) : '—'} />
       <FieldRow
-        label="Gratuity"
+        label={t("Gratuity")}
         value={
           gratuity?.available
             ? gratuity.already_raised
@@ -157,13 +158,13 @@ function Settlement({ settlement, currency, onRaiseGratuity }) {
         }
       />
       <FieldRow
-        label="Loans outstanding"
+        label={t("Loans outstanding")}
         value={loans?.total ? `− ${fmtMoney(loans.total, currency)}` : '—'}
       />
 
       <div className="divider" style={{ margin: 'var(--space-4) 0' }} />
       <Stat
-        label="Net settlement"
+        label={t("Net settlement")}
         value={fmtMoney(settlement.net_settlement, currency)}
         meta={`${fmtMoney(settlement.total_payable, currency)} payable less ${fmtMoney(settlement.total_recoverable, currency)} recoverable`}
       />
@@ -177,7 +178,7 @@ function Settlement({ settlement, currency, onRaiseGratuity }) {
 
       {gratuity?.available && !gratuity.already_raised && gratuity.amount > 0 && (
         <div style={{ marginTop: 'var(--space-4)' }}>
-          <Button onClick={onRaiseGratuity}>Raise gratuity payment (draft)</Button>
+          <Button onClick={onRaiseGratuity}>{t("Raise gratuity payment (draft)")}</Button>
         </div>
       )}
     </Card>
@@ -247,7 +248,7 @@ function SeparationDrawer({ record, currency, onClose, onChanged }) {
             <div className="stack">
               <Card className="card--muted">
                 <Stat
-                  label="Clearance"
+                  label={t("Clearance")}
                   value={`${stats.percent}%`}
                   meta={`${stats.done} of ${stats.total} activities complete`}
                 />
@@ -260,27 +261,27 @@ function SeparationDrawer({ record, currency, onClose, onChanged }) {
                 </div>
               </Card>
 
-              <Card title="Details">
+              <Card title={t("Details")}>
                 <FieldRow
-                  label="Employee status"
+                  label={t("Employee status")}
                   value={detail.employee_status ? <Pill tone={statusTone(detail.employee_status)}>{detail.employee_status}</Pill> : null}
                 />
-                <FieldRow label="Department" value={detail.department} />
-                <FieldRow label="Designation" value={detail.designation} />
-                <FieldRow label="Resignation date" value={detail.resignation_letter_date ? fmtDate(detail.resignation_letter_date) : null} />
-                <FieldRow label="Last working day" value={detail.relieving_date ? fmtDate(detail.relieving_date) : null} />
-                <FieldRow label="Reason" value={detail.reason_for_leaving} />
-                <FieldRow label="Project" value={detail.project} />
+                <FieldRow label={t("Department")} value={detail.department} />
+                <FieldRow label={t("Designation")} value={detail.designation} />
+                <FieldRow label={t("Resignation date")} value={detail.resignation_letter_date ? fmtDate(detail.resignation_letter_date) : null} />
+                <FieldRow label={t("Last working day")} value={detail.relieving_date ? fmtDate(detail.relieving_date) : null} />
+                <FieldRow label={t("Reason")} value={detail.reason_for_leaving} />
+                <FieldRow label={t("Project")} value={detail.project} />
               </Card>
 
               <Card title={`Clearance (${stats.total})`} flush>
                 {stats.total === 0 ? (
-                  <EmptyState title="No activities" body="This separation has no checklist tasks." icon="◷" />
+                  <EmptyState title={t("No activities")} body={t("This separation has no checklist tasks.")} icon="◷" />
                 ) : (
                   <div className="table-wrap">
                     <table className="table">
                       <thead>
-                        <tr><th>Activity</th><th>Owner</th><th>Due</th><th>Status</th></tr>
+                        <tr><th>{t("Activity")}</th><th>{t("Owner")}</th><th>{t("Due")}</th><th>{t("Status")}</th></tr>
                       </thead>
                       <tbody>
                         {detail.activities.map((activity) => (
@@ -304,8 +305,8 @@ function SeparationDrawer({ record, currency, onClose, onChanged }) {
               />
 
               {!alreadyLeft && (
-                <Card title="Complete separation">
-                  <Field label="Last working day" hint="Marks the employee as Left on this date">
+                <Card title={t("Complete separation")}>
+                  <Field label={t("Last working day")} hint="Marks the employee as Left on this date">
                     <input
                       type="date"
                       value={relieving || detail.relieving_date || ''}
@@ -367,11 +368,11 @@ export default function Offboarding() {
     <div className="stack">
       <div className="row row--between page-head" style={{ flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-head__title">Offboarding</h1>
-          <p className="page-head__sub">Separations, clearance and final settlement</p>
+          <h1 className="page-head__title">{t("Offboarding")}</h1>
+          <p className="page-head__sub">{t("Separations, clearance and final settlement")}</p>
         </div>
         <div className="row" style={{ gap: 'var(--space-3)' }}>
-          <SearchInput value={query} onChange={setQuery} placeholder="Search people…" />
+          <SearchInput value={query} onChange={setQuery} placeholder={t("Search people…")} />
           <Button variant="primary" onClick={() => setStarting(true)}>
             <Icon name="checklist" size={15} />
             Start separation
@@ -384,8 +385,8 @@ export default function Offboarding() {
           if (!data.available) {
             return (
               <EmptyState
-                title="Separation is unavailable"
-                body="Employee Separation is not installed on this site."
+                title={t("Separation is unavailable")}
+                body={t("Employee Separation is not installed on this site.")}
                 icon="◷"
               />
             );
@@ -402,11 +403,11 @@ export default function Offboarding() {
           return (
             <>
               <div className="grid grid--3">
-                <Card className="card--muted"><Stat label="In progress" value={String(active)} /></Card>
-                <Card className="card--muted"><Stat label="Total separations" value={String(separations.length)} /></Card>
+                <Card className="card--muted"><Stat label={t("In progress")} value={String(active)} /></Card>
+                <Card className="card--muted"><Stat label={t("Total separations")} value={String(separations.length)} /></Card>
                 <Card className="card--muted">
                   <Stat
-                    label="Clearance complete"
+                    label={t("Clearance complete")}
                     value={String(separations.filter((r) => r.clearance_complete).length)}
                   />
                 </Card>
@@ -417,8 +418,8 @@ export default function Offboarding() {
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Employee</th><th>Department</th><th>Last day</th>
-                        <th>Clearance</th><th>Status</th><th />
+                        <th>{t("Employee")}</th><th>{t("Department")}</th><th>{t("Last day")}</th>
+                        <th>{t("Clearance")}</th><th>{t("Status")}</th><th />
                       </tr>
                     </thead>
                     <tbody>
@@ -442,7 +443,7 @@ export default function Offboarding() {
                               </Pill>
                             </td>
                             <td style={{ textAlign: 'right' }}>
-                              <Button onClick={() => setOpen(row)}>Open</Button>
+                              <Button onClick={() => setOpen(row)}>{t("Open")}</Button>
                             </td>
                           </tr>
                         );

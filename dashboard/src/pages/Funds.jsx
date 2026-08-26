@@ -7,6 +7,7 @@ import { DataTable, exportCsv } from '../components/DataTable';
 import { Button } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtMoney } from '../api/format';
+import { t } from '../api/i18n';
 
 const CREDIT_ENTRIES = new Set(['Employee Contribution', 'Employer Contribution', 'Profit']);
 
@@ -27,18 +28,18 @@ export default function Funds() {
   const columns = useMemo(
     () => [
       { key: 'posting_date', header: 'Date', render: (row) => <span className="cell-strong">{fmtDate(row.posting_date)}</span>, sortValue: (row) => row.posting_date },
-      { key: 'fund_type', header: 'Fund', render: (row) => <Pill>{row.fund_type}</Pill> },
+      { key: 'fund_type', header: t("Fund"), render: (row) => <Pill>{row.fund_type}</Pill> },
       {
         key: 'entry_type',
-        header: 'Entry',
+        header: t("Entry"),
         render: (row) => (
           <Pill tone={CREDIT_ENTRIES.has(row.entry_type) ? 'success' : 'warning'}>{row.entry_type}</Pill>
         ),
       },
-      { key: 'period', header: 'Period', render: (row) => row.period || '—' },
+      { key: 'period', header: t("Period"), render: (row) => row.period || '—' },
       {
         key: 'amount',
-        header: 'Amount',
+        header: t("Amount"),
         align: 'right',
         render: (row) => {
           const credit = CREDIT_ENTRIES.has(row.entry_type);
@@ -50,7 +51,7 @@ export default function Funds() {
         },
         sortValue: (row) => Number(row.amount) || 0,
       },
-      { key: 'remarks', header: 'Remarks', render: (row) => <span className="subtle truncate" style={{ maxWidth: 240, display: 'inline-block' }}>{row.remarks || '—'}</span> },
+      { key: 'remarks', header: t("Remarks"), render: (row) => <span className="subtle truncate" style={{ maxWidth: 240, display: 'inline-block' }}>{row.remarks || '—'}</span> },
     ],
     [currency],
   );
@@ -60,8 +61,8 @@ export default function Funds() {
   return (
     <div className="stack">
       <div className="page-head">
-        <h1 className="page-head__title">My funds</h1>
-        <p className="page-head__sub">Your EOBI and provident fund ledger</p>
+        <h1 className="page-head__title">{t("My funds")}</h1>
+        <p className="page-head__sub">{t("Your EOBI and provident fund ledger")}</p>
       </div>
 
       <Async state={state} rows={5}>
@@ -84,7 +85,7 @@ export default function Funds() {
             {allTransactions.length === 0 ? (
               <Card>
                 <EmptyState
-                  title="No fund transactions"
+                  title={t("No fund transactions")}
                   body="Contributions, withdrawals and profit allocations posted against your funds will show here."
                   icon={<Icon name="vault" size={22} />}
                 />
@@ -96,7 +97,7 @@ export default function Funds() {
                     value={fundType}
                     onChange={setFundType}
                     items={[
-                      { id: 'all', label: 'All', count: allTransactions.length },
+                      { id: 'all', label: t("All"), count: allTransactions.length },
                       ...fundTypes.map((type) => ({
                         id: type,
                         label: type,

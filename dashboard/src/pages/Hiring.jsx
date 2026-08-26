@@ -5,6 +5,7 @@ import { Async, Avatar, Button, Card, Drawer, EmptyState, FieldRow, Pill, Search
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtMoney, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 function salaryBand(opening, fallbackCurrency) {
   const currency = opening.currency || fallbackCurrency;
@@ -34,26 +35,26 @@ function OpeningDrawer({ opening, currency, onClose }) {
           return (
             <div className="stack">
               <div className="grid grid--3">
-                <div className="card"><Stat label="Applicants" value={detail.applicants ?? 0} /></div>
-                <div className="card"><Stat label="In process" value={detail.in_process ?? 0} /></div>
-                <div className="card"><Stat label="Offers" value={detail.offers ?? 0} tone="success" /></div>
+                <div className="card"><Stat label={t("Applicants")} value={detail.applicants ?? 0} /></div>
+                <div className="card"><Stat label={t("In process")} value={detail.in_process ?? 0} /></div>
+                <div className="card"><Stat label={t("Offers")} value={detail.offers ?? 0} tone="success" /></div>
               </div>
 
-              <Card title="Requisition">
-                <FieldRow label="Status" value={<Pill tone={statusTone(detail.status)}>{detail.status}</Pill>} />
-                <FieldRow label="Designation" value={detail.designation} />
-                <FieldRow label="Department" value={detail.department} />
-                <FieldRow label="Location" value={detail.location} />
-                <FieldRow label="Company" value={detail.company} />
-                <FieldRow label="Posts" value={detail.posts} />
-                <FieldRow label="Posted on" value={detail.posted_on ? fmtDate(detail.posted_on) : null} />
-                <FieldRow label="Closes on" value={detail.closes_on ? fmtDate(detail.closes_on) : null} />
-                <FieldRow label="Open for" value={detail.age_days !== null && detail.age_days !== undefined ? `${detail.age_days} days` : null} />
-                <FieldRow label="Salary band" value={salaryBand(detail, currency)} />
+              <Card title={t("Requisition")}>
+                <FieldRow label={t("Status")} value={<Pill tone={statusTone(detail.status)}>{detail.status}</Pill>} />
+                <FieldRow label={t("Designation")} value={detail.designation} />
+                <FieldRow label={t("Department")} value={detail.department} />
+                <FieldRow label={t("Location")} value={detail.location} />
+                <FieldRow label={t("Company")} value={detail.company} />
+                <FieldRow label={t("Posts")} value={detail.posts} />
+                <FieldRow label={t("Posted on")} value={detail.posted_on ? fmtDate(detail.posted_on) : null} />
+                <FieldRow label={t("Closes on")} value={detail.closes_on ? fmtDate(detail.closes_on) : null} />
+                <FieldRow label={t("Open for")} value={detail.age_days !== null && detail.age_days !== undefined ? `${detail.age_days} days` : null} />
+                <FieldRow label={t("Salary band")} value={salaryBand(detail, currency)} />
               </Card>
 
               {stages.length > 0 && (
-                <Card title="Pipeline">
+                <Card title={t("Pipeline")}>
                   <div className="stack">
                     {stages.map(([stage, count]) => (
                       <div className="row row--between" key={stage}>
@@ -67,7 +68,7 @@ function OpeningDrawer({ opening, currency, onClose }) {
 
               <Card title={`Candidates in flight (${applicants.length})`}>
                 {applicants.length === 0 ? (
-                  <EmptyState title="No candidates" body="Applicants in this pipeline will be listed here." icon="◷" />
+                  <EmptyState title={t("No candidates")} body={t("Applicants in this pipeline will be listed here.")} icon="◷" />
                 ) : (
                   <div className="stack">
                     {applicants.map((row) => (
@@ -85,7 +86,7 @@ function OpeningDrawer({ opening, currency, onClose }) {
               </Card>
 
               {detail.description && (
-                <Card title="Description">
+                <Card title={t("Description")}>
                   <div
                     className="muted"
                     style={{ fontSize: 13.5, lineHeight: 1.6 }}
@@ -121,7 +122,7 @@ export default function Hiring() {
     () => [
       {
         key: 'title',
-        header: 'Opening',
+        header: t("Opening"),
         render: (row) => (
           <div className="truncate">
             <div className="cell-strong truncate">{row.title}</div>
@@ -130,20 +131,20 @@ export default function Hiring() {
         ),
         exportValue: (row) => row.title,
       },
-      { key: 'status', header: 'Status', render: (row) => <Pill tone={statusTone(row.status)}>{row.status}</Pill> },
-      { key: 'posts', header: 'Posts', align: 'right', sortValue: (row) => Number(row.posts) || 0 },
-      { key: 'applicants', header: 'Applicants', align: 'right', sortValue: (row) => Number(row.applicants) || 0 },
-      { key: 'in_process', header: 'In process', align: 'right', sortValue: (row) => Number(row.in_process) || 0 },
+      { key: 'status', header: t("Status"), render: (row) => <Pill tone={statusTone(row.status)}>{row.status}</Pill> },
+      { key: 'posts', header: t("Posts"), align: 'right', sortValue: (row) => Number(row.posts) || 0 },
+      { key: 'applicants', header: t("Applicants"), align: 'right', sortValue: (row) => Number(row.applicants) || 0 },
+      { key: 'in_process', header: t("In process"), align: 'right', sortValue: (row) => Number(row.in_process) || 0 },
       {
         key: 'offers',
-        header: 'Offers',
+        header: t("Offers"),
         align: 'right',
         render: (row) => (row.offers ? <span style={{ color: 'var(--success)', fontWeight: 600 }}>{row.offers}</span> : '—'),
         sortValue: (row) => Number(row.offers) || 0,
       },
       {
         key: 'age_days',
-        header: 'Open for',
+        header: t("Open for"),
         align: 'right',
         // The API reports a raw day count and leaves the phrasing here, so no
         // ageing threshold is baked into the backend.
@@ -155,8 +156,8 @@ export default function Hiring() {
           ),
         sortValue: (row) => Number(row.age_days) || 0,
       },
-      { key: 'hiring_manager', header: 'Hiring manager', render: (row) => row.hiring_manager || '—' },
-      { key: 'salary', header: 'Band', render: (row) => salaryBand(row, currency) || '—', sortable: false, exportValue: (row) => salaryBand(row, currency) || '' },
+      { key: 'hiring_manager', header: t("Hiring manager"), render: (row) => row.hiring_manager || '—' },
+      { key: 'salary', header: t("Band"), render: (row) => salaryBand(row, currency) || '—', sortable: false, exportValue: (row) => salaryBand(row, currency) || '' },
     ],
     [currency],
   );
@@ -175,8 +176,8 @@ export default function Hiring() {
     <div className="stack">
       <div className="row row--between page-head">
         <div>
-          <h1 className="page-head__title">Job openings</h1>
-          <p className="page-head__sub">Requisitions you're hiring against, with their live pipelines</p>
+          <h1 className="page-head__title">{t("Job openings")}</h1>
+          <p className="page-head__sub">{t("Requisitions you're hiring against, with their live pipelines")}</p>
         </div>
         {openings.length > 0 && (
           <Button onClick={() => exportCsv('job-openings', columns, openings)}>
@@ -191,7 +192,7 @@ export default function Hiring() {
             return (
               <Card>
                 <EmptyState
-                  title="No job openings"
+                  title={t("No job openings")}
                   body="Recruitment is optional in HRMS. Job Opening records created on this site will appear here with their pipelines."
                   icon={<Icon name="briefcase" size={22} />}
                 />
@@ -202,15 +203,15 @@ export default function Hiring() {
           return (
             <>
               <div className="grid grid--4">
-                <div className="card"><Stat label="Open requisitions" value={totals.open} meta={`${payload.openings.length} total`} /></div>
-                <div className="card"><Stat label="Applicants" value={totals.applicants} /></div>
-                <div className="card"><Stat label="Offers out" value={totals.offers} tone="success" /></div>
-                <div className="card"><Stat label="Open over 60 days" value={totals.stale} tone={totals.stale ? 'warning' : undefined} /></div>
+                <div className="card"><Stat label={t("Open requisitions")} value={totals.open} meta={`${payload.openings.length} total`} /></div>
+                <div className="card"><Stat label={t("Applicants")} value={totals.applicants} /></div>
+                <div className="card"><Stat label={t("Offers out")} value={totals.offers} tone="success" /></div>
+                <div className="card"><Stat label={t("Open over 60 days")} value={totals.stale} tone={totals.stale ? 'warning' : undefined} /></div>
               </div>
 
               <Card flush>
                 <div className="toolbar" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0 }}>
-                  <SearchInput value={query} onChange={setQuery} placeholder="Search openings…" />
+                  <SearchInput value={query} onChange={setQuery} placeholder={t("Search openings…")} />
                   <div className="toolbar__spacer" />
                   <span className="small subtle">{openings.length} of {payload.openings.length}</span>
                 </div>

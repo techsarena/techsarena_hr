@@ -6,6 +6,7 @@ import { Async, Avatar, Button, Card, Drawer, EmptyState, FieldRow, Pill, Search
 import { DataTable, exportCsv } from '../components/DataTable';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtMoney, fmtRange } from '../api/format';
+import { t } from '../api/i18n';
 
 /** Turns a snake_case Employee fieldname into a readable label. */
 const label = (key) => key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -39,15 +40,15 @@ function ProfileDrawer({ employee, onClose }) {
   if (!employee) return null;
 
   return (
-    <Drawer open onClose={onClose} title="Employee profile" subtitle={employee}>
+    <Drawer open onClose={onClose} title={t("Employee profile")} subtitle={employee}>
       <Async state={state} rows={6}>
         {(data) => {
           const identity = data.identity || {};
           const tabs = [
-            { id: 'profile', label: 'Profile' },
-            { id: 'team', label: 'Team', count: (data.reports || []).length },
-            ...(data.can_view_statutory ? [{ id: 'pay', label: 'Pay & leave' }] : []),
-            { id: 'records', label: 'Records', count: (data.documents || []).length + (data.assets || []).length },
+            { id: 'profile', label: t("Profile") },
+            { id: 'team', label: t("Team"), count: (data.reports || []).length },
+            ...(data.can_view_statutory ? [{ id: 'pay', label: t("Pay & leave") }] : []),
+            { id: 'records', label: t("Records"), count: (data.documents || []).length + (data.assets || []).length },
           ];
 
           return (
@@ -59,7 +60,7 @@ function ProfileDrawer({ employee, onClose }) {
                   <p className="small subtle truncate">
                     {[identity.designation, identity.department].filter(Boolean).join(' · ') || '—'}
                   </p>
-                  {data.is_self && <Pill tone="primary">You</Pill>}
+                  {data.is_self && <Pill tone="primary">{t("You")}</Pill>}
                 </div>
               </div>
 
@@ -67,10 +68,10 @@ function ProfileDrawer({ employee, onClose }) {
 
               {tab === 'profile' && (
                 <>
-                  <Section title="Identity" values={data.identity} />
-                  <Section title="Job" values={data.job} />
-                  <Section title="Personal" values={data.personal} />
-                  {data.can_view_statutory && <Section title="Statutory" values={data.statutory} />}
+                  <Section title={t("Identity")} values={data.identity} />
+                  <Section title={t("Job")} values={data.job} />
+                  <Section title={t("Personal")} values={data.personal} />
+                  {data.can_view_statutory && <Section title={t("Statutory")} values={data.statutory} />}
                   {!data.can_view_statutory && (
                     <p className="small subtle">
                       Bank and statutory details stay with the employee and HR.
@@ -82,7 +83,7 @@ function ProfileDrawer({ employee, onClose }) {
               {tab === 'team' && (
                 <>
                   {data.manager && (
-                    <Card title="Reports to">
+                    <Card title={t("Reports to")}>
                       <div className="row">
                         <Avatar name={data.manager.employee_name} src={data.manager.image || undefined} size="sm" />
                         <div>
@@ -94,7 +95,7 @@ function ProfileDrawer({ employee, onClose }) {
                   )}
                   <Card title={`Direct reports (${(data.reports || []).length})`}>
                     {(data.reports || []).length === 0 ? (
-                      <EmptyState title="No direct reports" icon="◷" />
+                      <EmptyState title={t("No direct reports")} icon="◷" />
                     ) : (
                       <div className="stack">
                         {data.reports.map((row) => (
@@ -114,13 +115,13 @@ function ProfileDrawer({ employee, onClose }) {
 
               {tab === 'pay' && (
                 <>
-                  <Card title="Leave balances" flush>
+                  <Card title={t("Leave balances")} flush>
                     {(data.leave_balances || []).length === 0 ? (
-                      <EmptyState title="No allocations" icon="◷" />
+                      <EmptyState title={t("No allocations")} icon="◷" />
                     ) : (
                       <div className="table-wrap">
                         <table className="table">
-                          <thead><tr><th>Type</th><th className="num">Allocated</th><th className="num">Taken</th><th className="num">Left</th></tr></thead>
+                          <thead><tr><th>{t("Type")}</th><th className="num">{t("Allocated")}</th><th className="num">{t("Taken")}</th><th className="num">{t("Left")}</th></tr></thead>
                           <tbody>
                             {data.leave_balances.map((row) => (
                               <tr key={row.leave_type}>
@@ -136,13 +137,13 @@ function ProfileDrawer({ employee, onClose }) {
                     )}
                   </Card>
 
-                  <Card title="Recent payslips" flush>
+                  <Card title={t("Recent payslips")} flush>
                     {(data.salary_slips || []).length === 0 ? (
-                      <EmptyState title="No payslips" icon="◷" />
+                      <EmptyState title={t("No payslips")} icon="◷" />
                     ) : (
                       <div className="table-wrap">
                         <table className="table">
-                          <thead><tr><th>Period</th><th className="num">Gross</th><th className="num">Net</th></tr></thead>
+                          <thead><tr><th>{t("Period")}</th><th className="num">{t("Gross")}</th><th className="num">{t("Net")}</th></tr></thead>
                           <tbody>
                             {data.salary_slips.map((slip) => (
                               <tr key={slip.name}>
@@ -161,9 +162,9 @@ function ProfileDrawer({ employee, onClose }) {
 
               {tab === 'records' && (
                 <>
-                  <Card title="Documents">
+                  <Card title={t("Documents")}>
                     {(data.documents || []).length === 0 ? (
-                      <EmptyState title="No documents" icon="◷" />
+                      <EmptyState title={t("No documents")} icon="◷" />
                     ) : (
                       <div className="stack">
                         {data.documents.map((doc) => (
@@ -175,9 +176,9 @@ function ProfileDrawer({ employee, onClose }) {
                       </div>
                     )}
                   </Card>
-                  <Card title="Assets">
+                  <Card title={t("Assets")}>
                     {(data.assets || []).length === 0 ? (
-                      <EmptyState title="No assets assigned" icon="◷" />
+                      <EmptyState title={t("No assets assigned")} icon="◷" />
                     ) : (
                       <div className="stack">
                         {data.assets.map((asset, index) => (
@@ -226,7 +227,7 @@ export default function People() {
     () => [
       {
         key: 'employee_name',
-        header: 'Name',
+        header: t("Name"),
         render: (row) => (
           <div className="row" style={{ gap: 8 }}>
             <Avatar name={row.employee_name} src={row.image || undefined} size="sm" />
@@ -238,9 +239,9 @@ export default function People() {
         ),
         exportValue: (row) => row.employee_name,
       },
-      { key: 'designation', header: 'Designation', render: (row) => row.designation || '—' },
-      { key: 'department', header: 'Department', render: (row) => row.department || '—' },
-      { key: 'branch', header: 'Branch', render: (row) => row.branch || '—' },
+      { key: 'designation', header: t("Designation"), render: (row) => row.designation || '—' },
+      { key: 'department', header: t("Department"), render: (row) => row.department || '—' },
+      { key: 'branch', header: t("Branch"), render: (row) => row.branch || '—' },
       {
         key: 'company_email',
         header: 'Email',
@@ -248,10 +249,10 @@ export default function People() {
         render: (row) => (row.company_email ? <a href={`mailto:${row.company_email}`}>{row.company_email}</a> : '—'),
         exportValue: (row) => row.company_email || '',
       },
-      { key: 'cell_number', header: 'Phone', render: (row) => row.cell_number || '—' },
+      { key: 'cell_number', header: t("Phone"), render: (row) => row.cell_number || '—' },
       {
         key: 'roles',
-        header: 'Roles',
+        header: t("Roles"),
         sortable: false,
         render: (row) => {
           const roles = (row.roles || []).filter((r) => r !== 'All' && r !== 'Guest');
@@ -273,7 +274,7 @@ export default function People() {
     <div className="stack">
       <div className="row row--between page-head">
         <div>
-          <h1 className="page-head__title">People</h1>
+          <h1 className="page-head__title">{t("People")}</h1>
           <p className="page-head__sub">
             {capabilities.can_manage_hr
               ? `${directory.length} active employees`
@@ -287,9 +288,9 @@ export default function People() {
 
       <Card flush>
         <div className="toolbar" style={{ padding: 'var(--space-4) var(--space-5)', margin: 0 }}>
-          <SearchInput value={query} onChange={setQuery} placeholder="Search name, ID, email…" />
+          <SearchInput value={query} onChange={setQuery} placeholder={t("Search name, ID, email…")} />
           <select value={department} onChange={(e) => setDepartment(e.target.value)} style={{ width: 'auto', minWidth: 170 }}>
-            <option value="">All departments</option>
+            <option value="">{t("All departments")}</option>
             {departments.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
           </select>
           <div className="toolbar__spacer" />
@@ -297,7 +298,7 @@ export default function People() {
           <Tabs
             value={view}
             onChange={setView}
-            items={[{ id: 'table', label: 'Table' }, { id: 'cards', label: 'Cards' }]}
+            items={[{ id: 'table', label: t("Table") }, { id: 'cards', label: t("Cards") }]}
           />
         </div>
 

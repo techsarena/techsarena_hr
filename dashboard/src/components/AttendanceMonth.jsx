@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { fmtDate, fmtTime, isoDate, statusTone, toDate, truthy } from '../api/format';
+import { t } from '../api/i18n';
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -21,10 +22,10 @@ function dayClass({ record, holiday, weekend, needsAction }) {
 export function AttendanceMonthLegend() {
   return (
     <div className="cal__legend">
-      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--accent-700)' }} />Present</span>
-      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--secondary-300)' }} />Work from home</span>
-      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--primary-400)' }} />Leave</span>
-      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--danger)' }} />Missing punch</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--accent-700)' }} />{t("Present")}</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--secondary-300)' }} />{t("Work from home")}</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--primary-400)' }} />{t("Leave")}</span>
+      <span className="cal__legend-item"><span className="cal__dot" style={{ background: 'var(--danger)' }} />{t("Missing punch")}</span>
     </div>
   );
 }
@@ -99,12 +100,12 @@ export function AttendanceMonth({ month, days = [], holidays = [], needsAction =
             >
               <div className="aday__top">
                 <span className="aday__num">{cell.day}</span>
-                {isToday && <span className="aday__today">Today</span>}
+                {isToday && <span className="aday__today">{t("Today")}</span>}
                 {cell.needsAction && !isToday && <span className="aday__alert" aria-hidden="true">!</span>}
               </div>
 
               {cell.needsAction ? (
-                <div className="aday__note aday__note--danger">No check-out</div>
+                <div className="aday__note aday__note--danger">{t("No check-out")}</div>
               ) : cell.holiday && !truthy(cell.holiday.weekly_off) ? (
                 <div className="aday__note aday__note--holiday">
                   {cell.holiday.description || 'Holiday'}
@@ -122,7 +123,7 @@ export function AttendanceMonth({ month, days = [], holidays = [], needsAction =
                   {rec.status}
                 </div>
               ) : cell.weekend ? (
-                <div className="aday__note aday__note--weekend">Weekend</div>
+                <div className="aday__note aday__note--weekend">{t("Weekend")}</div>
               ) : null}
             </button>
           );

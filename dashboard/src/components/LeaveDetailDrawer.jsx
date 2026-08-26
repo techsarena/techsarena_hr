@@ -1,5 +1,6 @@
 import { Drawer, Pill } from './ui';
 import { fmtDateTime, fmtRange, fmtDate, statusTone } from '../api/format';
+import { t } from '../api/i18n';
 
 /* The approval trail HRMS actually records: a Leave Application carries its
    submission (creation), one approver, and the balance deduction that happens
@@ -27,7 +28,7 @@ function steps(row) {
     },
     {
       key: 'balance',
-      title: 'Balance deducted',
+      title: t("Balance deducted"),
       meta: status === 'Approved' ? 'Applied to your balance' : 'On approval',
       state: status === 'Approved' ? 'done' : 'todo',
     },
@@ -48,7 +49,7 @@ export function LeaveDetailDrawer({ row, onClose }) {
       <div className="stack">
         <div className="card card--muted leave-detail__range">
           <div>
-            <div className="stat__label">From</div>
+            <div className="stat__label">{t("From")}</div>
             <div className="leave-detail__date">{fmtDate(row.from_date)}</div>
           </div>
           <div className="leave-detail__arrow" aria-hidden>→</div>
@@ -57,7 +58,7 @@ export function LeaveDetailDrawer({ row, onClose }) {
             <div className="leave-detail__date">{fmtDate(row.to_date || row.from_date)}</div>
           </div>
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-            <div className="stat__label">Days</div>
+            <div className="stat__label">{t("Days")}</div>
             <div className="leave-detail__date tabular">{days.toFixed(1)}</div>
           </div>
         </div>
@@ -70,7 +71,7 @@ export function LeaveDetailDrawer({ row, onClose }) {
         {row.description && <p className="muted">{row.description}</p>}
 
         <div className="card">
-          <div className="section-heading__label" style={{ marginBottom: 'var(--space-3)' }}>Approval</div>
+          <div className="section-heading__label" style={{ marginBottom: 'var(--space-3)' }}>{t("Approval")}</div>
           <ol className="steps">
             {steps(row).map((step, i) => (
               <li key={step.key} className={`steps__item steps__item--${step.state}`}>

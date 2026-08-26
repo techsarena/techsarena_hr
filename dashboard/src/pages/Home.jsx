@@ -6,6 +6,7 @@ import hr from '../api/hr';
 import { Button, EmptyState, Meter, Pill } from '../components/ui';
 import { Icon } from '../components/Icon';
 import { fmtDate, fmtDateShort, fmtDays, fmtDuration, fmtRange, fmtTime, initials } from '../api/format';
+import { t } from '../api/i18n';
 
 function greeting() {
   const hour = new Date().getHours();
@@ -53,7 +54,7 @@ function PunchCard() {
   return (
     <section className="home-card home-card--today">
       <header>
-        <h2>Today</h2>
+        <h2>{t("Today")}</h2>
         <span className="home-shift">{shiftLabel(attendance?.shift)}</span>
       </header>
       <div className="home-punch">
@@ -72,10 +73,10 @@ function PunchCard() {
         {busy ? 'Working…' : checkedIn ? 'Check out' : 'Check in'}
       </Button>
       <div className="home-mini-stats">
-        <div><strong>{stats.present ?? '—'}</strong><span>Present</span></div>
-        <div><strong>{stats.on_leave ?? '—'}</strong><span>On leave</span></div>
-        <div><strong>{stats.late_entry ?? '—'}</strong><span>Late in</span></div>
-        <div><strong>{stats.average_hours ? `${Number(stats.average_hours).toFixed(1)}h` : '—'}</strong><span>Avg day</span></div>
+        <div><strong>{stats.present ?? '—'}</strong><span>{t("Present")}</span></div>
+        <div><strong>{stats.on_leave ?? '—'}</strong><span>{t("On leave")}</span></div>
+        <div><strong>{stats.late_entry ?? '—'}</strong><span>{t("Late in")}</span></div>
+        <div><strong>{stats.average_hours ? `${Number(stats.average_hours).toFixed(1)}h` : '—'}</strong><span>{t("Avg day")}</span></div>
       </div>
     </section>
   );
@@ -89,7 +90,7 @@ function LeaveBalanceCard() {
   return (
     <section className="home-card home-card--leave">
       <header>
-        <h2>Leave balance</h2>
+        <h2>{t("Leave balance")}</h2>
         <Link to="/leave/policies">2026 allocation ↗</Link>
       </header>
       {balances.length ? (
@@ -111,10 +112,10 @@ function LeaveBalanceCard() {
           })}
         </div>
       ) : (
-        <EmptyState title="No leave allocation" body="Your leave balances will appear here once HR allocates them." icon={<Icon name="calendar" size={20} />} />
+        <EmptyState title={t("No leave allocation")} body={t("Your leave balances will appear here once HR allocates them.")} icon={<Icon name="calendar" size={20} />} />
       )}
       <footer>
-        <span>Next off</span>
+        <span>{t("Next off")}</span>
         <strong>{next ? `${fmtDateShort(next.from_date)} — ${next.leave_type}` : 'No approved leave planned'}</strong>
         {next && <Pill tone={next.status === 'Approved' ? 'success' : 'warning'}>{next.status}</Pill>}
       </footer>
@@ -136,7 +137,7 @@ function NeedsYouCard() {
     })),
     ...(pendingLeave ? [{
       key: pendingLeave.name,
-      label: 'Action · Leave',
+      label: t("Action · Leave"),
       title: `${pendingLeave.leave_type} request`,
       meta: `${fmtRange(pendingLeave.from_date, pendingLeave.to_date)} · ${pendingLeave.status}`,
       tone: 'info',
@@ -153,7 +154,7 @@ function NeedsYouCard() {
   return (
     <aside className="home-card home-card--needs">
       <header>
-        <h2>Needs you</h2>
+        <h2>{t("Needs you")}</h2>
         <span>{items.length}</span>
       </header>
       {items.length ? (
@@ -165,18 +166,18 @@ function NeedsYouCard() {
               <span>{item.meta}</span>
               {item.actions && (
                 <div>
-                  <Link to="/approvals" className="btn btn--indigo btn--sm">Approve</Link>
-                  <Link to="/approvals" className="btn btn--ghost btn--sm">Reject</Link>
+                  <Link to="/approvals" className="btn btn--indigo btn--sm">{t("Approve")}</Link>
+                  <Link to="/approvals" className="btn btn--ghost btn--sm">{t("Reject")}</Link>
                 </div>
               )}
             </div>
           ))}
         </div>
       ) : (
-        <EmptyState title="Nothing pending" body="Approvals, acknowledgements and reminders will appear here." icon={<Icon name="check" size={20} />} />
+        <EmptyState title={t("Nothing pending")} body={t("Approvals, acknowledgements and reminders will appear here.")} icon={<Icon name="check" size={20} />} />
       )}
       <footer>
-        <span>Announcement</span>
+        <span>{t("Announcement")}</span>
         <strong>{notifications[0]?.subject || 'No new company announcements'}</strong>
       </footer>
     </aside>
@@ -190,8 +191,8 @@ function HolidaysCard() {
   return (
     <section className="home-card home-card--holidays">
       <header>
-        <h2>Upcoming holidays</h2>
-        <span>Calendar</span>
+        <h2>{t("Upcoming holidays")}</h2>
+        <span>{t("Calendar")}</span>
       </header>
       {rows.length ? rows.map((row) => {
         const date = new Date(String(row.holiday_date).replace(' ', 'T'));
@@ -207,7 +208,7 @@ function HolidaysCard() {
             </div>
           </div>
         );
-      }) : <EmptyState title="No holidays listed" icon={<Icon name="calendar" size={20} />} />}
+      }) : <EmptyState title={t("No holidays listed")} icon={<Icon name="calendar" size={20} />} />}
     </section>
   );
 }
@@ -231,7 +232,7 @@ function TeamWeekCard() {
   return (
     <section className="home-card home-card--team">
       <header>
-        <h2>Your team this week</h2>
+        <h2>{t("Your team this week")}</h2>
         <span>
           {profile?.department || team?.department || 'Team'} ·{' '}
           {total > members.length ? `${members.length} of ${total}` : `${total || 0}`} people
@@ -257,7 +258,7 @@ function TeamWeekCard() {
           </div>
         </>
       ) : (
-        <EmptyState title="No team calendar" body="Team leave will appear once you have access to other employee records." icon={<Icon name="people" size={20} />} />
+        <EmptyState title={t("No team calendar")} body={t("Team leave will appear once you have access to other employee records.")} icon={<Icon name="people" size={20} />} />
       )}
     </section>
   );
